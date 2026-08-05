@@ -14,10 +14,21 @@ interface BklitLightnessChartProps {
   palette: Palette;
 }
 
+/**
+ * Formats Hue cleanly, returning 'neutral' for neutral/gray colors or null hues.
+ */
+function formatHue(h: number | null | undefined, c: number): string {
+  if (h === null || h === undefined || isNaN(h) || c < 0.025) {
+    return 'neutral';
+  }
+  const normH = (h % 360 + 360) % 360;
+  return `${Math.round(normH)}°`;
+}
+
 export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palette }) => {
   const shouldReduceMotion = useReducedMotion();
 
-  // Single-row grouped bar chart data for Bklit UI BarChart component
+  // Single grouped row for 4 roles with distinct palette color fills
   const chartData = [
     {
       name: 'Lightness',
@@ -27,37 +38,6 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
       accent: Math.round(palette.accent.oklch.l * 100),
     },
   ];
-
-  const colorMeta: Record<string, { label: string; hex: string; l: number; c: number; h: number | null }> = {
-    shadow: {
-      label: 'Shadow',
-      hex: palette.shadow.hex,
-      l: palette.shadow.oklch.l,
-      c: palette.shadow.oklch.c,
-      h: palette.shadow.oklch.h,
-    },
-    base: {
-      label: 'Base',
-      hex: palette.base.hex,
-      l: palette.base.oklch.l,
-      c: palette.base.oklch.c,
-      h: palette.base.oklch.h,
-    },
-    highlight: {
-      label: 'Highlight',
-      hex: palette.highlight.hex,
-      l: palette.highlight.oklch.l,
-      c: palette.highlight.oklch.c,
-      h: palette.highlight.oklch.h,
-    },
-    accent: {
-      label: 'Accent',
-      hex: palette.accent.hex,
-      l: palette.accent.oklch.l,
-      c: palette.accent.oklch.c,
-      h: palette.accent.oklch.h,
-    },
-  };
 
   return (
     <div className="glass-panel rounded-xl p-5 border border-white/10 relative flex flex-col justify-between">
@@ -71,7 +51,7 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
               Lightness Ladder
             </h3>
-            <p className="text-[11px] text-gray-400 font-mono">Bklit UI Registry Component</p>
+            <p className="text-[11px] text-gray-400 font-mono">Bklit UI BarChart Component</p>
           </div>
         </div>
         <div className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5">
@@ -79,7 +59,7 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
         </div>
       </div>
 
-      {/* Real Bklit UI BarChart Component Container */}
+      {/* Real Bklit UI BarChart Component */}
       <div className="relative w-full py-2">
         <BarChart
           data={chartData}
@@ -99,30 +79,34 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
           <ChartTooltip
             showDatePill={false}
             showCrosshair={false}
-            content={({ point }) => {
+            content={() => {
               return (
-                <div className="p-3 rounded-lg border border-purple-500/30 shadow-2xl bg-zinc-950/95 text-left min-w-[180px]">
-                  <span className="text-[10px] font-mono text-purple-400 block mb-2 font-bold uppercase border-b border-white/10 pb-1">
-                    Bklit Lightness Metrics
-                  </span>
-                  <div className="space-y-1.5 font-mono text-[11px]">
-                    {Object.entries(colorMeta).map(([key, meta]) => (
-                      <div key={key} className="flex items-center justify-between gap-2 text-gray-300">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full border border-white/20"
-                            style={{ backgroundColor: meta.hex }}
-                          />
-                          <span className="capitalize">{meta.label}:</span>
+                <div className="p-3 rounded-xl border border-purple-500/30 shadow-2xl bg-zinc-950/95 text-left font-mono min-w-[220px]">
+                  <div className="text-[10px] font-bold uppercase text-purple-400 mb-2 pb-1 border-b border-white/10 tracking-wider">
+                    OKLCH Lightness Metrics
+                  </div>
+                  <div className="space-y-1.5 text-[11px]">
+                    {(['shadow', 'base', 'highlight', 'accent'] as const).map((roleKey) => {
+                      const col = palette[roleKey];
+                      const hText = formatHue(col.oklch.h, col.oklch.c);
+                      return (
+                        <div key={roleKey} className="flex items-center justify-between gap-2 text-gray-300">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full border border-white/30 shrink-0"
+                              style={{ backgroundColor: col.hex }}
+                            />
+                            <span className="capitalize font-bold text-white">{col.role}:</span>
+                          </div>
+                          <div className="font-mono text-right text-purple-300">
+                            <span>{col.hex.toUpperCase()}</span>{' '}
+                            <span className="text-gray-400">L:{col.oklch.l.toFixed(2)}</span>{' '}
+                            <span className="text-gray-400">C:{col.oklch.c.toFixed(2)}</span>{' '}
+                            <span className="text-purple-400 font-bold">H:{hText}</span>
+                          </div>
                         </div>
-                        <div className="text-right font-bold text-white">
-                          <span>{meta.hex.toUpperCase()}</span>
-                          <span className="text-purple-300 ml-1.5 font-normal">
-                            ({(meta.l * 100).toFixed(0)}%)
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
