@@ -14,6 +14,7 @@
 [**Live Demo**](http://localhost:3001) &bull; [**Deploy to Vercel**](https://vercel.com/new) &bull; [**Report Bug**](https://github.com/vansGAMee/OKLCH-PIXEL-PALETTE/issues)
 
 </div>
+<img width="800" height="450" alt="pixel-palette-3f213a" src="https://github.com/user-attachments/assets/8d0d942f-e336-4502-9a9b-b3aa7337fe44" />
 
 ---
 
