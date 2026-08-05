@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { RefreshCw, RotateCcw, Download, Sparkles } from 'lucide-react';
+import { RefreshCw, RotateCcw, Download } from 'lucide-react';
 import { Palette } from '@/types/palette';
 import { exportPalettePng } from '@/lib/color/exportPalettePng';
 

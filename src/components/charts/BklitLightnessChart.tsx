@@ -1,31 +1,66 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { Palette, PaletteColor } from '@/types/palette';
+import React from 'react';
+import { useReducedMotion } from 'motion/react';
+import { Palette } from '@/types/palette';
 import { Activity, Info } from 'lucide-react';
+
+import { BarChart } from '@/components/charts/bar-chart';
+import { Bar } from '@/components/charts/bar';
+import { Grid } from '@/components/charts/grid';
+import { ChartTooltip } from '@/components/charts/tooltip';
 
 interface BklitLightnessChartProps {
   palette: Palette;
 }
 
 export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palette }) => {
-  const [hoveredRole, setHoveredRole] = useState<string | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
-  const columns: { label: string; role: keyof Omit<Palette, 'harmony' | 'seed'>; data: PaletteColor }[] = [
-    { label: 'Shadow', role: 'shadow', data: palette.shadow },
-    { label: 'Base', role: 'base', data: palette.base },
-    { label: 'Highlight', role: 'highlight', data: palette.highlight },
-    { label: 'Accent', role: 'accent', data: palette.accent },
+  // Single-row grouped bar chart data for Bklit UI BarChart component
+  const chartData = [
+    {
+      name: 'Lightness',
+      shadow: Math.round(palette.shadow.oklch.l * 100),
+      base: Math.round(palette.base.oklch.l * 100),
+      highlight: Math.round(palette.highlight.oklch.l * 100),
+      accent: Math.round(palette.accent.oklch.l * 100),
+    },
   ];
 
-  const hoveredData = hoveredRole
-    ? columns.find((c) => c.role === hoveredRole)?.data
-    : null;
+  const colorMeta: Record<string, { label: string; hex: string; l: number; c: number; h: number | null }> = {
+    shadow: {
+      label: 'Shadow',
+      hex: palette.shadow.hex,
+      l: palette.shadow.oklch.l,
+      c: palette.shadow.oklch.c,
+      h: palette.shadow.oklch.h,
+    },
+    base: {
+      label: 'Base',
+      hex: palette.base.hex,
+      l: palette.base.oklch.l,
+      c: palette.base.oklch.c,
+      h: palette.base.oklch.h,
+    },
+    highlight: {
+      label: 'Highlight',
+      hex: palette.highlight.hex,
+      l: palette.highlight.oklch.l,
+      c: palette.highlight.oklch.c,
+      h: palette.highlight.oklch.h,
+    },
+    accent: {
+      label: 'Accent',
+      hex: palette.accent.hex,
+      l: palette.accent.oklch.l,
+      c: palette.accent.oklch.c,
+      h: palette.accent.oklch.h,
+    },
+  };
 
   return (
-    <div className="glass-panel rounded-xl p-5 border border-white/10 relative overflow-hidden flex flex-col justify-between">
+    <div className="glass-panel rounded-xl p-5 border border-white/10 relative flex flex-col justify-between">
       {/* Chart Header */}
       <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
         <div className="flex items-center gap-2">
@@ -34,9 +69,9 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
-              Bklit UI Lightness Ladder
+              Lightness Ladder
             </h3>
-            <p className="text-[11px] text-gray-400 font-mono">OKLCH Perceived Lightness (L)</p>
+            <p className="text-[11px] text-gray-400 font-mono">Bklit UI Registry Component</p>
           </div>
         </div>
         <div className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-gray-400 border border-white/5">
@@ -44,140 +79,64 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
         </div>
       </div>
 
-      {/* Interactive Chart Container */}
-      <div className="relative h-44 w-full flex items-end justify-between gap-3 px-2 pt-6 pb-2">
-        {/* Horizontal Guide Lines */}
-        <div className="absolute inset-x-0 top-6 bottom-2 flex flex-col justify-between pointer-events-none opacity-25">
-          <div className="border-b border-dashed border-white/20 w-full relative">
-            <span className="absolute -top-3 right-0 text-[9px] font-mono text-gray-400">1.0</span>
-          </div>
-          <div className="border-b border-dashed border-white/20 w-full relative">
-            <span className="absolute -top-3 right-0 text-[9px] font-mono text-gray-400">0.75</span>
-          </div>
-          <div className="border-b border-dashed border-white/20 w-full relative">
-            <span className="absolute -top-3 right-0 text-[9px] font-mono text-gray-400">0.50</span>
-          </div>
-          <div className="border-b border-dashed border-white/20 w-full relative">
-            <span className="absolute -top-3 right-0 text-[9px] font-mono text-gray-400">0.25</span>
-          </div>
-          <div className="border-b border-white/30 w-full relative">
-            <span className="absolute -top-3 right-0 text-[9px] font-mono text-gray-400">0.0</span>
-          </div>
-        </div>
+      {/* Real Bklit UI BarChart Component Container */}
+      <div className="relative w-full py-2">
+        <BarChart
+          data={chartData}
+          xDataKey="name"
+          aspectRatio="2.4 / 1"
+          barGap={0.3}
+          animationDuration={shouldReduceMotion ? 0 : 600}
+          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
+        >
+          <Grid horizontal vertical={false} strokeDasharray="3 3" />
+          
+          <Bar dataKey="shadow" fill={palette.shadow.hex} lineCap="round" />
+          <Bar dataKey="base" fill={palette.base.hex} lineCap="round" />
+          <Bar dataKey="highlight" fill={palette.highlight.hex} lineCap="round" />
+          <Bar dataKey="accent" fill={palette.accent.hex} lineCap="round" />
 
-        {/* Bklit Columns */}
-        {columns.map(({ label, role, data }) => {
-          const lightnessPct = Math.min(100, Math.max(4, Math.round(data.oklch.l * 100)));
-          const isHovered = hoveredRole === role;
-
-          return (
-            <div
-              key={role}
-              className="relative flex-1 h-full flex flex-col items-center justify-end group cursor-pointer z-10"
-              onMouseEnter={() => setHoveredRole(role)}
-              onMouseLeave={() => setHoveredRole(null)}
-            >
-              {/* Column Bar Container */}
-              <div className="w-full max-w-[56px] h-full flex items-end justify-center relative">
-                {/* Bar Motion Container */}
-                <motion.div
-                  className="w-full rounded-t-lg relative transition-all duration-200"
-                  style={{
-                    backgroundColor: data.hex,
-                    boxShadow: isHovered
-                      ? `0 0 20px ${data.hex}80, 0 0 2px #ffffff80 inset`
-                      : `0 0 10px ${data.hex}30`,
-                    border: '1px solid rgba(255, 255, 255, 0.25)',
-                    borderBottom: 'none',
-                  }}
-                  initial={shouldReduceMotion ? { height: `${lightnessPct}%` } : { height: '0%' }}
-                  animate={{ height: `${lightnessPct}%` }}
-                  transition={{
-                    type: 'spring',
-                    stiffness: 180,
-                    damping: 20,
-                  }}
-                >
-                  {/* Top Highlight Shine */}
-                  <div className="absolute top-0 inset-x-0 h-1 bg-white/40 rounded-t-lg" />
-                  
-                  {/* Lightness Label Badge Inside Column if Tall */}
-                  {lightnessPct > 25 && (
-                    <span
-                      className="absolute top-2 inset-x-0 text-center text-[10px] font-mono font-bold"
-                      style={{
-                        color: data.oklch.l > 0.6 ? '#000000' : '#ffffff',
-                      }}
-                    >
-                      {(data.oklch.l * 100).toFixed(0)}%
-                    </span>
-                  )}
-                </motion.div>
-              </div>
-
-              {/* Column Label */}
-              <div className="mt-2 text-center">
-                <span
-                  className={`text-[11px] font-mono font-semibold transition-colors ${
-                    isHovered ? 'text-purple-300' : 'text-gray-400'
-                  }`}
-                >
-                  {label}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Bklit UI Animated Floating Tooltip */}
-        <AnimatePresence>
-          {hoveredData && (
-            <motion.div
-              initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 5, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 3, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute top-2 left-1/2 -translate-x-1/2 z-30 pointer-events-none"
-            >
-              <div className="glass-panel px-3 py-2 rounded-lg border border-purple-500/30 shadow-2xl bg-zinc-950/90 text-left min-w-[160px]">
-                <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className="w-3 h-3 rounded-full border border-white/30"
-                    style={{ backgroundColor: hoveredData.hex }}
-                  />
-                  <span className="text-xs font-mono font-bold uppercase text-white">
-                    {hoveredData.role}
+          <ChartTooltip
+            showDatePill={false}
+            showCrosshair={false}
+            content={({ point }) => {
+              return (
+                <div className="p-3 rounded-lg border border-purple-500/30 shadow-2xl bg-zinc-950/95 text-left min-w-[180px]">
+                  <span className="text-[10px] font-mono text-purple-400 block mb-2 font-bold uppercase border-b border-white/10 pb-1">
+                    Bklit Lightness Metrics
                   </span>
-                  <span className="text-[10px] font-mono text-purple-400 ml-auto font-bold">
-                    {hoveredData.hex.toUpperCase()}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1 text-[10px] font-mono text-gray-300 pt-1 border-t border-white/10">
-                  <div>
-                    <span className="text-gray-500 block">L</span>
-                    {(hoveredData.oklch.l * 100).toFixed(1)}%
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block">C</span>
-                    {hoveredData.oklch.c.toFixed(3)}
-                  </div>
-                  <div>
-                    <span className="text-gray-500 block">H</span>
-                    {hoveredData.oklch.h !== null ? `${hoveredData.oklch.h.toFixed(0)}°` : 'None'}
+                  <div className="space-y-1.5 font-mono text-[11px]">
+                    {Object.entries(colorMeta).map(([key, meta]) => (
+                      <div key={key} className="flex items-center justify-between gap-2 text-gray-300">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full border border-white/20"
+                            style={{ backgroundColor: meta.hex }}
+                          />
+                          <span className="capitalize">{meta.label}:</span>
+                        </div>
+                        <div className="text-right font-bold text-white">
+                          <span>{meta.hex.toUpperCase()}</span>
+                          <span className="text-purple-300 ml-1.5 font-normal">
+                            ({(meta.l * 100).toFixed(0)}%)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              );
+            }}
+          />
+        </BarChart>
       </div>
 
       {/* Footer Info */}
       <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-gray-400">
         <span className="flex items-center gap-1">
-          <Info className="w-3 h-3 text-purple-400" /> Smooth L-Step progression
+          <Info className="w-3 h-3 text-purple-400" /> Bklit UI BarChart Component
         </span>
-        <span>sRGB Gamut OK</span>
+        <span>sRGB Gamut Guarded</span>
       </div>
     </div>
   );

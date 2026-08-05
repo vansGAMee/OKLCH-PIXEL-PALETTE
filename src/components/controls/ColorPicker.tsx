@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { isValidHex, normalizeHex } from '@/lib/color/conversions';
 import { Pipette, AlertCircle } from 'lucide-react';
 
@@ -22,17 +22,15 @@ const PRESET_COLORS = [
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
   const [inputVal, setInputVal] = useState(value);
+  const [prevValue, setPrevValue] = useState(value);
   const [error, setError] = useState(false);
 
-  // Sync internal input string when external value changes and doesn't match
-  useEffect(() => {
-    const normValue = normalizeHex(value) || value;
-    const normInput = normalizeHex(inputVal);
-    if (normValue !== normInput) {
-      setInputVal(normValue);
-      setError(false);
-    }
-  }, [value]);
+  // Sync internal input string during render when external prop value changes
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setInputVal(value);
+    setError(false);
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;

@@ -29,11 +29,11 @@ export function isInSrgbGamut(color: OklchColor, eps: number = 1e-4): boolean {
 /**
  * Fits an OKLCH color into the sRGB gamut by preserving Lightness (L) and Hue (H),
  * and performing a binary search for maximum allowable Chroma (C).
- * Also caps Lightness to 0.97 to ensure sRGB top boundary is respected.
+ * Preserves L in physical range [0, 1] without forced clamping.
  */
 export function fitToSrgb(color: OklchColor): OklchColor {
-  let targetL = Math.min(0.995, Math.max(0.04, color.l));
-  let baseColor: OklchColor = { l: targetL, c: color.c, h: color.h };
+  const targetL = Math.max(0, Math.min(1, color.l));
+  const baseColor: OklchColor = { l: targetL, c: color.c, h: color.h };
 
   if (isInSrgbGamut(baseColor, 1e-4)) {
     return baseColor;

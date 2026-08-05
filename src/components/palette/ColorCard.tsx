@@ -25,6 +25,13 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCopy();
+    }
+  };
+
   const isLightColor = color.oklch.l > 0.6;
   const textColor = isLightColor ? 'text-zinc-950' : 'text-zinc-50';
   const subTextColor = isLightColor ? 'text-zinc-700' : 'text-zinc-300';
@@ -37,10 +44,15 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, delay: index * 0.05 }}
-      className="group relative flex flex-col rounded-2xl overflow-hidden shadow-xl border border-white/10 transition-all hover:border-purple-500/40"
+      className="group relative flex flex-col rounded-2xl overflow-hidden shadow-xl border border-white/10 transition-all hover:border-purple-500/40 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer"
       style={{
         backgroundColor: color.hex,
       }}
+      role="button"
+      tabIndex={0}
+      onClick={handleCopy}
+      onKeyDown={handleKeyDown}
+      aria-label={`Copy ${color.role} color HEX code ${color.hex}`}
     >
       {/* Top Swatch Section */}
       <div className="p-5 flex flex-col justify-between min-h-[200px] relative">
@@ -58,7 +70,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
           )}
         </div>
 
-        {/* Center/Bottom Copy Action */}
+        {/* Center/Bottom Copy Display */}
         <div className="mt-auto">
           <div className="flex items-end justify-between gap-2">
             <div>
@@ -70,16 +82,12 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
               </h3>
             </div>
 
-            {/* Interactive Copy Button */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
-              onClick={handleCopy}
-              aria-label={`Copy ${color.role} HEX code ${color.hex}`}
+            {/* Copy Icon Visual Indicator (no nested button) */}
+            <div
               className={`p-3 rounded-xl border backdrop-blur-md transition-all shadow-lg flex items-center justify-center ${
                 isLightColor
-                  ? 'bg-black/15 hover:bg-black/25 text-black border-black/20'
-                  : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+                  ? 'bg-black/15 group-hover:bg-black/25 text-black border-black/20'
+                  : 'bg-white/15 group-hover:bg-white/25 text-white border-white/20'
               }`}
             >
               <AnimatePresence mode="wait">
@@ -99,7 +107,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.button>
+            </div>
           </div>
         </div>
 
@@ -122,14 +130,26 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
       </div>
 
       {/* Expandable OKLCH Details Drawer */}
-      <div className="bg-zinc-950/90 border-t border-white/10 p-3 text-white">
-        <button
+      <div
+        className="bg-zinc-950/90 border-t border-white/10 p-3 text-white"
+        onClick={(e) => e.stopPropagation()} // Stop copy trigger when toggling details
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => setShowDetails(!showDetails)}
-          className="w-full flex items-center justify-between text-xs font-mono text-gray-400 hover:text-purple-300 transition-colors py-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setShowDetails(!showDetails);
+            }
+          }}
+          className="w-full flex items-center justify-between text-xs font-mono text-gray-400 hover:text-purple-300 transition-colors py-1 cursor-pointer focus-visible:outline-none focus-visible:text-purple-300"
         >
           <span>OKLCH Data & Metrics</span>
           {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        </div>
 
         <AnimatePresence>
           {showDetails && (

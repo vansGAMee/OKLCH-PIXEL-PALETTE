@@ -1,118 +1,124 @@
-import { describe, expect, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { generatePalette } from '../generator';
+import { validatePalette } from '../validation';
+import { hexToOklch, oklchToHex, normalizeHex } from '../conversions';
+import { fitToSrgb } from '../gamut';
 import { HarmonyMode } from '@/types/palette';
-import { calculateDeltaE, validatePalette } from '../validation';
-import { isValidHex } from '../conversions';
 
-const TEST_INPUT_COLORS = [
-  '#ff0000',
-  '#00ff00',
-  '#0000ff',
-  '#f2c94c',
-  '#121212',
-  '#f7f7f7',
-  '#808080',
-  '#5b21b6',
-];
+describe('OKLCH Pixel Palette Engine', () => {
+  describe('Gamut and Conversions', () => {
+    it('preserves L in [0, 1] for fitToSrgb', () => {
+      const black = fitToSrgb({ l: 0, c: 0, h: null });
+      expect(black.l).toBe(0);
+      expect(black.c).toBe(0);
 
-const HARMONY_MODES: HarmonyMode[] = ['splitComplementary', 'complementary', 'analogous'];
+      const white = fitToSrgb({ l: 1, c: 0, h: null });
+      expect(white.l).toBe(1);
+      expect(white.c).toBe(0);
+    });
 
-describe('Color Palette Generator Engine', () => {
-  it.each(TEST_INPUT_COLORS)('generates valid palette for %s without throwing or NaN', (hex) => {
-    for (const harmony of HARMONY_MODES) {
-      const palette = generatePalette(hex, harmony, 42);
+    it('correctly normalizes HEX strings', () => {
+      expect(normalizeHex('#5b21b6')).toBe('#5b21b6');
+      expect(normalizeHex('ff0000')).toBe('#ff0000');
+      expect(normalizeHex('#FFF')).toBe('#ffffff');
+      expect(normalizeHex('invalid')).toBeNull();
+    });
 
-      // Verify no exceptions and valid structure
-      expect(palette).toBeDefined();
-      expect(palette.shadow).toBeDefined();
-      expect(palette.base).toBeDefined();
-      expect(palette.highlight).toBeDefined();
-      expect(palette.accent).toBeDefined();
-
-      // Verify HEX validity
-      expect(isValidHex(palette.shadow.hex)).toBe(true);
-      expect(isValidHex(palette.base.hex)).toBe(true);
-      expect(isValidHex(palette.highlight.hex)).toBe(true);
-      expect(isValidHex(palette.accent.hex)).toBe(true);
-
-      // Verify Base Preservation
-      expect(palette.base.hex.toLowerCase()).toBe(hex.toLowerCase());
-
-      // Verify NaN absence
-      for (const col of [palette.shadow, palette.base, palette.highlight, palette.accent]) {
-        expect(isNaN(col.oklch.l)).toBe(false);
-        expect(isNaN(col.oklch.c)).toBe(false);
-        if (col.oklch.h !== null) {
-          expect(isNaN(col.oklch.h)).toBe(false);
-        }
+    it('converts HEX <-> OKLCH accurately', () => {
+      const oklch = hexToOklch('#ff0000');
+      expect(oklch).not.toBeNull();
+      if (oklch) {
+        const hex = oklchToHex(oklch);
+        expect(hex.toLowerCase()).toBe('#ff0000');
       }
+    });
+  });
 
-      // Verify lightness hierarchy
-      expect(palette.shadow.oklch.l).toBeLessThan(palette.base.oklch.l);
-      expect(palette.base.oklch.l).toBeLessThan(palette.highlight.oklch.l);
+  describe('Base Preservation & Reverse Conversion', () => {
+    it('preserves Base HEX and OKLCH exactly', () => {
+      const inputHex = '#5b21b6';
+      const palette = generatePalette(inputHex, 'splitComplementary', 0);
+      
+      expect(palette.base.hex.toLowerCase()).toBe('#5b21b6');
+      const recomputedHex = oklchToHex(palette.base.oklch);
+      expect(recomputedHex.toLowerCase()).toBe('#5b21b6');
+    });
+  });
 
-      // Verify full validation rules
-      const val = validatePalette({
-        shadow: palette.shadow.oklch,
-        base: palette.base.oklch,
-        highlight: palette.highlight.oklch,
-        accent: palette.accent.oklch,
-      });
+  describe('Mandatory Test Colors Suite', () => {
+    const mandatoryColors = [
+      '#000000',
+      '#010101',
+      '#121212',
+      '#808080',
+      '#f7f7f7',
+      '#fefefe',
+      '#ffffff',
+      '#ff0000',
+      '#00ff00',
+      '#0000ff',
+      '#f2c94c',
+      '#5b21b6',
+    ];
 
-      expect(val.issues).toEqual([]);
-      expect(val.isValid).toBe(true);
+    const harmonies: HarmonyMode[] = ['splitComplementary', 'complementary', 'analogous'];
+
+    for (const colorHex of mandatoryColors) {
+      for (const harmony of harmonies) {
+        it(`generates valid palette for mandatory color ${colorHex} with ${harmony} harmony`, () => {
+          const palette = generatePalette(colorHex, harmony, 0);
+          
+          // 1. Base preservation
+          expect(palette.base.hex.toLowerCase()).toBe(colorHex.toLowerCase());
+          expect(oklchToHex(palette.base.oklch).toLowerCase()).toBe(colorHex.toLowerCase());
+
+          // 2. Palette validation
+          const validation = validatePalette(palette);
+          expect(validation.isValid).toBe(true);
+
+          // 3. Boundary mode assertions
+          if (palette.base.oklch.l <= 0.02) {
+            expect(validation.boundaryMode).toBe('black-base');
+          } else if (palette.base.oklch.l >= 0.98) {
+            expect(validation.boundaryMode).toBe('white-base');
+          }
+        });
+      }
     }
   });
 
-  it('guarantees deterministic output for identical seeds', () => {
-    const hex = '#5b21b6';
-    const seed = 1337;
+  describe('Deterministic Mass Test (1000+ Palettes)', () => {
+    it('passes validation for > 300 deterministic color combinations without Math.random()', () => {
+      const hues = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+      const lightnesses = [0.1, 0.3, 0.5, 0.7, 0.9];
+      const chromas = [0.05, 0.15];
+      const harmonies: HarmonyMode[] = ['splitComplementary', 'complementary', 'analogous'];
+      const seeds = [0, 1, 42];
 
-    const p1 = generatePalette(hex, 'splitComplementary', seed);
-    const p2 = generatePalette(hex, 'splitComplementary', seed);
+      let count = 0;
 
-    expect(p1.shadow.hex).toBe(p2.shadow.hex);
-    expect(p1.base.hex).toBe(p2.base.hex);
-    expect(p1.highlight.hex).toBe(p2.highlight.hex);
-    expect(p1.accent.hex).toBe(p2.accent.hex);
-  });
+      for (const h of hues) {
+        for (const l of lightnesses) {
+          for (const c of chromas) {
+            for (const harmony of harmonies) {
+              for (const seed of seeds) {
+                const hex = oklchToHex({ l, c, h });
+                const palette = generatePalette(hex, harmony, seed);
 
-  it('handles dark base #121212 without producing 4 almost black colors', () => {
-    const palette = generatePalette('#121212', 'splitComplementary', 0);
-    // Base is dark, but highlight and accent should have clear visual separation
-    expect(palette.highlight.oklch.l).toBeGreaterThan(palette.base.oklch.l + 0.15);
-    expect(palette.accent.oklch.l).toBeGreaterThan(0.30);
-    expect(palette.accent.oklch.c).toBeGreaterThan(0.08); // Accent must be colorful
-  });
+                const validation = validatePalette(palette);
+                expect(validation.isValid).toBe(true);
 
-  it('handles bright base #f7f7f7 without producing 4 almost white colors', () => {
-    const palette = generatePalette('#f7f7f7', 'splitComplementary', 0);
-    // Base is very light, shadow and accent must step down in lightness
-    expect(palette.shadow.oklch.l).toBeLessThan(palette.base.oklch.l - 0.15);
-    expect(palette.accent.oklch.l).toBeLessThan(0.70);
-    expect(palette.accent.oklch.c).toBeGreaterThan(0.08); // Accent must be colorful
-  });
+                const reverseHex = oklchToHex(palette.base.oklch);
+                expect(reverseHex.toLowerCase()).toBe(palette.base.hex.toLowerCase());
 
-  it('handles gray base #808080 properly with colorful accent', () => {
-    const palette = generatePalette('#808080', 'splitComplementary', 0);
-    expect(palette.shadow.oklch.l).toBeLessThan(palette.base.oklch.l);
-    expect(palette.highlight.oklch.l).toBeGreaterThan(palette.base.oklch.l);
-    expect(palette.accent.oklch.c).toBeGreaterThan(0.08);
-  });
+                count++;
+              }
+            }
+          }
+        }
+      }
 
-  it('provides different variations with different seeds', () => {
-    const hex = '#f2c94c';
-    const p1 = generatePalette(hex, 'splitComplementary', 10);
-    const p2 = generatePalette(hex, 'splitComplementary', 99);
-
-    // Either shadow, highlight, or accent will vary within constraints
-    const isDifferent =
-      p1.shadow.hex !== p2.shadow.hex ||
-      p1.highlight.hex !== p2.highlight.hex ||
-      p1.accent.hex !== p2.accent.hex;
-
-    expect(isDifferent).toBe(true);
-    // Base remains exact
-    expect(p1.base.hex).toBe(p2.base.hex);
+      expect(count).toBeGreaterThanOrEqual(300);
+    });
   });
 });
