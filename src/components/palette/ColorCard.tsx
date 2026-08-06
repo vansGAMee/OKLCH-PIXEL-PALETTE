@@ -3,17 +3,22 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PaletteColor } from '@/types/palette';
+import { Locale, messages } from '@/i18n/messages';
+import { getPaletteColorLabel } from '@/lib/color/colorNaming';
 import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ColorCardProps {
   color: PaletteColor;
   index: number;
+  totalColors?: number;
+  locale?: Locale;
 }
 
-export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
+export const ColorCard: React.FC<ColorCardProps> = ({ color, index, totalColors = 4, locale = 'en' }) => {
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const c = messages[locale].controls;
 
   const handleCopy = async () => {
     try {
@@ -37,6 +42,8 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
   const subTextColor = isLightColor ? 'text-zinc-700' : 'text-zinc-300';
   const badgeBg = isLightColor ? 'bg-black/10 border-black/20' : 'bg-white/10 border-white/20';
 
+  const label = getPaletteColorLabel(color.role, index, totalColors, color.oklch);
+
   return (
     <motion.div
       layout
@@ -52,7 +59,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
       tabIndex={0}
       onClick={handleCopy}
       onKeyDown={handleKeyDown}
-      aria-label={`Copy ${color.role} color HEX code ${color.hex}`}
+      aria-label={`Copy ${label} color HEX code ${color.hex}`}
     >
       {/* Top Swatch Section */}
       <div className="p-5 flex flex-col justify-between min-h-[200px] relative">
@@ -61,11 +68,11 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
           <span
             className={`px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase border backdrop-blur-xs ${textColor} ${badgeBg}`}
           >
-            {color.role.startsWith('color') ? color.role.replace('color', 'COLOR ') : color.role}
+            {label}
           </span>
           {color.role === 'base' && (
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white font-bold shadow-md">
-              Primary Base
+              {locale === 'ru' ? 'Базовый' : 'Primary Base'}
             </span>
           )}
         </div>
@@ -82,7 +89,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
               </h3>
             </div>
 
-            {/* Copy Icon Visual Indicator (no nested button) */}
+            {/* Copy Icon Visual Indicator */}
             <div
               className={`p-3 rounded-xl border backdrop-blur-md transition-all shadow-lg flex items-center justify-center ${
                 isLightColor
@@ -122,7 +129,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
             >
               <Check className="w-5 h-5 text-emerald-400" />
               <span className="text-xs font-mono font-bold text-emerald-300">
-                COPIED {color.hex.toUpperCase()}!
+                {c.copied} {color.hex.toUpperCase()}
               </span>
             </motion.div>
           )}
@@ -147,7 +154,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
           }}
           className="w-full flex items-center justify-between text-xs font-mono text-gray-400 hover:text-purple-300 transition-colors py-1 cursor-pointer focus-visible:outline-none focus-visible:text-purple-300"
         >
-          <span>OKLCH Data & Metrics</span>
+          <span>OKLCH Data &amp; Metrics</span>
           {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
 

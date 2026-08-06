@@ -12,5 +12,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'daily',
       priority: 0.9,
     },
+    {
+      url: 'https://oklchpalette.ru/ru',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: 'https://oklchpalette.ru/ru/create',
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
   ];
 }

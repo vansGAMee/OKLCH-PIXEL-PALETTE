@@ -10,6 +10,8 @@ import { ActionToolbar } from '@/components/controls/ActionToolbar';
 import { PaletteGrid } from '@/components/palette/PaletteGrid';
 import { BklitLightnessChart } from '@/components/charts/BklitLightnessChart';
 import { PixelPreview } from '@/components/preview/PixelPreview';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
+import { Locale, messages } from '@/i18n/messages';
 import { Sparkles, Palette as PaletteIcon, ShieldCheck, Terminal, Home } from 'lucide-react';
 
 const STORAGE_KEY = 'pixel_palette_studio_state_v1';
@@ -19,7 +21,14 @@ const DEFAULT_HARMONY: HarmonyMode = 'splitComplementary';
 const DEFAULT_SEED = 0;
 const DEFAULT_COLOR_COUNT = 4;
 
-export function PaletteStudio() {
+interface PaletteStudioProps {
+  locale?: Locale;
+}
+
+export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
+  const t = messages[locale].header;
+  const c = messages[locale].controls;
+
   // Initialize state directly from localStorage synchronously without cascading effect renders
   const [baseHex, setBaseHex] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_HEX;
@@ -109,39 +118,46 @@ export function PaletteStudio() {
     setColorCount(DEFAULT_COLOR_COUNT);
   };
 
+  const homeHref = locale === 'ru' ? '/ru' : '/';
+
   return (
-    <div className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white">
+    <div
+      lang={locale}
+      className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white"
+    >
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-40 border-b border-white/10 glass-panel backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Brand Title */}
-          <Link href="/" className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 transition-all">
+          <Link href={homeHref} className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 transition-all">
             <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform">
               <PaletteIcon className="w-5 h-5" />
             </div>
             <div>
               <h1 className="text-sm sm:text-base font-mono font-black tracking-tight text-white flex items-center gap-2">
-                OKLCH PIXEL PALETTE <span className="text-purple-400 font-normal text-xs px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">STUDIO</span>
+                OKLCH PIXEL PALETTE <span className="text-purple-400 font-normal text-xs px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">{t.studioBadge}</span>
               </h1>
               <p className="text-[11px] text-gray-400 font-mono hidden sm:block">
-                Color Theory Engine tailored for Pixel Art &amp; UI
+                {t.subtitle}
               </p>
             </div>
           </Link>
 
           {/* Right Header Navigation & Status Stamp */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <LanguageSwitcher currentLocale={locale} />
+
             <Link
-              href="/"
+              href={homeHref}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-gray-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <Home className="w-3.5 h-3.5" />
-              <span>Homepage</span>
+              <span>{t.homepage}</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-gray-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>sRGB Gamut Guarded</span>
+              <span>{t.gamutGuarded}</span>
             </div>
           </div>
         </div>
@@ -151,8 +167,8 @@ export function PaletteStudio() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
         {/* Top Control Section */}
         <section aria-label="Palette Controls" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ColorPicker value={baseHex} onChange={setBaseHex} />
-          <HarmonySelector harmony={harmony} onChange={setHarmony} />
+          <ColorPicker value={baseHex} onChange={setBaseHex} locale={locale} />
+          <HarmonySelector harmony={harmony} onChange={setHarmony} locale={locale} />
         </section>
 
         {/* Global Action Toolbar */}
@@ -163,6 +179,7 @@ export function PaletteStudio() {
             onColorCountChange={setColorCount}
             onNewVariation={handleNewVariation}
             onReset={handleReset}
+            locale={locale}
           />
         </section>
 
@@ -171,18 +188,18 @@ export function PaletteStudio() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xs font-mono font-bold tracking-widest text-gray-300 uppercase flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-purple-400" />
-              Generated {colorCount}-Color Palette
+              {c.generatedPaletteTitle} ({colorCount})
             </h2>
-            <span className="text-[11px] font-mono text-gray-400">Click any card to copy HEX</span>
+            <span className="text-[11px] font-mono text-gray-400">{c.clickToCopy}</span>
           </div>
 
-          <PaletteGrid palette={palette} />
+          <PaletteGrid palette={palette} locale={locale} />
         </section>
 
         {/* Visualizations and Pixel Preview Dual Column Section */}
         <section aria-label="Visualizations and Pixel Preview" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BklitLightnessChart palette={palette} />
-          <PixelPreview palette={palette} />
+          <BklitLightnessChart palette={palette} locale={locale} />
+          <PixelPreview palette={palette} locale={locale} />
         </section>
       </main>
 

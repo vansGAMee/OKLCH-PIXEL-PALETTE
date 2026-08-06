@@ -1,9 +1,9 @@
 import { renderSocialCard, socialCardSize } from '@/components/social/renderSocialCard';
 
-export const alt = 'OKLCH Pixel Palette Generator';
+export const alt = 'Генератор палитр OKLCH';
 export const size = socialCardSize;
 export const contentType = 'image/png';
 
-export default function TwitterImage() {
-  return renderSocialCard('en');
+export default function RuTwitterImage() {
+  return renderSocialCard('ru');
 }

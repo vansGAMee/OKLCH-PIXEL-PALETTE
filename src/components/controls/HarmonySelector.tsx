@@ -2,35 +2,46 @@
 
 import React from 'react';
 import { HarmonyMode } from '@/types/palette';
+import { Locale, messages } from '@/i18n/messages';
 import { Compass, Sparkles, Spline, Orbit } from 'lucide-react';
 
 interface HarmonySelectorProps {
   harmony: HarmonyMode;
   onChange: (mode: HarmonyMode) => void;
+  locale?: Locale;
 }
 
-const HARMONY_OPTIONS: { id: HarmonyMode; title: string; desc: string; icon: React.ReactNode }[] = [
-  {
-    id: 'splitComplementary',
-    title: 'Split Comp',
-    desc: 'Dynamic & Balanced (Default)',
-    icon: <Sparkles className="w-4 h-4" />,
-  },
-  {
-    id: 'complementary',
-    title: 'Complementary',
-    desc: 'High Contrast Accent',
-    icon: <Orbit className="w-4 h-4" />,
-  },
-  {
-    id: 'analogous',
-    title: 'Analogous',
-    desc: 'Smooth & Harmonious',
-    icon: <Spline className="w-4 h-4" />,
-  },
-];
+const HARMONY_ICONS: Record<HarmonyMode, React.ReactNode> = {
+  splitComplementary: <Sparkles className="w-4 h-4" />,
+  complementary: <Orbit className="w-4 h-4" />,
+  analogous: <Spline className="w-4 h-4" />,
+};
 
-export const HarmonySelector: React.FC<HarmonySelectorProps> = ({ harmony, onChange }) => {
+export const HarmonySelector: React.FC<HarmonySelectorProps> = ({
+  harmony,
+  onChange,
+  locale = 'en',
+}) => {
+  const t = messages[locale].controls;
+
+  const options: { id: HarmonyMode; title: string; desc: string }[] = [
+    {
+      id: 'splitComplementary',
+      title: t.harmonies.splitComplementary,
+      desc: locale === 'ru' ? 'Сбалансированный контраст' : 'Dynamic & Balanced',
+    },
+    {
+      id: 'complementary',
+      title: t.harmonies.complementary,
+      desc: locale === 'ru' ? 'Высокий контраст' : 'High Contrast Accent',
+    },
+    {
+      id: 'analogous',
+      title: t.harmonies.analogous,
+      desc: locale === 'ru' ? 'Плавные переходы' : 'Smooth & Harmonious',
+    },
+  ];
+
   return (
     <div className="glass-panel rounded-xl p-5 border border-white/10 space-y-3">
       {/* Header */}
@@ -41,7 +52,7 @@ export const HarmonySelector: React.FC<HarmonySelectorProps> = ({ harmony, onCha
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
-              Color Harmony Engine
+              {t.harmonyTitle}
             </h3>
             <p className="text-[11px] text-gray-400 font-mono">Accent Generation Mode</p>
           </div>
@@ -50,25 +61,25 @@ export const HarmonySelector: React.FC<HarmonySelectorProps> = ({ harmony, onCha
 
       {/* Segmented Control Options */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        {HARMONY_OPTIONS.map((opt) => {
+        {options.map((opt) => {
           const isActive = harmony === opt.id;
           return (
             <button
               key={opt.id}
               onClick={() => onChange(opt.id)}
-              className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+              className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                 isActive
                   ? 'bg-purple-600/20 border-purple-500 shadow-lg shadow-purple-900/30 text-white'
                   : 'bg-zinc-900/60 border-white/10 text-gray-400 hover:text-gray-200 hover:border-white/25'
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-mono font-bold uppercase">{opt.title}</span>
+                <span className="text-xs font-mono font-bold uppercase truncate">{opt.title}</span>
                 <span className={isActive ? 'text-purple-300' : 'text-gray-500'}>
-                  {opt.icon}
+                  {HARMONY_ICONS[opt.id]}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-gray-400 block">{opt.desc}</span>
+              <span className="text-[10px] font-mono text-gray-400 block truncate">{opt.desc}</span>
 
               {isActive && (
                 <div className="absolute bottom-0 inset-x-0 h-0.5 bg-purple-400 shadow-sm" />

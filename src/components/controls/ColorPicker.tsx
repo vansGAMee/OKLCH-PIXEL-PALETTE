@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { isValidHex, normalizeHex } from '@/lib/color/conversions';
+import { Locale, messages } from '@/i18n/messages';
 import { Pipette, AlertCircle } from 'lucide-react';
 
 interface ColorPickerProps {
   value: string;
   onChange: (hex: string) => void;
+  locale?: Locale;
 }
 
 const PRESET_COLORS = [
@@ -20,10 +22,11 @@ const PRESET_COLORS = [
   { name: 'Pearl White', hex: '#f7f7f7' },
 ];
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, locale = 'en' }) => {
   const [inputVal, setInputVal] = useState(value);
   const [prevValue, setPrevValue] = useState(value);
   const [error, setError] = useState(false);
+  const t = messages[locale].controls;
 
   // Sync internal input string during render when external prop value changes
   if (value !== prevValue) {
@@ -63,7 +66,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => 
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
-              Base Color Picker
+              {t.colorPickerTitle}
             </h3>
             <p className="text-[11px] text-gray-400 font-mono">User Primary Color (Base)</p>
           </div>
@@ -72,7 +75,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => 
 
       {/* Input Row */}
       <div className="space-y-2">
-        <label className="text-xs font-mono text-gray-300 block">HEX Color Code</label>
+        <label className="text-xs font-mono text-gray-300 block">{t.hexLabel}</label>
         <div className="flex items-center gap-3">
           {/* Swatch & Native Color Picker Trigger */}
           <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-white/20 shadow-md cursor-pointer shrink-0 group">
@@ -114,7 +117,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => 
 
       {/* Preset Swatches */}
       <div>
-        <span className="text-[11px] font-mono text-gray-400 block mb-2">Preset Swatches</span>
+        <span className="text-[11px] font-mono text-gray-400 block mb-2">Presets</span>
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
           {PRESET_COLORS.map((preset) => (
             <button

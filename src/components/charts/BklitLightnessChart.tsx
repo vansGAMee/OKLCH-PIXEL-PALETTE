@@ -3,11 +3,13 @@
 import React from 'react';
 import { useReducedMotion } from 'motion/react';
 import { Palette } from '@/types/palette';
+import { Locale, messages } from '@/i18n/messages';
 import { Activity, Info } from 'lucide-react';
 import { getPaletteColorLabel } from '@/lib/color/colorNaming';
 
 interface BklitLightnessChartProps {
   palette: Palette;
+  locale?: Locale;
 }
 
 /**
@@ -21,9 +23,10 @@ function formatHue(h: number | null | undefined, c: number): string {
   return `${Math.round(normH)}°`;
 }
 
-export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palette }) => {
+export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palette, locale = 'en' }) => {
   const shouldReduceMotion = useReducedMotion();
   const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
+  const t = messages[locale].chart;
 
   // Sort colors for visual display ONLY from darkest (L=0) to lightest (L=1)
   const sortedColors = React.useMemo(() => {
@@ -56,7 +59,7 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
-              Lightness Ladder
+              {t.title}
             </h3>
             <p className="text-[11px] text-gray-400 font-mono">
               OKLCH L-Scale ({sortedColors.length} Colors Sorted L&rarr;H)
@@ -91,7 +94,7 @@ export const BklitLightnessChart: React.FC<BklitLightnessChartProps> = ({ palett
           </div>
         ) : (
           <div className="mb-3 p-2.5 rounded-xl border border-white/5 bg-zinc-900/40 text-gray-400 text-center font-mono text-[11px]">
-            Hover over any bar to inspect OKLCH metrics
+            {t.hoverTip}
           </div>
         )}
 

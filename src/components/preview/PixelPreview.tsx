@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Palette } from '@/types/palette';
+import { Locale, messages } from '@/i18n/messages';
 import { Sparkles } from 'lucide-react';
 import { getPaletteColorLabel } from '@/lib/color/colorNaming';
 
 interface PixelPreviewProps {
   palette: Palette;
+  locale?: Locale;
 }
 
 type SceneType = 'potion' | 'gem' | 'shield' | 'hero' | 'full';
@@ -15,9 +17,9 @@ type SceneType = 'potion' | 'gem' | 'shield' | 'hero' | 'full';
 // 16x16 Pixel Art Matrices
 // Indices: 0: Shadow, 1: Base, 2: Highlight, 3: Accent, -1: Transparent
 
-const PIXEL_SCENES: Record<Exclude<SceneType, 'full'>, { title: string; grid: number[][] }> = {
+const PIXEL_SCENES: Record<Exclude<SceneType, 'full'>, { titleKey: 'potion' | 'gem' | 'shield' | 'hero'; grid: number[][] }> = {
   potion: {
-    title: 'Magic Potion',
+    titleKey: 'potion',
     grid: [
       [-1, -1, -1, -1, -1, -1,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1],
       [-1, -1, -1, -1, -1, -1,  0,  2,  2,  0, -1, -1, -1, -1, -1, -1],
@@ -38,7 +40,7 @@ const PIXEL_SCENES: Record<Exclude<SceneType, 'full'>, { title: string; grid: nu
     ],
   },
   gem: {
-    title: 'Crystal Gem',
+    titleKey: 'gem',
     grid: [
       [-1, -1, -1, -1, -1, -1,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1],
       [-1, -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1],
@@ -59,7 +61,7 @@ const PIXEL_SCENES: Record<Exclude<SceneType, 'full'>, { title: string; grid: nu
     ],
   },
   shield: {
-    title: 'Knight Shield',
+    titleKey: 'shield',
     grid: [
       [-1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1],
       [-1,  0,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  0, -1],
@@ -80,7 +82,7 @@ const PIXEL_SCENES: Record<Exclude<SceneType, 'full'>, { title: string; grid: nu
     ],
   },
   hero: {
-    title: 'Retro Hero',
+    titleKey: 'hero',
     grid: [
       [-1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1],
       [-1, -1, -1, -1,  0,  2,  2,  2,  2,  2,  2,  0, -1, -1, -1, -1],
@@ -118,9 +120,10 @@ function createFullPaletteGrid(numColors: number): number[][] {
   return grid;
 }
 
-export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette }) => {
+export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette, locale = 'en' }) => {
   const [activeScene, setActiveScene] = useState<SceneType>('potion');
   const shouldReduceMotion = useReducedMotion();
+  const t = messages[locale].preview;
 
   const paletteColors = palette.colors && palette.colors.length > 0
     ? palette.colors
@@ -134,7 +137,7 @@ export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette }) => {
     ? createFullPaletteGrid(paletteColors.length)
     : PIXEL_SCENES[activeScene].grid;
 
-  const sceneTitle = isFullMode ? 'Full Palette Showcase' : PIXEL_SCENES[activeScene].title;
+  const sceneTitle = isFullMode ? t.scenes.full : t.scenes[PIXEL_SCENES[activeScene].titleKey];
 
   // Calculate used color indices in active scene
   const usedIndices = React.useMemo(() => {
@@ -149,6 +152,10 @@ export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette }) => {
     return set;
   }, [activeGrid, paletteColors.length]);
 
+  const usesCaption = t.usesCaption
+    .replace('{used}', String(usedIndices.size))
+    .replace('{total}', String(paletteColors.length));
+
   return (
     <div className="glass-panel rounded-xl p-5 border border-white/10 relative flex flex-col justify-between">
       {/* Header & Scene Switcher */}
@@ -159,10 +166,10 @@ export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette }) => {
           </div>
           <div>
             <h3 className="text-xs font-mono font-bold tracking-widest text-gray-200 uppercase">
-              Pixel Art Preview
+              {t.title}
             </h3>
             <p className="text-[11px] text-gray-400 font-mono flex items-center gap-1.5">
-              <span>Uses {usedIndices.size} of {paletteColors.length} colors</span>
+              <span>{usesCaption}</span>
             </p>
           </div>
         </div>
@@ -179,7 +186,7 @@ export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette }) => {
                   : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
               }`}
             >
-              {sceneKey === 'full' ? 'Full palette' : sceneKey}
+              {t.scenes[sceneKey]}
             </button>
           ))}
         </div>

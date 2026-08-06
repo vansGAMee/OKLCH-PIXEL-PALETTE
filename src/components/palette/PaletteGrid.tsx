@@ -3,13 +3,15 @@
 import React from 'react';
 import { LayoutGroup } from 'motion/react';
 import { Palette } from '@/types/palette';
+import { Locale } from '@/i18n/messages';
 import { ColorCard } from './ColorCard';
 
 interface PaletteGridProps {
   palette: Palette;
+  locale?: Locale;
 }
 
-export const PaletteGrid: React.FC<PaletteGridProps> = ({ palette }) => {
+export const PaletteGrid: React.FC<PaletteGridProps> = ({ palette, locale = 'en' }) => {
   const colors = palette.colors && palette.colors.length > 0
     ? palette.colors
     : [palette.shadow, palette.base, palette.highlight, palette.accent];
@@ -31,7 +33,13 @@ export const PaletteGrid: React.FC<PaletteGridProps> = ({ palette }) => {
     <LayoutGroup>
       <div className={`grid ${getGridColsClass(colors.length)} gap-4 sm:gap-6`}>
         {colors.map((color, idx) => (
-          <ColorCard key={`${color.role}-${idx}`} color={color} index={idx} />
+          <ColorCard
+            key={`${color.role}-${idx}`}
+            color={color}
+            index={idx}
+            totalColors={colors.length}
+            locale={locale}
+          />
         ))}
       </div>
     </LayoutGroup>
