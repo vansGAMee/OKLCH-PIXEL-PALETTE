@@ -11,10 +11,28 @@ CREATE INDEX IF NOT EXISTS palette_likes_palette_idx ON public.palette_likes (pa
 
 ALTER TABLE public.palette_likes ENABLE ROW LEVEL SECURITY;
 
--- Anyone can see aggregate like counts (but we expose via count() in queries)
-CREATE POLICY "likes_public_select"
+-- Users can read only their own like rows
+CREATE POLICY "likes_own_select"
   ON public.palette_likes FOR SELECT
-  USING (true);
+  USING (auth.uid() = user_id);
+
+-- Public pages receive only the total number of likes, without user IDs
+CREATE OR REPLACE FUNCTION public.get_palette_like_count(target_palette_id uuid)
+RETURNS bigint
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT count(*)
+  FROM public.palette_likes AS likes
+  JOIN public.palettes AS palettes ON palettes.id = likes.palette_id
+  WHERE likes.palette_id = target_palette_id
+    AND palettes.visibility = 'public';
+$$;
+
+REVOKE ALL ON FUNCTION public.get_palette_like_count(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_palette_like_count(uuid) TO anon, authenticated;
 
 -- Users manage only their own likes
 CREATE POLICY "likes_authenticated_insert"

@@ -63,10 +63,12 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
   const profiles = Array.isArray((row as any).profiles) ? (row as any).profiles[0] ?? null : (row as any).profiles as { username: string; display_name: string | null } | null;
 
   // Like count
-  const { count: likeCount } = await (supabase as any)
-    .from('palette_likes')
-    .select('user_id', { count: 'exact', head: true })
-    .eq('palette_id', (row as any).id);
+  const { data: likeCountData } = await (supabase as any)
+    .rpc('get_palette_like_count', {
+      target_palette_id: (row as any).id,
+    });
+
+  const likeCount = Number(likeCountData ?? 0);
 
   const colors = Array.isArray(row.colors) ? row.colors as Array<{ hex: string; role: string; oklch: { l: number; c: number; h: number | null } }> : [];
 

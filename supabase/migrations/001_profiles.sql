@@ -42,13 +42,28 @@ CREATE POLICY "profiles_public_select"
 
 -- Users can only update their own profile
 CREATE POLICY "profiles_authenticated_update"
-  ON public.profiles FOR UPDATE
-  USING (auth.uid() = id)
-  WITH CHECK (
-    auth.uid() = id
-    -- Prevent self-promotion: role cannot be changed via client
-    AND role = (SELECT role FROM public.profiles WHERE id = auth.uid())
-  );
+ON public.profiles FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
+
+-- Prevent ordinary users from changing their role
+CREATE OR REPLACE FUNCTION public.protect_profile_role()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.role IS DISTINCT FROM OLD.role
+     AND COALESCE(auth.role(), '') <> 'service_role'
+     AND current_user NOT IN ('postgres', 'supabase_admin') THEN
+    RAISE EXCEPTION 'role cannot be changed';
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = public;
+
+DROP TRIGGER IF EXISTS protect_profile_role ON public.profiles;
+CREATE TRIGGER protect_profile_role
+BEFORE UPDATE OF role ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role();
 
 -- Only insert via trigger (see below) - no direct client insert
 CREATE POLICY "profiles_insert_trigger"

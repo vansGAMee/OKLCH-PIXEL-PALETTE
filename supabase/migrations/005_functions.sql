@@ -3,6 +3,7 @@
 CREATE OR REPLACE FUNCTION public.check_saved_palette_limit(uid uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT COUNT(*) < 30
   FROM public.palettes
@@ -13,6 +14,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.check_public_palette_limit(uid uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT COUNT(*) < 3
   FROM public.palettes
@@ -37,7 +39,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger for INSERT
 CREATE TRIGGER palettes_enforce_limits_insert
@@ -56,7 +58,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER palettes_enforce_limits_update
   BEFORE UPDATE ON public.palettes
