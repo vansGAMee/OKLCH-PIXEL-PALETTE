@@ -2,17 +2,24 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { SignInForm } from '@/components/auth/SignInForm';
-import { isSupabaseAvailable } from '@/lib/supabase/client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Sign In | OKLCH Pixel Palette',
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
-  const available = isSupabaseAvailable();
+export default async function LoginPage() {
+  const supabase = await createClient();
+  const available = Boolean(supabase);
 
-  return (
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) redirect('/dashboard');
+  }
+
+return (
     <AuthForm
       locale="en"
       title="Sign in"
