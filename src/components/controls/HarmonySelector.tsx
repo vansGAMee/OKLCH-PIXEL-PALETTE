@@ -20,11 +20,11 @@ const HARMONY_ICONS: Record<HarmonyMode, React.ReactNode> = {
   monochromatic: <Spline className="w-4 h-4" />,
 };
 
-export const HarmonySelector: React.FC<HarmonySelectorProps> = ({
+export const HarmonySelector: React.FC<HarmonySelectorProps> = React.memo(function HarmonySelectorComponent({
   harmony,
   onChange,
   locale = 'en',
-}) => {
+}: HarmonySelectorProps) {
   const t = messages[locale].controls;
 
   const options: { id: HarmonyMode; title: string; desc: string }[] = [
@@ -93,4 +93,4 @@ export const HarmonySelector: React.FC<HarmonySelectorProps> = ({
       </div>
     </div>
   );
-};
+});

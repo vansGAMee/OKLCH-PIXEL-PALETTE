@@ -14,7 +14,7 @@ interface ColorCardProps {
   locale?: Locale;
 }
 
-export const ColorCard: React.FC<ColorCardProps> = ({ color, index, totalColors = 4, locale = 'en' }) => {
+export const ColorCard = React.memo(function ColorCardComponent({ color, index, totalColors = 4, locale = 'en' }: ColorCardProps) {
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -46,11 +46,10 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index, totalColors 
 
   return (
     <motion.div
-      layout
       initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.2 }}
       className="group relative flex flex-col rounded-2xl overflow-hidden shadow-xl border border-white/10 transition-all hover:border-purple-500/40 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer"
       style={{
         backgroundColor: color.hex,
@@ -191,4 +190,4 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index, totalColors 
       </div>
     </motion.div>
   );
-};
+});

@@ -11,7 +11,7 @@ interface PaletteGridProps {
   locale?: Locale;
 }
 
-export const PaletteGrid: React.FC<PaletteGridProps> = ({ palette, locale = 'en' }) => {
+export const PaletteGrid: React.FC<PaletteGridProps> = React.memo(function PaletteGridComponent({ palette, locale = 'en' }: PaletteGridProps) {
   const colors = palette.colors && palette.colors.length > 0
     ? palette.colors
     : [palette.shadow, palette.base, palette.highlight, palette.accent];
@@ -44,4 +44,4 @@ export const PaletteGrid: React.FC<PaletteGridProps> = ({ palette, locale = 'en'
       </div>
     </LayoutGroup>
   );
-};
+});

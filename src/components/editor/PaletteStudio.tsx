@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import Link from 'next/link';
-import { HarmonyMode, Palette } from '@/types/palette';
+import { HarmonyMode, Palette, PaletteColor } from '@/types/palette';
 import { generatePalette } from '@/lib/color/generator';
 import { ColorPicker } from '@/components/controls/ColorPicker';
 import { HarmonySelector } from '@/components/controls/HarmonySelector';
@@ -10,6 +10,11 @@ import { ActionToolbar } from '@/components/controls/ActionToolbar';
 import { PaletteGrid } from '@/components/palette/PaletteGrid';
 import { BklitLightnessChart } from '@/components/charts/BklitLightnessChart';
 import { PixelPreview } from '@/components/preview/PixelPreview';
+import { QualityInspector } from '@/components/quality/QualityInspector';
+import { ImportModal } from '@/components/import/ImportModal';
+import { inspectPalette } from '@/lib/color/qualityInspector';
+import { savePalette } from '@/app/actions/palettes';
+import { isSupabaseAvailable } from '@/lib/supabase/client';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { Locale, messages } from '@/i18n/messages';
 import { Sparkles, Palette as PaletteIcon, ShieldCheck, Terminal, Home } from 'lucide-react';
@@ -28,8 +33,8 @@ interface PaletteStudioProps {
 export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   const t = messages[locale].header;
   const c = messages[locale].controls;
+  const isRu = locale === 'ru';
 
-  // Initialize state directly from localStorage synchronously without cascading effect renders
   const [baseHex, setBaseHex] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_HEX;
     try {
@@ -88,16 +93,24 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
     return DEFAULT_COLOR_COUNT;
   });
 
-  // Save state changes to localStorage
+  // Modal and cloud notification state
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [cloudNotice, setCloudNotice] = useState<string | null>(null);
+
+  // Debounced sync to localStorage (400ms delay to eliminate synchronous disk I/O during drag)
   useEffect(() => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ baseHex, harmony, seed, colorCount })
-      );
-    } catch {
-      // Ignore errors
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ baseHex, harmony, seed, colorCount })
+        );
+      } catch {
+        // Ignore
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
   }, [baseHex, harmony, seed, colorCount]);
 
   const deferredHex = useDeferredValue(baseHex);
@@ -107,16 +120,58 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
     return generatePalette(deferredHex, harmony, seed, colorCount);
   }, [deferredHex, harmony, seed, colorCount]);
 
-  const handleNewVariation = () => {
-    setSeed((prev) => prev + 1);
-  };
+  // Quality Report calculated with useMemo
+  const qualityReport = useMemo(() => {
+    return inspectPalette(palette);
+  }, [palette]);
 
-  const handleReset = () => {
+  const handleNewVariation = useCallback(() => {
+    setSeed((prev) => prev + 1);
+  }, []);
+
+  const handleReset = useCallback(() => {
     setBaseHex(DEFAULT_HEX);
     setHarmony(DEFAULT_HARMONY);
     setSeed(DEFAULT_SEED);
     setColorCount(DEFAULT_COLOR_COUNT);
-  };
+  }, []);
+
+  const handleImportColors = useCallback((colors: PaletteColor[]) => {
+    if (!colors || colors.length === 0) return;
+    const baseCol = colors.find((col) => col.role === 'base') || colors[0];
+    setBaseHex(baseCol.hex);
+    setColorCount(Math.min(9, Math.max(2, colors.length)));
+  }, []);
+
+  const handleCloudSave = useCallback(async () => {
+    if (!isSupabaseAvailable()) {
+      setCloudNotice(
+        isRu
+          ? 'Облачное сохранение требует подключения Supabase. Настройте переменные в SUPABASE_SETUP.md.'
+          : 'Cloud save requires Supabase setup. Check SUPABASE_SETUP.md for instructions.'
+      );
+      setTimeout(() => setCloudNotice(null), 5000);
+      return;
+    }
+
+    const title = isRu ? `Палитра ${palette.base.hex}` : `Palette ${palette.base.hex}`;
+    const result = await savePalette({
+      title,
+      visibility: 'private',
+      palette,
+    });
+
+    if ('error' in result) {
+      setCloudNotice(result.error);
+    } else {
+      setCloudNotice(
+        isRu
+          ? 'Палитра успешно сохранена в облаке!'
+          : 'Palette saved to cloud successfully!'
+      );
+    }
+    setTimeout(() => setCloudNotice(null), 4000);
+  }, [isRu, palette]);
 
   const homeHref = locale === 'ru' ? '/ru' : '/';
 
@@ -165,6 +220,14 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
 
       {/* Main Studio Workstation */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+        {/* Cloud Notice Alert */}
+        {cloudNotice && (
+          <div className="p-4 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 text-xs font-mono flex items-center justify-between shadow-xl">
+            <span>{cloudNotice}</span>
+            <button onClick={() => setCloudNotice(null)} className="text-gray-400 hover:text-white">✕</button>
+          </div>
+        )}
+
         {/* Top Control Section */}
         <section aria-label="Palette Controls" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ColorPicker value={baseHex} onChange={setBaseHex} locale={locale} />
@@ -179,6 +242,8 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
             onColorCountChange={setColorCount}
             onNewVariation={handleNewVariation}
             onReset={handleReset}
+            onOpenImport={() => setIsImportOpen(true)}
+            onCloudSave={handleCloudSave}
             locale={locale}
           />
         </section>
@@ -196,12 +261,25 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
           <PaletteGrid palette={palette} locale={locale} />
         </section>
 
+        {/* Quality Inspector Panel */}
+        <section aria-label="Quality Inspection">
+          <QualityInspector report={qualityReport} locale={locale} />
+        </section>
+
         {/* Visualizations and Pixel Preview Dual Column Section */}
         <section aria-label="Visualizations and Pixel Preview" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BklitLightnessChart palette={palette} locale={locale} />
           <PixelPreview palette={palette} locale={locale} />
         </section>
       </main>
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImport={handleImportColors}
+        locale={locale}
+      />
 
       {/* Minimal Footer */}
       <footer className="border-t border-white/10 bg-zinc-950 py-6 text-xs font-mono text-gray-500">

@@ -22,17 +22,21 @@ interface ActionToolbarProps {
   onColorCountChange: (count: number) => void;
   onNewVariation: () => void;
   onReset: () => void;
+  onOpenImport?: () => void;
+  onCloudSave?: () => void;
   locale?: Locale;
 }
 
-export const ActionToolbar: React.FC<ActionToolbarProps> = ({
+export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function ActionToolbarComponent({
   palette,
   colorCount,
   onColorCountChange,
   onNewVariation,
   onReset,
+  onOpenImport,
+  onCloudSave,
   locale = 'en',
-}) => {
+}: ActionToolbarProps) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const t = messages[locale].controls;
@@ -122,6 +126,32 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
 
       {/* Buttons Row */}
       <div className="flex items-center gap-2 flex-wrap relative" ref={menuRef}>
+        {/* Import Button */}
+        {onOpenImport && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onOpenImport}
+            className="px-3.5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-gray-200 text-xs font-mono font-bold border border-white/10 flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4 rotate-180 text-purple-400" />
+            <span>{locale === 'ru' ? 'Импорт' : 'Import'}</span>
+          </motion.button>
+        )}
+
+        {/* Cloud Save Button */}
+        {onCloudSave && (
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onCloudSave}
+            className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-mono font-bold shadow-lg shadow-indigo-900/30 border border-indigo-400/40 flex items-center gap-2 transition-all cursor-pointer"
+          >
+            <PaletteIcon className="w-4 h-4" />
+            <span>{locale === 'ru' ? 'В облако' : 'Cloud Save'}</span>
+          </motion.button>
+        )}
+
         {/* New Variation Button */}
         <motion.button
           whileHover={{ scale: 1.03 }}
@@ -267,4 +297,4 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
       </div>
     </div>
   );
-};
+});

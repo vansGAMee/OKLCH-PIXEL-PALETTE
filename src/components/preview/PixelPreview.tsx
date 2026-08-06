@@ -120,7 +120,7 @@ function createFullPaletteGrid(numColors: number): number[][] {
   return grid;
 }
 
-export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette, locale = 'en' }) => {
+export const PixelPreview: React.FC<PixelPreviewProps> = React.memo(function PixelPreviewComponent({ palette, locale = 'en' }: PixelPreviewProps) {
   const [activeScene, setActiveScene] = useState<SceneType>('potion');
   const shouldReduceMotion = useReducedMotion();
   const t = messages[locale].preview;
@@ -279,4 +279,4 @@ export const PixelPreview: React.FC<PixelPreviewProps> = ({ palette, locale = 'e
       </div>
     </div>
   );
-};
+});

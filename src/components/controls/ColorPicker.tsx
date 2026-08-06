@@ -22,10 +22,11 @@ const PRESET_COLORS = [
   { name: 'Pearl White', hex: '#f7f7f7' },
 ];
 
-export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, locale = 'en' }) => {
+export const ColorPicker: React.FC<ColorPickerProps> = React.memo(function ColorPickerComponent({ value, onChange, locale = 'en' }: ColorPickerProps) {
   const [inputVal, setInputVal] = useState(value);
   const [prevValue, setPrevValue] = useState(value);
   const [error, setError] = useState(false);
+  const rafRef = React.useRef<number | null>(null);
   const t = messages[locale].controls;
 
   // Sync internal input string during render when external prop value changes
@@ -34,6 +35,12 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, local
     setInputVal(value);
     setError(false);
   }
+
+  React.useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
@@ -53,7 +60,11 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, local
     const norm = normalizeHex(hex) || hex;
     setInputVal(norm);
     setError(false);
-    onChange(norm);
+
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      onChange(norm);
+    });
   };
 
   return (
@@ -141,4 +152,4 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, local
       </div>
     </div>
   );
-};
+});
