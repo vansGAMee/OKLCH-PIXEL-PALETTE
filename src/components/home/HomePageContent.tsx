@@ -77,12 +77,18 @@ export function HomePageContent({ locale = 'en' }: HomePageContentProps) {
             >
               {t.header.features}
             </a>
-            <a
-              href="#why-oklch"
+            <Link
+              href={locale === 'ru' ? '/ru/explore' : '/explore'}
               className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:block focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
             >
-              {t.header.whyOklch}
-            </a>
+              {locale === 'ru' ? 'Галерея' : 'Explore'}
+            </Link>
+            <Link
+              href={locale === 'ru' ? '/ru/login' : '/login'}
+              className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:block focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
+            >
+              {locale === 'ru' ? 'Войти' : 'Sign in'}
+            </Link>
             <Link
               href={createHref}
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all shadow-md shadow-purple-900/30 focus:outline-none focus:ring-2 focus:ring-purple-400"
@@ -91,6 +97,7 @@ export function HomePageContent({ locale = 'en' }: HomePageContentProps) {
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </nav>
+
         </div>
       </header>
 
@@ -430,27 +437,41 @@ export function HomePageContent({ locale = 'en' }: HomePageContentProps) {
 
       {/* Footer */}
       <footer className="border-t border-white/10 bg-zinc-950 py-8 text-xs font-mono text-gray-400">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
             <div className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-purple-400" />
               <span className="font-bold text-white">{t.footer.brand}</span>
             </div>
-            <span className="hidden sm:inline text-gray-600">|</span>
             <span className="text-gray-400">{t.footer.text}</span>
           </div>
-
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 border-t border-white/5 pt-6">
             <Link href={createHref} className="hover:text-white transition-colors">
               {t.footer.studioLink}
             </Link>
-            <a href="https://oklchpalette.ru" className="hover:text-white transition-colors">
-              https://oklchpalette.ru
+            <Link href={locale === 'ru' ? '/ru/explore' : '/explore'} className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Галерея' : 'Explore'}
+            </Link>
+            <Link href="/guides/oklch-for-pixel-art" className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Гайды' : 'Guides'}
+            </Link>
+            <Link href="/tools/pixel-art-palette-generator" className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Генератор' : 'Generator'}
+            </Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Конфиденциальность' : 'Privacy'}
+            </Link>
+            <Link href="/terms" className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Условия' : 'Terms'}
+            </Link>
+            <a href="https://github.com/vansGAMee/OKLCH-PIXEL-PALETTE" className="hover:text-white transition-colors">
+              GitHub
             </a>
             <span>&copy; {currentYear}</span>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }

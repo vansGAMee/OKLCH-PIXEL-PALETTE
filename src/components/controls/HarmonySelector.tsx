@@ -15,6 +15,9 @@ const HARMONY_ICONS: Record<HarmonyMode, React.ReactNode> = {
   splitComplementary: <Sparkles className="w-4 h-4" />,
   complementary: <Orbit className="w-4 h-4" />,
   analogous: <Spline className="w-4 h-4" />,
+  triadic: <Compass className="w-4 h-4" />,
+  tetradic: <Orbit className="w-4 h-4" />,
+  monochromatic: <Spline className="w-4 h-4" />,
 };
 
 export const HarmonySelector: React.FC<HarmonySelectorProps> = ({

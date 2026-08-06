@@ -18,6 +18,12 @@ export function getHarmonyCandidateHues(baseHue: number | null, harmony: Harmony
         return [240];
       case 'analogous':
         return [210, 310];
+      case 'triadic':
+        return [120, 240];
+      case 'tetradic':
+        return [90, 180, 270];
+      case 'monochromatic':
+        return [260];
     }
   }
 
@@ -30,6 +36,12 @@ export function getHarmonyCandidateHues(baseHue: number | null, harmony: Harmony
       return [(h + 180) % 360];
     case 'analogous':
       return [(h - 30 + 360) % 360, (h + 30) % 360];
+    case 'triadic':
+      return [(h + 120) % 360, (h + 240) % 360];
+    case 'tetradic':
+      return [(h + 90) % 360, (h + 180) % 360, (h + 270) % 360];
+    case 'monochromatic':
+      return [h];
   }
 }
 

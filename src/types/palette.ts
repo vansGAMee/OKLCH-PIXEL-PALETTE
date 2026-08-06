@@ -1,4 +1,10 @@
-export type HarmonyMode = 'splitComplementary' | 'complementary' | 'analogous';
+export type HarmonyMode =
+  | 'splitComplementary'
+  | 'complementary'
+  | 'analogous'
+  | 'triadic'
+  | 'tetradic'
+  | 'monochromatic';
 
 export type PaletteRole = 'shadow' | 'base' | 'highlight' | 'accent' | string;
 
