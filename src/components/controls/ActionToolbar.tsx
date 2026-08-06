@@ -8,12 +8,16 @@ import { exportPalettePng } from '@/lib/color/exportPalettePng';
 
 interface ActionToolbarProps {
   palette: Palette;
+  colorCount: number;
+  onColorCountChange: (count: number) => void;
   onNewVariation: () => void;
   onReset: () => void;
 }
 
 export const ActionToolbar: React.FC<ActionToolbarProps> = ({
   palette,
+  colorCount,
+  onColorCountChange,
   onNewVariation,
   onReset,
 }) => {
@@ -22,13 +26,37 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-xl p-4 border border-white/10 flex flex-wrap items-center justify-between gap-3">
-      {/* Seed Badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-mono text-gray-400">Current Seed:</span>
-        <span className="px-2.5 py-1 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30 text-xs font-mono font-bold">
-          #{palette.seed}
-        </span>
+    <div className="glass-panel rounded-xl p-4 border border-white/10 flex flex-wrap items-center justify-between gap-4">
+      {/* Left side: Seed & Color Count Selector */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Seed Badge */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-gray-400">Seed:</span>
+          <span className="px-2.5 py-1 rounded bg-purple-500/10 text-purple-300 border border-purple-500/30 text-xs font-mono font-bold">
+            #{palette.seed}
+          </span>
+        </div>
+
+        {/* Color Count Selector (2 to 9) */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-mono text-gray-400">Colors:</span>
+          <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-white/10 gap-0.5 overflow-x-auto">
+            {[2, 3, 4, 5, 6, 7, 8, 9].map((cnt) => (
+              <button
+                key={cnt}
+                onClick={() => onColorCountChange(cnt)}
+                aria-label={`Select ${cnt} colors`}
+                className={`w-7 h-7 text-xs font-mono rounded-lg transition-all flex items-center justify-center font-bold cursor-pointer ${
+                  colorCount === cnt
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                }`}
+              >
+                {cnt}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Buttons Row */}

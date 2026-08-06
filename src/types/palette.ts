@@ -1,6 +1,6 @@
 export type HarmonyMode = 'splitComplementary' | 'complementary' | 'analogous';
 
-export type PaletteRole = 'shadow' | 'base' | 'highlight' | 'accent';
+export type PaletteRole = 'shadow' | 'base' | 'highlight' | 'accent' | string;
 
 export type PaletteColor = {
   role: PaletteRole;
@@ -13,6 +13,8 @@ export type PaletteColor = {
 };
 
 export type Palette = {
+  colors: PaletteColor[];
+  count: number;
   shadow: PaletteColor;
   base: PaletteColor;
   highlight: PaletteColor;

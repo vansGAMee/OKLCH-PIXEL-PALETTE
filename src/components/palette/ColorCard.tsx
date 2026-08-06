@@ -61,7 +61,7 @@ export const ColorCard: React.FC<ColorCardProps> = ({ color, index }) => {
           <span
             className={`px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase border backdrop-blur-xs ${textColor} ${badgeBg}`}
           >
-            {color.role}
+            {color.role.startsWith('color') ? color.role.replace('color', 'COLOR ') : color.role}
           </span>
           {color.role === 'base' && (
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white font-bold shadow-md">

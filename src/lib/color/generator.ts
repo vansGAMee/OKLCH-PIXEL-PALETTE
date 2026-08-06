@@ -169,12 +169,15 @@ export function repairPalette(
 
 /**
  * Main palette generator function.
+ * Supports palette sizes from 2 to 9 colors.
  */
 export function generatePalette(
   hexInput: string,
   harmony: HarmonyMode = 'splitComplementary',
-  seed: number = 0
+  seed: number = 0,
+  colorCount: number = 4
 ): Palette {
+  const count = clamp(Math.round(colorCount), 2, 9);
   const normHex = normalizeHex(hexInput) || '#5b21b6';
   const baseOklch = hexToOklch(normHex) || { l: 0.35, c: 0.18, h: 290 };
 
@@ -190,17 +193,17 @@ export function generatePalette(
 
   const seedAccentOffset = prng();
 
-  // Step 1: Generate initial colors
+  // Step 1: Generate initial core colors
   const rawShadow = generateShadow(baseOklch, seedShadowL, seedShadowC, seedShadowH);
   const rawHighlight = generateHighlight(baseOklch, seedHighlightL, seedHighlightC, seedHighlightH);
   const rawAccent = generateAccentCandidate(baseOklch, rawShadow, rawHighlight, harmony, seedAccentOffset);
 
-  // Step 2: Repair palette for hard guarantees
+  // Step 2: Repair core palette for hard guarantees
   const repaired = repairPalette(rawShadow, baseOklch, rawHighlight, rawAccent);
 
-  // Helper for Shadow, Highlight, Accent colors (fit & format)
+  // Helper for formatting PaletteColor objects
   const createGeneratedColor = (
-    role: 'shadow' | 'highlight' | 'accent',
+    role: string,
     rawOklch: OklchColor
   ): PaletteColor => {
     const fitted = fitToSrgb(rawOklch);
@@ -226,12 +229,161 @@ export function generatePalette(
     },
   };
 
+  const shadowColor = createGeneratedColor('shadow', repaired.shadow);
+  const highlightColor = createGeneratedColor('highlight', repaired.highlight);
+  const accentColor = createGeneratedColor('accent', repaired.accent);
+
+  // Build the colors array (Single Source of Truth) based on count
+  const colors: PaletteColor[] = [];
+
+  if (count === 2) {
+    colors.push(shadowColor);
+    colors.push(basePaletteColor);
+  } else if (count === 3) {
+    colors.push(shadowColor);
+    colors.push(basePaletteColor);
+    colors.push(highlightColor);
+  } else {
+    // 4 to 9 colors: start with standard 4 core colors
+    colors.push(shadowColor);
+    colors.push(basePaletteColor);
+    colors.push(highlightColor);
+    colors.push(accentColor);
+
+    // Extra colors (5 to 9)
+    const extraSpecs: { l: number; c: number; hShift: number }[] = [
+      // color 5: mid shadow
+      { l: (repaired.shadow.l + baseOklch.l) / 2, c: (repaired.shadow.l > 0.01 ? (repaired.shadow.c + baseOklch.c) / 2 : baseOklch.c * 0.5), hShift: -15 },
+      // color 6: mid highlight
+      { l: (baseOklch.l + repaired.highlight.l) / 2, c: (baseOklch.c + repaired.highlight.c) / 2, hShift: 15 },
+      // color 7: deep shadow
+      { l: Math.max(0.03, repaired.shadow.l * 0.6), c: repaired.shadow.c * 0.7, hShift: -30 },
+      // color 8: vibrant accent variation
+      { l: clamp(repaired.accent.l + 0.08, 0.15, 0.88), c: clamp(repaired.accent.c * 1.1, 0.05, 0.22), hShift: 45 },
+      // color 9: bright highlight
+      { l: Math.min(0.98, repaired.highlight.l + (1 - repaired.highlight.l) * 0.5), c: repaired.highlight.c * 0.6, hShift: 30 },
+    ];
+
+    for (let i = 4; i < count; i++) {
+      const spec = extraSpecs[i - 4];
+      const baseH = baseOklch.h ?? 0;
+      const targetH = (baseH + spec.hShift + 360) % 360;
+      const rawOklch: OklchColor = {
+        l: clamp(spec.l, 0.02, 0.98),
+        c: clamp(spec.c, 0.005, 0.25),
+        h: targetH,
+      };
+      colors.push(createGeneratedColor(`color${i + 1}`, rawOklch));
+    }
+  }
+
+  // Deduplication pass: ensure no duplicate HEX or visually indistinguishable colors (DeltaE < 0.035)
+  const deduplicatedColors = deduplicateColors(colors);
+
+  // Find or fallback core roles directly from deduplicated colors array (Single Source of Truth)
+  const shadow = deduplicatedColors.find((c) => c.role === 'shadow') || deduplicatedColors[0];
+  const base = deduplicatedColors.find((c) => c.role === 'base') || deduplicatedColors[1] || deduplicatedColors[0];
+  const highlight = deduplicatedColors.find((c) => c.role === 'highlight') || deduplicatedColors[deduplicatedColors.length - 1] || base;
+  const accent = deduplicatedColors.find((c) => c.role === 'accent') || highlight || base;
+
   return {
-    shadow: createGeneratedColor('shadow', repaired.shadow),
-    base: basePaletteColor,
-    highlight: createGeneratedColor('highlight', repaired.highlight),
-    accent: createGeneratedColor('accent', repaired.accent),
+    colors: deduplicatedColors,
+    count,
+    shadow,
+    base,
+    highlight,
+    accent,
     harmony,
     seed,
   };
+}
+
+export const MIN_PALETTE_DELTA_E = 0.025;
+
+/**
+ * Deduplicates and ensures minimum perceptual distinction (OKLab Delta E >= 0.025) between all colors.
+ * Lightness is adjusted first, then chroma, then hue. Base color remains 100% untouched.
+ */
+export function deduplicateColors(colors: PaletteColor[]): PaletteColor[] {
+  const result = colors.map((c) => ({ ...c, oklch: { ...c.oklch } }));
+  const count = result.length;
+  if (count <= 1) return result;
+
+  const MAX_OUTER_PASSES = 4;
+  const MAX_ITER = 8;
+
+  for (let pass = 0; pass < MAX_OUTER_PASSES; pass++) {
+    let anyChanged = false;
+
+    for (let i = 0; i < count; i++) {
+      for (let j = i + 1; j < count; j++) {
+        let iter = 0;
+        while (iter < MAX_ITER) {
+          const delta = calculateDeltaE(result[i].oklch, result[j].oklch);
+          const hex1 = result[i].hex.toLowerCase();
+          const hex2 = result[j].hex.toLowerCase();
+          const hexSame = hex1 === hex2;
+
+          if (delta >= MIN_PALETTE_DELTA_E && !hexSame) {
+            break; // Distinct enough
+          }
+
+          anyChanged = true;
+
+          // Adjust result[j] (unless it's base, in which case adjust result[i])
+          const targetIdx = result[j].role === 'base' ? i : j;
+          const compareIdx = targetIdx === j ? i : j;
+          const target = result[targetIdx];
+          const compare = result[compareIdx];
+
+          const step = iter + 1;
+          let lDir = target.oklch.l >= compare.oklch.l ? 1 : -1;
+          if (target.oklch.l >= 0.94) lDir = -1;
+          if (target.oklch.l <= 0.06) lDir = 1;
+
+          // Step 1: Lightness adjustment first
+          const newL = clamp(target.oklch.l + lDir * 0.04 * step, 0.03, 0.97);
+          let newC = target.oklch.c;
+          let newH = target.oklch.h;
+
+          let fitted = fitToSrgb({ l: newL, c: newC, h: newH });
+          let newHex = oklchToHex(fitted).toLowerCase();
+          let newDelta = calculateDeltaE(compare.oklch, fitted);
+
+          // Step 2: Chroma adjustment if lightness shift wasn't enough or HEX identical
+          if (newDelta < MIN_PALETTE_DELTA_E || newHex === compare.hex.toLowerCase()) {
+            const cDir = target.oklch.c >= compare.oklch.c ? 1 : -1;
+            newC = clamp(target.oklch.c + cDir * 0.035 * step, 0.005, 0.25);
+            fitted = fitToSrgb({ l: newL, c: newC, h: newH });
+            newHex = oklchToHex(fitted).toLowerCase();
+            newDelta = calculateDeltaE(compare.oklch, fitted);
+          }
+
+          // Step 3: Hue adjustment if still too close or HEX identical
+          if (newDelta < MIN_PALETTE_DELTA_E || newHex === compare.hex.toLowerCase()) {
+            const baseH = newH !== null ? newH : 180;
+            newH = (baseH + 25 * step) % 360;
+            fitted = fitToSrgb({ l: newL, c: newC, h: newH });
+            newHex = oklchToHex(fitted).toLowerCase();
+          }
+
+          result[targetIdx] = {
+            role: target.role,
+            hex: newHex,
+            oklch: {
+              l: Number(fitted.l.toFixed(4)),
+              c: Number(fitted.c.toFixed(4)),
+              h: fitted.h !== null ? Number(fitted.h.toFixed(2)) : null,
+            },
+          };
+
+          iter++;
+        }
+      }
+    }
+
+    if (!anyChanged) break;
+  }
+
+  return result;
 }
