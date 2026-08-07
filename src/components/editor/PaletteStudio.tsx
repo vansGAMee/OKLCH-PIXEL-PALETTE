@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { HarmonyMode, Palette, PaletteColor } from '@/types/palette';
 import { generatePalette } from '@/lib/color/generator';
 import { ColorPicker } from '@/components/controls/ColorPicker';
@@ -34,6 +35,9 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   const t = messages[locale].header;
   const c = messages[locale].controls;
   const isRu = locale === 'ru';
+  const searchParams = useSearchParams();
+
+  const [paletteName, setPaletteName] = useState<string>('');
 
   const [baseHex, setBaseHex] = useState<string>(() => {
     if (typeof window === 'undefined') return DEFAULT_HEX;
@@ -97,6 +101,22 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [cloudNotice, setCloudNotice] = useState<string | null>(null);
 
+  // Read URL search parameters on load if present
+  useEffect(() => {
+    if (!searchParams) return;
+    const pBase = searchParams.get('baseHex') || searchParams.get('base');
+    const pHarmony = searchParams.get('harmony');
+    const pSeed = searchParams.get('seed');
+    const pCount = searchParams.get('count');
+    const pTitle = searchParams.get('title') || searchParams.get('name');
+
+    if (pBase && /^#[0-9a-fA-F]{6}$/.test(pBase)) setBaseHex(pBase);
+    if (pHarmony) setHarmony(pHarmony as HarmonyMode);
+    if (pSeed && !isNaN(Number(pSeed))) setSeed(Number(pSeed));
+    if (pCount && !isNaN(Number(pCount))) setColorCount(Math.min(9, Math.max(2, Number(pCount))));
+    if (pTitle) setPaletteName(pTitle);
+  }, [searchParams]);
+
   // Debounced sync to localStorage (400ms delay to eliminate synchronous disk I/O during drag)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -134,6 +154,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
     setHarmony(DEFAULT_HARMONY);
     setSeed(DEFAULT_SEED);
     setColorCount(DEFAULT_COLOR_COUNT);
+    setPaletteName('');
   }, []);
 
   const handleImportColors = useCallback((colors: PaletteColor[]) => {
@@ -154,7 +175,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
       return;
     }
 
-    const title = isRu ? `Палитра ${palette.base.hex}` : `Palette ${palette.base.hex}`;
+    const title = paletteName.trim() || (isRu ? `Палитра ${palette.base.hex}` : `Palette ${palette.base.hex}`);
     const result = await savePalette({
       title,
       visibility: 'private',
@@ -171,7 +192,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
       );
     }
     setTimeout(() => setCloudNotice(null), 4000);
-  }, [isRu, palette]);
+  }, [isRu, palette, paletteName]);
 
   const homeHref = locale === 'ru' ? '/ru' : '/';
 
@@ -232,6 +253,22 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
         <section aria-label="Palette Controls" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ColorPicker value={baseHex} onChange={setBaseHex} locale={locale} />
           <HarmonySelector harmony={harmony} onChange={setHarmony} locale={locale} />
+        </section>
+
+        {/* Palette Name Section */}
+        <section aria-label="Palette Name" className="glass-panel p-4 rounded-xl border border-white/10">
+          <label htmlFor="studio-palette-title" className="block text-xs font-mono font-bold text-gray-300 mb-1.5">
+            {isRu ? 'Название палитры' : 'Palette Name'}
+          </label>
+          <input
+            id="studio-palette-title"
+            type="text"
+            value={paletteName}
+            onChange={(e) => setPaletteName(e.target.value)}
+            maxLength={80}
+            placeholder={isRu ? `Палитра ${baseHex}` : `Palette ${baseHex}`}
+            className="w-full px-3.5 py-2 bg-zinc-900 border border-white/10 rounded-lg text-sm font-mono text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
         </section>
 
         {/* Global Action Toolbar */}

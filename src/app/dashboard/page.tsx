@@ -19,11 +19,12 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   if (!supabase) return <DashboardUnavailable locale="en" />;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: { user } } = await (supabase as any).auth.getUser();
   if (!user) redirect('/login?redirect=/dashboard');
 
   // Fetch user data in parallel
-  const [profileRes, palettesRes, savedCountRes, publicCountRes] = await Promise.all([
+  const [profileRes, palettesRes, savedCountRes, publicCountRes, bookmarksRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase
       .from('palettes')
@@ -33,12 +34,41 @@ export default async function DashboardPage() {
       .limit(30),
     supabase.from('palettes').select('id', { count: 'exact', head: true }).eq('owner_id', user.id),
     supabase.from('palettes').select('id', { count: 'exact', head: true }).eq('owner_id', user.id).eq('visibility', 'public'),
+    // Fetch bookmarked palettes (join through palette_bookmarks)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('palette_bookmarks')
+      .select('palette_id, palettes!palette_id(id, slug, title, color_count, harmony, colors, profiles!owner_id(username, display_name))')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(48),
   ]);
 
   const profile = profileRes.data;
   const palettes = palettesRes.data ?? [];
   const savedCount = savedCountRes.count ?? 0;
   const publicCount = publicCountRes.count ?? 0;
+
+  // Flatten bookmarks query result
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawBookmarks = (bookmarksRes.data ?? []) as any[];
+  const bookmarks = rawBookmarks
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((b: any) => {
+      const p = b.palettes;
+      if (!p) return null;
+      return {
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        color_count: p.color_count,
+        harmony: p.harmony,
+        colors: p.colors,
+        profiles: Array.isArray(p.profiles) ? p.profiles[0] ?? null : p.profiles,
+      };
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter(Boolean) as any[];
 
   return (
     <DashboardContent
@@ -47,6 +77,7 @@ export default async function DashboardPage() {
       palettes={palettes}
       savedCount={savedCount}
       publicCount={publicCount}
+      bookmarks={bookmarks}
     />
   );
 }

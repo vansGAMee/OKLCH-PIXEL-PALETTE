@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { HomePageContent } from '@/components/home/HomePageContent';
+import { createClient } from '@/lib/supabase/server';
+import { isSupabaseAvailable } from '@/lib/supabase/client';
 
 export const metadata: Metadata = {
   title: 'OKLCH Palette Generator for Pixel Art, Games and UI',
@@ -31,6 +33,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
-  return <HomePageContent locale="en" />;
+export default async function Page() {
+  let isAuthenticated = false;
+  if (isSupabaseAvailable()) {
+    const supabase = await createClient();
+    if (supabase) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: { user } } = await (supabase as any).auth.getUser();
+      isAuthenticated = !!user;
+    }
+  }
+  return <HomePageContent locale="en" isAuthenticated={isAuthenticated} />;
 }

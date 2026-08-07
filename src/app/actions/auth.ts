@@ -157,6 +157,58 @@ export async function setUsername(formData: FormData): Promise<AuthResult> {
   redirect('/dashboard');
 }
 
+// ---------- Update Profile ----------
+const updateProfileSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(24, 'Username must be at most 24 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, _ and -'),
+  display_name: z.string().max(64, 'Display name must be at most 64 characters').optional().nullable(),
+  bio: z.string().max(200, 'Bio must be at most 200 characters').optional().nullable(),
+});
+
+export async function updateProfile(formData: FormData): Promise<AuthResult> {
+  const raw = {
+    username: formData.get('username'),
+    display_name: formData.get('display_name') || null,
+    bio: formData.get('bio') || null,
+  };
+
+  const parsed = updateProfileSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const supabase = await createClient();
+  if (!supabase) return { error: 'Service unavailable' };
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return { error: 'Not authenticated' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('profiles')
+    .update({
+      username: parsed.data.username.toLowerCase(),
+      display_name: parsed.data.display_name ?? null,
+      bio: parsed.data.bio ?? null,
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    if (error.code === '23505') {
+      return { error: 'This username is already taken.' };
+    }
+    return { error: 'Could not update profile. Please try again.' };
+  }
+
+  revalidatePath('/dashboard');
+  revalidatePath('/settings');
+  revalidatePath('/ru/settings');
+  return { success: true };
+}
+
 // ---------- Delete Account ----------
 export async function deleteAccount(formData: FormData): Promise<AuthResult> {
   const confirmPhrase = formData.get('confirm_phrase');

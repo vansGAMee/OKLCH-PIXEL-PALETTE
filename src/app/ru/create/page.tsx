@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { PaletteStudio } from '@/components/editor/PaletteStudio';
 
 export const metadata: Metadata = {
@@ -32,5 +33,9 @@ export const metadata: Metadata = {
 };
 
 export default function RuCreatePage() {
-  return <PaletteStudio locale="ru" />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#090909]" />}>
+      <PaletteStudio locale="ru" />
+    </Suspense>
+  );
 }

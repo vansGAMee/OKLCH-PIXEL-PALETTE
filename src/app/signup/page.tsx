@@ -1,16 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { SignUpForm } from '@/components/auth/SignUpForm';
 import { isSupabaseAvailable } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Create Account | OKLCH Pixel Palette',
   robots: { index: false, follow: false },
 };
 
-export default function SignupPage() {
-  const available = isSupabaseAvailable();
+export default async function SignupPage() {
+  const supabase = await createClient();
+  const available = Boolean(supabase);
+
+  if (supabase) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: { user } } = await (supabase as any).auth.getUser();
+    if (user) redirect('/dashboard');
+  }
 
   return (
     <AuthForm

@@ -16,7 +16,7 @@ interface PaletteDetailPageProps {
 export async function generateMetadata({ params }: PaletteDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
-  if (!supabase) return { title: 'Palette | OKLCH Pixel Palette' };
+  if (!supabase) return { title: 'Палитра | OKLCH Pixel Palette' };
 
   const { data } = await (supabase as any)
     .from('palettes')
@@ -24,32 +24,32 @@ export async function generateMetadata({ params }: PaletteDetailPageProps): Prom
     .eq('slug', slug)
     .single();
 
-  if (!data) return { title: 'Palette | OKLCH Pixel Palette' };
+  if (!data) return { title: 'Палитра | OKLCH Pixel Palette' };
 
   const isPublic = (data as any).visibility === 'public';
   const profiles = Array.isArray((data as any).profiles) ? (data as any).profiles[0] : (data as any).profiles as { username: string } | null;
-  const title = (data as any).title ?? 'Untitled Palette';
+  const title = (data as any).title ?? 'Палитра';
   const username = profiles?.username ?? 'unknown';
   const colorCount = (data as any).color_count ?? 0;
   const harmony = (data as any).harmony ?? '';
 
   return {
-    title: `${title} – Pixel Art Palette | OKLCH Pixel Palette`,
-    description: `${colorCount}-color ${harmony} palette by @${username}. Export to GPL, JASC PAL, HEX, JSON.`,
+    title: `${title} – Пиксель-арт Палитра | OKLCH Pixel Palette`,
+    description: `Палитра из ${colorCount} цветов (${harmony}) от @${username}. Экспорт в GPL, JASC PAL, HEX, JSON.`,
     robots: isPublic ? { index: true, follow: true } : { index: false, follow: false },
     alternates: {
-      canonical: `https://oklchpalette.ru/p/${slug}`,
+      canonical: `https://oklchpalette.ru/ru/p/${slug}`,
     },
     openGraph: {
       title: `${title} | OKLCH Pixel Palette`,
-      description: `${colorCount}-color ${harmony} palette by @${username}.`,
-      url: `https://oklchpalette.ru/p/${slug}`,
+      description: `Палитра из ${colorCount} цветов (${harmony}) от @${username}.`,
+      url: `https://oklchpalette.ru/ru/p/${slug}`,
       type: 'website',
     },
   };
 }
 
-export default async function PaletteDetailPage({ params }: PaletteDetailPageProps) {
+export default async function RuPaletteDetailPage({ params }: PaletteDetailPageProps) {
   const { slug } = await params;
 
   if (!isSupabaseAvailable()) notFound();
@@ -57,10 +57,8 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
   const supabase = await createClient();
   if (!supabase) notFound();
 
-  // Get current user (may be null for guests)
   const { data: { user } } = await (supabase as any).auth.getUser();
 
-  // Fetch palette WITHOUT visibility filter — we enforce access below
   const { data: row } = await (supabase as any)
     .from('palettes')
     .select(`
@@ -74,7 +72,6 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
 
   if (!row) notFound();
 
-  // Access control
   const visibility = (row as any).visibility as string;
   const ownerId = (row as any).owner_id as string;
   const isOwner = user?.id === ownerId;
@@ -82,19 +79,14 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
   if (visibility === 'private' && !isOwner) {
     notFound();
   }
-  if (visibility === 'unlisted' && !isOwner) {
-    // unlisted: accessible by link but not indexed - allow
-  }
 
   const palette = deserializePaletteRow(row as Parameters<typeof deserializePaletteRow>[0]);
   const profiles = Array.isArray((row as any).profiles) ? (row as any).profiles[0] ?? null : (row as any).profiles as { username: string; display_name: string | null } | null;
 
-  // Like count (public RPC)
   const { data: likeCountData } = await (supabase as any)
     .rpc('get_palette_like_count', { target_palette_id: (row as any).id });
   const likeCount = Number(likeCountData ?? 0);
 
-  // Check if current user has liked / bookmarked
   let initialLiked = false;
   let initialBookmarked = false;
   if (user) {
@@ -116,7 +108,6 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
     initialBookmarked = !!bookmarkRes.data;
   }
 
-  // Fetch source palette info if this is a remix
   let sourceTitle: string | null = null;
   let sourceSlug: string | null = null;
   const sourcePaletteId = (row as any).source_palette_id as string | null;
@@ -133,45 +124,39 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
   }
 
   const colors = Array.isArray(row.colors) ? row.colors as Array<{ hex: string; role: string; oklch: { l: number; c: number; h: number | null } }> : [];
-  const isRu = false; // EN page; RU page imports this with locale='ru'
 
   return (
     <div className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col selection:bg-purple-600 selection:text-white">
-      {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 glass-panel backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/ru" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
               <Palette className="w-4 h-4" />
             </div>
             <span className="text-sm font-mono font-black text-white hidden sm:block">OKLCH PIXEL PALETTE</span>
           </Link>
           <nav className="flex items-center gap-3">
-            <Link href="/explore" className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:inline">Explore</Link>
+            <Link href="/ru/explore" className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:inline">Галерея</Link>
             {user ? (
-              <Link href="/dashboard" className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:inline">Dashboard</Link>
+              <Link href="/ru/dashboard" className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:inline">Дашборд</Link>
             ) : (
-              <Link href="/login" className="text-xs font-mono text-gray-300 hover:text-white transition-colors">Sign in</Link>
+              <Link href="/ru/login" className="text-xs font-mono text-gray-300 hover:text-white transition-colors">Войти</Link>
             )}
-            <Link href="/create" className="px-3 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all">Studio</Link>
+            <Link href="/ru/create" className="px-3 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all">Редактор</Link>
           </nav>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left: main info */}
           <div className="lg:col-span-7 space-y-6">
-            {/* Private badge */}
             {visibility !== 'public' && (
               <div className="inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400">
-                {visibility === 'private' ? '🔒 Private' : '🔗 Unlisted'}
+                {visibility === 'private' ? '🔒 Приватная' : '🔗 По ссылке'}
               </div>
             )}
-
-            {/* Title + Meta */}
             <div className="space-y-3">
-              <h1 className="text-2xl sm:text-3xl font-mono font-extrabold text-white">{(row as any).title ?? 'Untitled Palette'}</h1>
+              <h1 className="text-2xl sm:text-3xl font-mono font-extrabold text-white">{(row as any).title ?? 'Без названия'}</h1>
               {(row as any).description && (
                 <p className="text-sm text-gray-300 font-sans">{(row as any).description}</p>
               )}
@@ -182,48 +167,36 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
                     @{profiles.username}
                   </Link>
                 )}
-                <span>{(row as any).color_count} colors</span>
+                <span>{(row as any).color_count} цветов</span>
                 {(row as any).harmony && <span>{(row as any).harmony}</span>}
               </div>
             </div>
 
-            {/* Color Swatches */}
             <div className="space-y-2">
               {colors.map((c, i) => (
                 <div key={i} className="flex items-center gap-3 glass-panel rounded-xl p-3 border border-white/10">
-                  <div
-                    className="w-12 h-12 rounded-lg border border-white/20 flex-shrink-0"
-                    style={{ backgroundColor: c.hex }}
-                  />
+                  <div className="w-12 h-12 rounded-lg border border-white/20 flex-shrink-0" style={{ backgroundColor: c.hex }} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-mono font-bold text-white">{c.role.toUpperCase()}</div>
                     <div className="text-[11px] font-mono text-gray-400">
                       {c.hex.toUpperCase()} · L:{(c.oklch.l * 100).toFixed(1)}% C:{c.oklch.c.toFixed(3)} H:{c.oklch.h !== null ? `${Math.round(c.oklch.h)}°` : 'neutral'}
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(c.hex.toUpperCase())}
-                    className="p-2 text-gray-400 hover:text-purple-400 transition-colors"
-                    title="Copy HEX"
-                  >
+                  <button onClick={() => navigator.clipboard.writeText(c.hex.toUpperCase())} className="p-2 text-gray-400 hover:text-purple-400 transition-colors" title="Скопировать HEX">
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
               ))}
             </div>
 
-            {/* Tags */}
             {(row as any).tags && (row as any).tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {(row as any).tags.map((tag: string) => (
-                  <span key={tag} className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300">
-                    #{tag}
-                  </span>
+                  <span key={tag} className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300">#{tag}</span>
                 ))}
               </div>
             )}
 
-            {/* Action Buttons — Like / Bookmark / Remix */}
             <PaletteActions
               paletteId={(row as any).id}
               paletteSlug={(row as any).slug}
@@ -232,18 +205,15 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
               initialLikeCount={likeCount}
               isAuthenticated={!!user}
               isOwner={isOwner}
-              locale="en"
+              locale="ru"
               sourcePaletteId={sourcePaletteId}
               sourceTitle={sourceTitle}
               sourceSlug={sourceSlug}
             />
           </div>
 
-          {/* Right: Lightness Chart */}
           <div className="lg:col-span-5">
-            {palette && (
-              <BklitLightnessChart palette={palette} locale="en" />
-            )}
+            {palette && <BklitLightnessChart palette={palette} locale="ru" />}
           </div>
         </div>
       </main>

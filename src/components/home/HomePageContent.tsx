@@ -2,13 +2,15 @@ import React from 'react';
 import Link from 'next/link';
 import { Palette, Sparkles, Sliders, Eye, BarChart2, ShieldCheck, Download, ChevronRight, Terminal } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
+import { MobileMenu } from '@/components/layout/MobileMenu';
 import { Locale, messages } from '@/i18n/messages';
 
 interface HomePageContentProps {
   locale?: Locale;
+  isAuthenticated?: boolean;
 }
 
-export function HomePageContent({ locale = 'en' }: HomePageContentProps) {
+export function HomePageContent({ locale = 'en', isAuthenticated = false }: HomePageContentProps) {
   const currentYear = new Date().getFullYear();
   const t = messages[locale];
   const createHref = locale === 'ru' ? '/ru/create' : '/create';
@@ -83,19 +85,30 @@ export function HomePageContent({ locale = 'en' }: HomePageContentProps) {
             >
               {locale === 'ru' ? 'Галерея' : 'Explore'}
             </Link>
-            <Link
-              href={locale === 'ru' ? '/ru/login' : '/login'}
-              className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:block focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
-            >
-              {locale === 'ru' ? 'Войти' : 'Sign in'}
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href={locale === 'ru' ? '/ru/dashboard' : '/dashboard'}
+                className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:block focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
+              >
+                {locale === 'ru' ? 'Дашборд' : 'Dashboard'}
+              </Link>
+            ) : (
+              <Link
+                href={locale === 'ru' ? '/ru/login' : '/login'}
+                className="text-xs font-mono text-gray-300 hover:text-white transition-colors hidden sm:block focus:outline-none focus:ring-2 focus:ring-purple-500 rounded px-2 py-1"
+              >
+                {locale === 'ru' ? 'Войти' : 'Sign in'}
+              </Link>
+            )}
             <Link
               href={createHref}
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all shadow-md shadow-purple-900/30 focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
-              <span>{t.header.openStudio}</span>
+              <span className="hidden sm:inline">{t.header.openStudio}</span>
+              <span className="sm:hidden">Studio</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
+            <MobileMenu locale={locale} isAuthenticated={isAuthenticated} />
           </nav>
 
         </div>

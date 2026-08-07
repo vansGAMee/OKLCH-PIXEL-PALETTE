@@ -1,16 +1,26 @@
 'use client';
 /**
  * src/components/dashboard/DashboardContent.tsx
- * Dashboard main client component with tabs.
+ * Dashboard main client component with tabs including Bookmarks.
  */
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Palette, BarChart2, User, Settings, Terminal, LogOut, Plus, ExternalLink } from 'lucide-react';
+import { Palette, BarChart2, User, Settings, Terminal, LogOut, Plus, ExternalLink, Bookmark } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { LimitBar } from './LimitBar';
 import { PaletteCard } from './PaletteCard';
 import { InsightsTab } from './InsightsTab';
 import { Profile } from '@/lib/supabase/types';
+
+interface BookmarkedPalette {
+  id: string;
+  slug: string;
+  title: string;
+  color_count: number;
+  harmony: string | null;
+  colors: unknown;
+  profiles: { username: string; display_name: string | null } | null;
+}
 
 interface DashboardContentProps {
   locale: 'en' | 'ru';
@@ -31,11 +41,12 @@ interface DashboardContentProps {
   }>;
   savedCount: number;
   publicCount: number;
+  bookmarks?: BookmarkedPalette[];
 }
 
-type Tab = 'saved' | 'published' | 'insights' | 'profile';
+type Tab = 'saved' | 'published' | 'bookmarks' | 'insights' | 'profile';
 
-export function DashboardContent({ locale, profile, palettes, savedCount, publicCount }: DashboardContentProps) {
+export function DashboardContent({ locale, profile, palettes, savedCount, publicCount, bookmarks = [] }: DashboardContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>('saved');
   const isRu = locale === 'ru';
 
@@ -43,11 +54,12 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
   const createHref = isRu ? '/ru/create' : '/create';
   const settingsHref = isRu ? '/ru/settings' : '/settings';
 
-  const tabs = [
-    { id: 'saved' as Tab, label: isRu ? 'Сохранённые' : 'Saved', icon: Palette },
-    { id: 'published' as Tab, label: isRu ? 'Опубликованные' : 'Published', icon: ExternalLink },
-    { id: 'insights' as Tab, label: isRu ? 'Аналитика' : 'Insights', icon: BarChart2 },
-    { id: 'profile' as Tab, label: isRu ? 'Профиль' : 'Profile', icon: User },
+  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+    { id: 'saved', label: isRu ? 'Сохранённые' : 'Saved', icon: Palette },
+    { id: 'published', label: isRu ? 'Публичные' : 'Published', icon: ExternalLink },
+    { id: 'bookmarks', label: isRu ? 'Закладки' : 'Bookmarks', icon: Bookmark },
+    { id: 'insights', label: isRu ? 'Аналитика' : 'Insights', icon: BarChart2 },
+    { id: 'profile', label: isRu ? 'Профиль' : 'Profile', icon: User },
   ];
 
   const savedPalettes = palettes;
@@ -65,15 +77,15 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
             <span className="text-sm font-mono font-black text-white hidden sm:block">OKLCH PIXEL PALETTE</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href={createHref}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-mono text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
-              {isRu ? 'Новая палитра' : 'New Palette'}
+              <span className="hidden sm:inline">{isRu ? 'Новая палитра' : 'New Palette'}</span>
             </Link>
-            <Link href={settingsHref} className="p-2 text-gray-400 hover:text-white transition-colors">
+            <Link href={settingsHref} className="p-2 text-gray-400 hover:text-white transition-colors" title={isRu ? 'Настройки' : 'Settings'}>
               <Settings className="w-4 h-4" />
             </Link>
             <form action={signOut}>
@@ -101,16 +113,8 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
 
         {/* Limits */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <LimitBar
-            label={isRu ? 'Сохранено' : 'Saved'}
-            current={savedCount}
-            max={30}
-          />
-          <LimitBar
-            label={isRu ? 'Публичных' : 'Public'}
-            current={publicCount}
-            max={3}
-          />
+          <LimitBar label={isRu ? 'Сохранено' : 'Saved'} current={savedCount} max={30} />
+          <LimitBar label={isRu ? 'Публичных' : 'Public'} current={publicCount} max={3} />
         </div>
 
         {/* Tabs */}
@@ -120,7 +124,7 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-mono font-bold whitespace-nowrap border-b-2 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-t-lg ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-2.5 text-xs font-mono font-bold whitespace-nowrap border-b-2 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-t-lg ${
                   activeTab === tab.id
                     ? 'border-purple-500 text-purple-400'
                     : 'border-transparent text-gray-400 hover:text-white hover:border-white/20'
@@ -154,7 +158,7 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
         )}
 
         {activeTab === 'published' && (
-          <section aria-label={isRu ? 'Опубликованные палитры' : 'Published palettes'}>
+          <section aria-label={isRu ? 'Публичные палитры' : 'Published palettes'}>
             {publishedPalettes.length === 0 ? (
               <EmptyState
                 locale={locale}
@@ -166,6 +170,57 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {publishedPalettes.map((p) => (
                   <PaletteCard key={p.id} palette={p} locale={locale} showPublicLink />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {activeTab === 'bookmarks' && (
+          <section aria-label={isRu ? 'Закладки' : 'Bookmarks'}>
+            {bookmarks.length === 0 ? (
+              <div className="text-center py-16 space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto">
+                  <Bookmark className="w-8 h-8 text-amber-400" />
+                </div>
+                <p className="text-sm font-mono font-bold text-white">
+                  {isRu ? 'Нет закладок' : 'No bookmarks'}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {isRu
+                    ? 'Открывайте публичные палитры и сохраняйте их в закладки.'
+                    : 'Browse public palettes and bookmark ones you like.'}
+                </p>
+                <Link
+                  href={isRu ? '/ru/explore' : '/explore'}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-xl transition-all"
+                >
+                  {isRu ? 'Галерея' : 'Explore'}
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bookmarks.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`${locale === 'ru' ? '/ru' : ''}/p/${p.slug}`}
+                    className="glass-panel rounded-xl border border-white/10 overflow-hidden group transition-all hover:border-amber-500/40 hover:shadow-lg hover:shadow-amber-900/20"
+                  >
+                    <div className="flex h-14">
+                      {(Array.isArray(p.colors) ? p.colors as Array<{ hex: string }> : []).slice(0, 9).map((c, i) => (
+                        <div key={i} className="flex-1 group-hover:brightness-110 transition-all" style={{ backgroundColor: c.hex }} />
+                      ))}
+                    </div>
+                    <div className="p-3 space-y-1">
+                      <h3 className="text-sm font-mono font-bold text-white truncate group-hover:text-amber-300 transition-colors">
+                        {p.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-gray-400">
+                        <span>@{p.profiles?.username ?? '?'}</span>
+                        <span>{p.color_count} {isRu ? 'цветов' : 'colors'}</span>
+                      </div>
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
@@ -200,7 +255,7 @@ export function DashboardContent({ locale, profile, palettes, savedCount, public
                       className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      {isRu ? 'Посмотреть публичный профиль' : 'View public profile'}
+                      {isRu ? 'Публичный профиль' : 'View public profile'}
                     </Link>
                   )}
                 </dl>
