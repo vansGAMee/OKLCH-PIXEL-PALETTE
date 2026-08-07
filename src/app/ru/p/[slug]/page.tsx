@@ -7,6 +7,7 @@ import { isSupabaseAvailable } from '@/lib/supabase/client';
 import { deserializePaletteRow } from '@/lib/palette/deserialize';
 import { BklitLightnessChart } from '@/components/charts/BklitLightnessChart';
 import { PaletteActions } from '@/components/palette/PaletteActions';
+import { CopyHexButton } from '@/components/palette/CopyHexButton';
 import { Palette, Terminal, User, Copy } from 'lucide-react';
 
 interface PaletteDetailPageProps {
@@ -182,9 +183,7 @@ export default async function RuPaletteDetailPage({ params }: PaletteDetailPageP
                       {c.hex.toUpperCase()} · L:{(c.oklch.l * 100).toFixed(1)}% C:{c.oklch.c.toFixed(3)} H:{c.oklch.h !== null ? `${Math.round(c.oklch.h)}°` : 'neutral'}
                     </div>
                   </div>
-                  <button onClick={() => navigator.clipboard.writeText(c.hex.toUpperCase())} className="p-2 text-gray-400 hover:text-purple-400 transition-colors" title="Скопировать HEX">
-                    <Copy className="w-4 h-4" />
-                  </button>
+                  <CopyHexButton hex={c.hex} locale="ru" />
                 </div>
               ))}
             </div>
