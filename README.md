@@ -8,7 +8,7 @@
 
 A professional, color-theory-driven web application for generating expressive **4-color pixel art palettes** (Shadow, Base, Highlight, Accent) in perceived-uniform **OKLCH** color space with sRGB gamut enforcement.
 
-🔗 **Live Production Demo**: [https://oklch-pixel-palette.vercel.app/](https://oklch-pixel-palette.vercel.app/)
+🔗 **Live Production Demo**: [oklchpalette.ru/](oklchpalette.ru)
 
 ---
 
