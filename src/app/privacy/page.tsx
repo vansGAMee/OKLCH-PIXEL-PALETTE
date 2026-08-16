@@ -54,14 +54,14 @@ export default function PrivacyPage() {
               <strong>Existing Registered Accounts:</strong> Previously created accounts and their saved or public palettes/boards remain stored in our Supabase PostgreSQL database. Existing users may continue to sign in with their existing credentials to manage, edit, or delete their content. Existing account holders may update their profile or delete their account entirely from the Settings page.
             </p>
             <p>
-              <strong>Aggregated Traffic Analytics:</strong> We use <code className="text-purple-300 font-mono text-xs">@vercel/analytics</code> (Vercel Analytics) to collect anonymous, aggregated website traffic statistics (such as total page views, visitor counts, popular pages, referring sources, country of origin, and device types). Vercel Analytics does not use tracking cookies, does not collect personal identifiers, and does not track users across external websites.
+              <strong>Aggregated Traffic Analytics:</strong> We use <code className="text-purple-300 font-mono text-xs">@vercel/analytics</code> (Vercel Analytics) to collect anonymous, aggregated website traffic statistics (such as total page views, visitor counts, popular pages, referring sources, country of origin, and device types). Vercel Web Analytics operates without cookies; visitor identification relies on a temporary one-way hash that is not stored longer than 24 hours, does not collect personal identifiers, and does not track users across external websites.
             </p>
           </section>
 
           <section className="space-y-2">
             <h2 className="text-lg font-mono font-bold text-white">3. What We Do Not Do</h2>
             <ul className="list-disc list-inside space-y-1.5">
-              <li>We do not sell, rent, or lease user data to any third party.</li>
+              <li>We do not sell user data. Data may be processed by third-party infrastructure providers necessary for the operation of the website, including Supabase and Vercel.</li>
               <li>We do not display commercial advertising or banners.</li>
               <li>We do not use advertising trackers or cross-site behavioral tracking scripts (no Google Analytics, no Yandex Metrika, no Facebook Pixel, no PostHog, no Sentry).</li>
               <li>We do not require visitors to provide personal information to access public palettes and color tools.</li>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
           <section className="space-y-2">
             <h2 className="text-lg font-mono font-bold text-white">5. Operator Information & Inquiries</h2>
             <p>
-              <strong>Website Operator:</strong> Ivan Andreevich Kulkin
+              <strong>Website Operator:</strong> Kulkin Ivan Andreevich
             </p>
             <p>
               <strong>Email:</strong>{' '}
