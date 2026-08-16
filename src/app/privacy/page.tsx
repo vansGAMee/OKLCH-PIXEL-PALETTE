@@ -4,7 +4,7 @@ import { Palette, Terminal, Globe } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | OKLCH Pixel Palette',
-  description: 'Privacy policy for OKLCH Pixel Palette — transparent details on data handling and privacy.',
+  description: 'Privacy Policy for OKLCH Pixel Palette — data processing and privacy practices.',
   alternates: { canonical: 'https://oklchpalette.ru/privacy' },
 };
 
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
               <strong>Website Visitors:</strong> We do not collect or request your name, email address, password, or any other identifying personal details. When you use the OKLCH Palette Studio editor, your working parameters (e.g., base color, harmony, color count) are stored locally on your device in your browser&apos;s <code className="text-purple-300 font-mono text-xs">localStorage</code> (<code className="text-purple-300 font-mono text-xs">oklch_studio_state_v1</code>). This data remains on your computer and is not transmitted to our servers.
             </p>
             <p>
-              <strong>Public Palettes:</strong> Supabase database infrastructure is used solely to store publicly available palettes and color schemes.
+              <strong>Public Palettes & Database:</strong> Supabase is used for storing public palettes and technical data necessary for the operation of the website.
             </p>
             <p>
               <strong>Aggregated Traffic Analytics:</strong> We use <code className="text-purple-300 font-mono text-xs">@vercel/analytics</code> (Vercel Analytics) to collect anonymous, aggregated website traffic statistics (such as total page views, visitor counts, popular pages, referring sources, country of origin, and device types). Vercel Web Analytics operates without cookies; visitor identification relies on a temporary one-way hash that is not stored longer than 24 hours, does not collect personal identifiers, and does not track users across external websites.
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
             <h2 className="text-lg font-mono font-bold text-white">4. Third-Party Services</h2>
             <p>The platform relies on the following infrastructure providers:</p>
             <ul className="list-disc list-inside space-y-1.5">
-              <li><strong>Supabase:</strong> Cloud database infrastructure used for storing public palette records.</li>
+              <li><strong>Supabase:</strong> Cloud database infrastructure used for storing public palettes and technical data necessary for the operation of the website.</li>
               <li><strong>Vercel:</strong> Web hosting and aggregated traffic analytics.</li>
             </ul>
           </section>
