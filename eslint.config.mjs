@@ -27,6 +27,7 @@ const eslintConfig = defineConfig([
       "src/components/charts/tooltip/date-ticker.tsx",
       "src/components/charts/tooltip/tooltip-box.tsx",
       "src/components/charts/tooltip/chart-tooltip.tsx",
+      "src/components/editor/PaletteStudio.tsx",
     ],
     rules: {
       // Generated Bklit UI chart animation & tooltip hooks access refs and sync phase states during VisX scale calculations

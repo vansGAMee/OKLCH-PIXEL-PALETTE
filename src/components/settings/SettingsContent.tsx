@@ -7,7 +7,7 @@ import React, { useActionState } from 'react';
 import Link from 'next/link';
 import { updateProfile } from '@/app/actions/auth';
 import { Profile } from '@/lib/supabase/types';
-import { Palette, ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { Palette, ArrowLeft, Check, Loader2, Terminal } from 'lucide-react';
 
 interface SettingsContentProps {
   locale: 'en' | 'ru';
@@ -160,6 +160,20 @@ export function SettingsContent({ locale, profile, email }: SettingsContentProps
           </form>
         </div>
       </main>
+
+      <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex items-center gap-1">
+          <Terminal className="w-3.5 h-3.5 text-purple-400 inline" />
+          <span>OKLCH Pixel Palette &copy; {new Date().getFullYear()}</span>
+        </div>
+        <span className="hidden sm:inline text-gray-700">·</span>
+        <Link
+          href={isRu ? '/ru/privacy' : '/privacy'}
+          className="text-gray-400 hover:text-white transition-colors underline-offset-4 hover:underline"
+        >
+          {isRu ? 'Политика конфиденциальности' : 'Privacy Policy'}
+        </Link>
+      </footer>
     </div>
   );
 }

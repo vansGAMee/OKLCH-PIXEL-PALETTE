@@ -3,17 +3,15 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { SignUpForm } from '@/components/auth/SignUpForm';
-import { isSupabaseAvailable } from '@/lib/supabase/client';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
-  title: 'Создать аккаунт | OKLCH Pixel Palette',
+  title: 'Регистрация временно недоступна | OKLCH Pixel Palette',
   robots: { index: false, follow: false },
 };
 
 export default async function RuSignupPage() {
   const supabase = await createClient();
-  const available = Boolean(supabase);
 
   if (supabase) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,8 +22,8 @@ export default async function RuSignupPage() {
   return (
     <AuthForm
       locale="ru"
-      title="Создать аккаунт"
-      subtitle="Бесплатно. Без кредитной карты."
+      title="Регистрация"
+      subtitle="Регистрация временно недоступна."
       footerContent={
         <span>
           Уже есть аккаунт?{' '}
@@ -35,22 +33,7 @@ export default async function RuSignupPage() {
         </span>
       }
     >
-      {available ? (
-        <SignUpForm locale="ru" />
-      ) : (
-        <div className="text-center py-6 space-y-3">
-          <div className="text-3xl">🔒</div>
-          <p className="text-xs font-mono text-gray-400">
-            Регистрация пока не настроена.
-          </p>
-          <p className="text-xs text-gray-500">
-            Редактор работает без аккаунта.{' '}
-            <Link href="/ru/create" className="text-purple-400 hover:text-purple-300">
-              Открыть редактор →
-            </Link>
-          </p>
-        </div>
-      )}
+      <SignUpForm locale="ru" />
     </AuthForm>
   );
 }

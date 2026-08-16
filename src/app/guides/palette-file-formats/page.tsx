@@ -179,9 +179,18 @@ export default function PaletteFileFormatsGuide() {
         </article>
       </main>
 
-      <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center">
-        <Terminal className="w-3.5 h-3.5 text-purple-400 inline mr-1" />
-        OKLCH Pixel Palette &copy; {new Date().getFullYear()}
+      <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex items-center gap-1">
+          <Terminal className="w-3.5 h-3.5 text-purple-400 inline" />
+          <span>OKLCH Pixel Palette &copy; {new Date().getFullYear()}</span>
+        </div>
+        <span className="hidden sm:inline text-gray-700">·</span>
+        <Link
+          href="/privacy"
+          className="text-gray-400 hover:text-white transition-colors underline-offset-4 hover:underline"
+        >
+          Privacy Policy
+        </Link>
       </footer>
     </div>
   );

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { SignInForm } from '@/components/auth/SignInForm';
-import { isSupabaseAvailable } from '@/lib/supabase/client';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
@@ -28,9 +27,9 @@ export default async function RuLoginPage() {
       subtitle="Доступ к сохранённым палитрам и панели управления."
       footerContent={
         <span>
-          Нет аккаунта?{' '}
-          <Link href="/ru/signup" className="text-purple-400 hover:text-purple-300 transition-colors">
-            Создать бесплатно
+          Редактор работает без аккаунта.{' '}
+          <Link href="/ru/create" className="text-purple-400 hover:text-purple-300 transition-colors">
+            Открыть редактор →
           </Link>
         </span>
       }

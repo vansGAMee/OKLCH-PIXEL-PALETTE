@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/tools/pixel-art-palette-generator`, changeFrequency: 'monthly', priority: 0.80 },
     // Legal
     { url: `${base}/privacy`, changeFrequency: 'yearly', priority: 0.20 },
+    { url: `${base}/ru/privacy`, changeFrequency: 'yearly', priority: 0.20 },
     { url: `${base}/terms`, changeFrequency: 'yearly', priority: 0.20 },
   ];
 

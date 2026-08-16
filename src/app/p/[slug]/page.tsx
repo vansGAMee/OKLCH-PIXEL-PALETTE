@@ -8,7 +8,7 @@ import { deserializePaletteRow } from '@/lib/palette/deserialize';
 import { BklitLightnessChart } from '@/components/charts/BklitLightnessChart';
 import { PaletteActions } from '@/components/palette/PaletteActions';
 import { CopyHexButton } from '@/components/palette/CopyHexButton';
-import { Palette, Terminal, User, Copy } from 'lucide-react';
+import { Palette, Terminal, User } from 'lucide-react';
 
 interface PaletteDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -134,7 +134,6 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
   }
 
   const colors = Array.isArray(row.colors) ? row.colors as Array<{ hex: string; role: string; oklch: { l: number; c: number; h: number | null } }> : [];
-  const isRu = false; // EN page; RU page imports this with locale='ru'
 
   return (
     <div className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col selection:bg-purple-600 selection:text-white">
@@ -243,9 +242,18 @@ export default async function PaletteDetailPage({ params }: PaletteDetailPagePro
         </div>
       </main>
 
-      <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center">
-        <Terminal className="w-3.5 h-3.5 text-purple-400 inline mr-1" />
-        OKLCH Pixel Palette &copy; {new Date().getFullYear()}
+      <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex items-center gap-1">
+          <Terminal className="w-3.5 h-3.5 text-purple-400 inline" />
+          <span>OKLCH Pixel Palette &copy; {new Date().getFullYear()}</span>
+        </div>
+        <span className="hidden sm:inline text-gray-700">·</span>
+        <Link
+          href="/privacy"
+          className="text-gray-400 hover:text-white transition-colors underline-offset-4 hover:underline"
+        >
+          Privacy Policy
+        </Link>
       </footer>
     </div>
   );

@@ -471,8 +471,8 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
             <Link href="/tools/pixel-art-palette-generator" className="hover:text-white transition-colors">
               {locale === 'ru' ? 'Генератор' : 'Generator'}
             </Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">
-              {locale === 'ru' ? 'Конфиденциальность' : 'Privacy'}
+            <Link href={locale === 'ru' ? '/ru/privacy' : '/privacy'} className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Политика конфиденциальности' : 'Privacy Policy'}
             </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               {locale === 'ru' ? 'Условия' : 'Terms'}

@@ -12,10 +12,6 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 // ---------- Schemas ----------
-const signUpSchema = z.object({
-  email: z.string().email('Invalid email'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-});
 
 const signInSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -32,39 +28,10 @@ const usernameSchema = z.object({
 
 export type AuthResult = { error: string } | { success: true };
 
-// ---------- Sign Up ----------
-export async function signUp(formData: FormData): Promise<AuthResult> {
-  const raw = {
-    email: formData.get('email'),
-    password: formData.get('password'),
-  };
-
-  const parsed = signUpSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const supabase = await createClient();
-  if (!supabase) {
-    return { error: 'Account features are currently unavailable. Try again later.' };
-  }
-
-  const { error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      // Disable email confirmation for launch mode (no SMTP configured)
-      // emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?type=signup`,
-    },
-  });
-
-  if (error) {
-    // No account enumeration — return generic message
-    console.error('[auth] signUp error (code):', error.code);
-    return { error: 'Could not create account. Please try again.' };
-  }
-
-  return { success: true };
+// ---------- Sign Up (Disabled) ----------
+export async function signUp(): Promise<AuthResult> {
+  // New user registration is disabled to minimize personal data processing
+  return { error: 'Registration is temporarily unavailable.' };
 }
 
 // ---------- Sign In ----------
@@ -186,7 +153,6 @@ export async function updateProfile(formData: FormData): Promise<AuthResult> {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return { error: 'Not authenticated' };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('profiles')
     .update({

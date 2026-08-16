@@ -19,16 +19,16 @@ export default async function LoginPage() {
     if (user) redirect('/dashboard');
   }
 
-return (
+  return (
     <AuthForm
       locale="en"
       title="Sign in"
       subtitle="Access your saved palettes and dashboard."
       footerContent={
         <span>
-          No account?{' '}
-          <Link href="/signup" className="text-purple-400 hover:text-purple-300 transition-colors">
-            Create one free
+          The editor works without an account.{' '}
+          <Link href="/create" className="text-purple-400 hover:text-purple-300 transition-colors">
+            Open Studio →
           </Link>
         </span>
       }

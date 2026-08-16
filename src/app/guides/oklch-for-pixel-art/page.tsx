@@ -156,7 +156,7 @@ export default function OklchForPixelArtGuide() {
       <footer className="border-t border-white/10 py-6 text-xs font-mono text-gray-500 text-center">
         <Terminal className="w-3.5 h-3.5 text-purple-400 inline mr-1" />
         OKLCH Pixel Palette &copy; {new Date().getFullYear()} ·{' '}
-        <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy</Link>
+        <Link href="/privacy" className="hover:text-gray-400 transition-colors">Privacy Policy</Link>
         {' · '}
         <Link href="/terms" className="hover:text-gray-400 transition-colors">Terms</Link>
       </footer>

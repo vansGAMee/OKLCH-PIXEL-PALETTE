@@ -321,11 +321,16 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
       {/* Minimal Footer */}
       <footer className="border-t border-white/10 bg-zinc-950 py-6 text-xs font-mono text-gray-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Terminal className="w-4 h-4 text-purple-400" />
             <span>OKLCH Pixel Palette Studio &copy; {new Date().getFullYear()}</span>
             <span className="text-gray-700">|</span>
-            <span className="text-gray-400">Next.js &bull; Tailwind CSS &bull; Motion &bull; Bklit UI</span>
+            <Link
+              href={isRu ? '/ru/privacy' : '/privacy'}
+              className="text-gray-400 hover:text-white transition-colors underline-offset-4 hover:underline"
+            >
+              {isRu ? 'Политика конфиденциальности' : 'Privacy Policy'}
+            </Link>
           </div>
 
           <div className="flex items-center gap-4 text-gray-400">
