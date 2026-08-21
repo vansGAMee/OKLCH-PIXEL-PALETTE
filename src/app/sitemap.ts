@@ -16,7 +16,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Guides (EN)
     { url: `${base}/guides/oklch-for-pixel-art`, changeFrequency: 'monthly', priority: 0.75 },
     { url: `${base}/guides/palette-file-formats`, changeFrequency: 'monthly', priority: 0.70 },
-    { url: `${base}/guides/pixel-art-lightness`, changeFrequency: 'monthly', priority: 0.70 },
     // Tools
     { url: `${base}/tools/pixel-art-palette-generator`, changeFrequency: 'monthly', priority: 0.80 },
     // Legal

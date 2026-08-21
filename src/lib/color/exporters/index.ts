@@ -5,3 +5,4 @@ export { generateJascPalString } from './exportJascPal';
 export { generateHexListString } from './exportHex';
 export { generateTxtString } from './exportTxt';
 export { generateJsonString } from './exportJson';
+export { generateCssString } from './exportCss';

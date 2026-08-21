@@ -7,6 +7,7 @@ import {
   generateHexListString,
   generateTxtString,
   generateJsonString,
+  generateCssString,
 } from '../exporters';
 
 describe('Artist Palette Exporters Unit Tests', () => {
@@ -127,6 +128,18 @@ describe('Artist Palette Exporters Unit Tests', () => {
     });
   });
 
+  describe('CSS Custom Properties (.css)', () => {
+    it('exports every color with an sRGB fallback and OKLCH override', () => {
+      const css = generateCssString(p9);
+
+      expect(css).toContain(':root {');
+      expect(css).toContain('@supports (color: oklch(50% 0 0))');
+      expect(css.match(/--palette-\d+-/g)).toHaveLength(18);
+      expect(css).toContain(p9.colors[0].hex.toUpperCase());
+      expect(css).toContain('oklch(');
+    });
+  });
+
   describe('Graceful Fallback for Invalid Palettes', () => {
     it('handles empty or malformed palette objects without throwing', () => {
       const invalid = {} as unknown as Parameters<typeof generateGplString>[0];
@@ -135,6 +148,7 @@ describe('Artist Palette Exporters Unit Tests', () => {
       expect(() => generateHexListString(invalid)).not.toThrow();
       expect(() => generateTxtString(invalid)).not.toThrow();
       expect(() => generateJsonString(invalid)).not.toThrow();
+      expect(() => generateCssString(invalid)).not.toThrow();
     });
   });
 });

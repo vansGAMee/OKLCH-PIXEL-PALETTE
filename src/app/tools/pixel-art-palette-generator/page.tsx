@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { Palette, Terminal, ChevronRight, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Pixel Art Palette Generator — OKLCH Colors | OKLCH Pixel Palette',
-  description: 'Generate perceptually balanced pixel art palettes using OKLCH color space. 2–9 colors, 6 harmony modes, instant export to GPL, JASC PAL, HEX, PNG.',
+  title: 'Free OKLCH Pixel Art Palette Generator & CSS Export',
+  description: 'Build perceptually balanced 2–9 color pixel-art palettes in OKLCH. Preview sprites and export CSS variables, Aseprite PAL, GPL, HEX, JSON or PNG.',
   alternates: { canonical: 'https://oklchpalette.ru/tools/pixel-art-palette-generator' },
   openGraph: {
-    title: 'Pixel Art Palette Generator — OKLCH',
-    description: 'The only free palette generator built on OKLCH. Even lightness. No muddy midtones.',
+    title: 'Free OKLCH Pixel Art Palette Generator & CSS Export',
+    description: 'Build balanced pixel-art palettes, preview sprites, and export production-ready CSS variables or artist palette files.',
     type: 'website',
   },
 };
@@ -19,7 +19,7 @@ const FEATURES = [
   { title: 'sRGB Gamut Guard', desc: 'Every generated color is clamped to sRGB with Delta E verification — no out-of-gamut surprises.' },
   { title: 'Lightness Ladder', desc: 'Visual bar chart sorted by L-value so you can see lightness distribution instantly.' },
   { title: 'Live Pixel Preview', desc: 'See your palette on a potion, gem, shield, and hero sprite before exporting.' },
-  { title: 'Artist File Export', desc: 'GPL (GIMP), JASC PAL (Aseprite), HEX list, JSON with OKLCH values, branded PNG card.' },
+  { title: 'CSS & Artist Export', desc: 'CSS variables with HEX fallbacks, GPL (GIMP), JASC PAL (Aseprite), HEX, JSON, and branded PNG.' },
 ];
 
 export default function PixelArtPaletteGeneratorPage() {
@@ -109,7 +109,7 @@ export default function PixelArtPaletteGeneratorPage() {
             </div>
             <div className="glass-panel rounded-xl border border-white/10 p-5 space-y-2">
               <dt className="text-sm font-mono font-bold text-white">What software accepts the export files?</dt>
-              <dd className="text-xs text-gray-300 font-sans">GPL works in GIMP, Inkscape, and Krita. JASC PAL works in Aseprite, GraphicsGale, and GrafX2. HEX works in Figma, web code, and Lospec.</dd>
+              <dd className="text-xs text-gray-300 font-sans">CSS export works directly in web projects with HEX fallbacks and OKLCH overrides. GPL works in GIMP, Inkscape, and Krita; JASC PAL works in Aseprite, GraphicsGale, and GrafX2.</dd>
             </div>
           </dl>
         </section>

@@ -101,9 +101,9 @@ Palette cards act as accessible copy controls with:
 - animated feedback
 - `prefers-reduced-motion` support
 
-### 🖼 PNG export
+### 💾 CSS and artist-file export
 
-Export the generated palette as a downloadable PNG swatch.
+Export production-ready CSS custom properties with HEX fallbacks and native OKLCH overrides. The same menu also downloads PNG, GIMP GPL, JASC PAL, HEX, TXT, and structured JSON files.
 
 ### 💾 Persistent studio state
 

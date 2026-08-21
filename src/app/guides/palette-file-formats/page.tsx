@@ -3,14 +3,30 @@ import Link from 'next/link';
 import { Palette, Terminal, ChevronRight, ArrowRight, Download } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Pixel Art Palette File Formats: GPL, PAL, HEX, JSON | OKLCH Pixel Palette',
-  description: 'Complete guide to pixel art palette file formats — GIMP GPL, JASC PAL, HEX list, JSON. What each format is for and which software reads them.',
+  title: 'Pixel Palette Formats: CSS, GPL, PAL, HEX & JSON',
+  description: 'Compare CSS variables, GIMP GPL, JASC PAL, HEX and JSON palette formats. See which apps support each format and choose the right pixel-art workflow.',
   alternates: {
     canonical: 'https://oklchpalette.ru/guides/palette-file-formats',
   },
 };
 
 const FORMATS = [
+  {
+    name: 'CSS Variables (.css)',
+    badge: 'Web Ready',
+    badgeColor: 'text-fuchsia-300 border-fuchsia-500/20 bg-fuchsia-500/10',
+    apps: ['CSS', 'React', 'Vue', 'Svelte', 'Design systems'],
+    desc: 'Production-ready custom properties with ordinary HEX values as a universal fallback and perceptual OKLCH values inside an @supports block for modern browsers.',
+    sample: `:root {
+  --palette-1-shadow: #1E1B4B;
+}
+
+@supports (color: oklch(50% 0 0)) {
+  :root {
+    --palette-1-shadow: oklch(18% 0.12 280);
+  }
+}`,
+  },
   {
     name: 'GIMP Palette (.gpl)',
     badge: 'Universal',
@@ -88,7 +104,7 @@ export default function PaletteFileFormatsGuide() {
         <nav className="text-xs font-mono text-gray-500 flex items-center gap-1.5">
           <Link href="/" className="hover:text-purple-400 transition-colors">Home</Link>
           <span>/</span>
-          <Link href="/guides" className="hover:text-purple-400 transition-colors">Guides</Link>
+          <span>Guides</span>
           <span>/</span>
           <span className="text-gray-300">Palette File Formats</span>
         </nav>
@@ -102,7 +118,7 @@ export default function PaletteFileFormatsGuide() {
               Palette File Formats
             </h1>
             <p className="text-base text-gray-300 font-sans leading-relaxed">
-              The right palette format depends on your workflow. GIMP GPL works everywhere. JASC PAL is native to pixel art apps. HEX is for web. JSON preserves OKLCH data. Here&apos;s what you need to know.
+              The right palette format depends on your workflow. CSS is ready for web projects. GIMP GPL works across art tools. JASC PAL is native to pixel-art apps. JSON preserves OKLCH data.
             </p>
           </header>
 
@@ -118,6 +134,12 @@ export default function PaletteFileFormatsGuide() {
                 </tr>
               </thead>
               <tbody className="text-gray-300">
+                <tr className="border-b border-white/5">
+                  <td className="py-2 pr-4 text-white font-bold">CSS Variables</td>
+                  <td className="py-2 pr-4">.css</td>
+                  <td className="py-2 pr-4">HEX + OKLCH</td>
+                  <td className="py-2">Web apps, design systems</td>
+                </tr>
                 <tr className="border-b border-white/5">
                   <td className="py-2 pr-4 text-white font-bold">GIMP GPL</td>
                   <td className="py-2 pr-4">.gpl</td>
@@ -168,7 +190,7 @@ export default function PaletteFileFormatsGuide() {
           <section className="glass-panel rounded-2xl border border-purple-500/30 p-8 text-center space-y-4">
             <Download className="w-8 h-8 text-purple-400 mx-auto" />
             <h2 className="text-xl font-mono font-bold text-white">Export in all formats, free</h2>
-            <p className="text-sm text-gray-300">OKLCH Pixel Palette exports GPL, PAL, HEX, JSON, and PNG in one click. No account required.</p>
+            <p className="text-sm text-gray-300">Export CSS, GPL, PAL, HEX, JSON, and PNG in one click. No account required.</p>
             <Link
               href="/create"
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-xl transition-all"
