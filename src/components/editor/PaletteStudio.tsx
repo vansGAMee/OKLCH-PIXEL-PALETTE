@@ -7,6 +7,7 @@ import { HarmonyMode, Palette, PaletteColor } from '@/types/palette';
 import { generatePalette } from '@/lib/color/generator';
 import { ColorPicker } from '@/components/controls/ColorPicker';
 import { HarmonySelector } from '@/components/controls/HarmonySelector';
+import { AiPaletteInput, type AiApplyResult } from '@/components/controls/AiPaletteInput';
 import { ActionToolbar } from '@/components/controls/ActionToolbar';
 import { PaletteGrid } from '@/components/palette/PaletteGrid';
 import { BklitLightnessChart } from '@/components/charts/BklitLightnessChart';
@@ -157,6 +158,13 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
     setPaletteName('');
   }, []);
 
+  const handleAiApply = useCallback((result: AiApplyResult) => {
+    setBaseHex(result.baseHex);
+    setHarmony(result.harmony);
+    setSeed(result.seed);
+    setColorCount(Math.max(4, Math.min(9, result.count)));
+  }, []);
+
   const handleImportColors = useCallback((colors: PaletteColor[]) => {
     if (!colors || colors.length === 0) return;
     const baseCol = colors.find((col) => col.role === 'base') || colors[0];
@@ -253,6 +261,11 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
         <section aria-label="Palette Controls" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ColorPicker value={baseHex} onChange={setBaseHex} locale={locale} />
           <HarmonySelector harmony={harmony} onChange={setHarmony} locale={locale} />
+        </section>
+
+        {/* AI Palette Generation */}
+        <section aria-label={isRu ? 'AI генерация' : 'AI generation'}>
+          <AiPaletteInput onApply={handleAiApply} locale={locale} />
         </section>
 
         {/* Palette Name Section */}

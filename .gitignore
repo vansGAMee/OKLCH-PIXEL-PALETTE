@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ML - generated/large files, not shipped
+ml/.venv/
+ml/.cache/
+ml/data/
+ml/checkpoints/
+__pycache__/
+*.pyc
+
+# ORT WASM assets - deterministically regenerated from npm
+/public/ort/

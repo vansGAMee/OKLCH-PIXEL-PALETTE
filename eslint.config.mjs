@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/ort/**",
+    "ml/**",
   ]),
   // Minimal targeted rule overrides for Bklit UI registry-generated chart components
   {
