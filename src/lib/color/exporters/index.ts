@@ -6,3 +6,4 @@ export { generateHexListString } from './exportHex';
 export { generateTxtString } from './exportTxt';
 export { generateJsonString } from './exportJson';
 export { generateCssString } from './exportCss';
+export { generateTailwindConfigString, generateDesignTokensJson } from './exportTailwind';

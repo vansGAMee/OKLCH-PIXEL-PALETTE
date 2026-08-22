@@ -13,9 +13,27 @@ interface ProfilePageProps {
 
 export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
   const { username } = await params;
+  const supabase = await createClient();
+
+  let hasPublicPalettes = false;
+  if (supabase) {
+    const { count } = await (supabase as any)
+      .from('palettes')
+      .select('id', { count: 'exact', head: true })
+      .eq('owner_id', (await (supabase as any)
+        .from('profiles')
+        .select('id')
+        .eq('username', username.toLowerCase())
+        .single()
+        .then((r: any) => r.data?.id ?? '')) ?? '')
+      .eq('visibility', 'public');
+    hasPublicPalettes = (count ?? 0) > 0;
+  }
+
   return {
     title: `@${username} | OKLCH Pixel Palette`,
     description: `Public palettes by @${username} on OKLCH Pixel Palette.`,
+    robots: hasPublicPalettes ? { index: true, follow: true } : { index: false, follow: false },
     alternates: {
       canonical: `https://oklchpalette.ru/u/${username}`,
     },

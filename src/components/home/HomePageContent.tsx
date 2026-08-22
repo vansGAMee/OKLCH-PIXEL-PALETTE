@@ -535,14 +535,17 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
             <Link href={createHref} className="hover:text-white transition-colors">
               {t.footer.studioLink}
             </Link>
+            <Link href={locale === 'ru' ? '/ru/tools' : '/tools'} className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Инструменты' : 'Tools'}
+            </Link>
+            <Link href={locale === 'ru' ? '/ru/palettes' : '/palettes'} className="hover:text-white transition-colors">
+              {locale === 'ru' ? 'Палитры' : 'Palettes'}
+            </Link>
             <Link href={locale === 'ru' ? '/ru/explore' : '/explore'} className="hover:text-white transition-colors">
               {locale === 'ru' ? 'Галерея' : 'Explore'}
             </Link>
             <Link href="/guides/oklch-for-pixel-art" className="hover:text-white transition-colors">
               {locale === 'ru' ? 'Гайды' : 'Guides'}
-            </Link>
-            <Link href="/tools/pixel-art-palette-generator" className="hover:text-white transition-colors">
-              {locale === 'ru' ? 'Генератор' : 'Generator'}
             </Link>
             <Link href={locale === 'ru' ? '/ru/privacy' : '/privacy'} className="hover:text-white transition-colors">
               {locale === 'ru' ? 'Политика конфиденциальности' : 'Privacy Policy'}
