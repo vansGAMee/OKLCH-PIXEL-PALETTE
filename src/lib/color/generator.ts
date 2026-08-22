@@ -169,15 +169,13 @@ export function repairPalette(
 
 /**
  * Main palette generator function.
- * Supports palette sizes from 2 to 9 colors.
+ * Produces the 4 semantic anchors: Shadow, Base, Highlight, Accent.
  */
 export function generatePalette(
   hexInput: string,
   harmony: HarmonyMode = 'splitComplementary',
-  seed: number = 0,
-  colorCount: number = 4
+  seed: number = 0
 ): Palette {
-  const count = clamp(Math.round(colorCount), 2, 9);
   const normHex = normalizeHex(hexInput) || '#5b21b6';
   const baseOklch = hexToOklch(normHex) || { l: 0.35, c: 0.18, h: 290 };
 
@@ -233,62 +231,17 @@ export function generatePalette(
   const highlightColor = createGeneratedColor('highlight', repaired.highlight);
   const accentColor = createGeneratedColor('accent', repaired.accent);
 
-  // Build the colors array (Single Source of Truth) based on count
-  const colors: PaletteColor[] = [];
+  const colors = [shadowColor, basePaletteColor, highlightColor, accentColor];
+  const deduplicated = deduplicateColors(colors);
 
-  if (count === 2) {
-    colors.push(shadowColor);
-    colors.push(basePaletteColor);
-  } else if (count === 3) {
-    colors.push(shadowColor);
-    colors.push(basePaletteColor);
-    colors.push(highlightColor);
-  } else {
-    // 4 to 9 colors: start with standard 4 core colors
-    colors.push(shadowColor);
-    colors.push(basePaletteColor);
-    colors.push(highlightColor);
-    colors.push(accentColor);
-
-    // Extra colors (5 to 9)
-    const extraSpecs: { l: number; c: number; hShift: number }[] = [
-      // color 5: mid shadow
-      { l: (repaired.shadow.l + baseOklch.l) / 2, c: (repaired.shadow.l > 0.01 ? (repaired.shadow.c + baseOklch.c) / 2 : baseOklch.c * 0.5), hShift: -15 },
-      // color 6: mid highlight
-      { l: (baseOklch.l + repaired.highlight.l) / 2, c: (baseOklch.c + repaired.highlight.c) / 2, hShift: 15 },
-      // color 7: deep shadow
-      { l: Math.max(0.03, repaired.shadow.l * 0.6), c: repaired.shadow.c * 0.7, hShift: -30 },
-      // color 8: vibrant accent variation
-      { l: clamp(repaired.accent.l + 0.08, 0.15, 0.88), c: clamp(repaired.accent.c * 1.1, 0.05, 0.22), hShift: 45 },
-      // color 9: bright highlight
-      { l: Math.min(0.98, repaired.highlight.l + (1 - repaired.highlight.l) * 0.5), c: repaired.highlight.c * 0.6, hShift: 30 },
-    ];
-
-    for (let i = 4; i < count; i++) {
-      const spec = extraSpecs[i - 4];
-      const baseH = baseOklch.h ?? 0;
-      const targetH = (baseH + spec.hShift + 360) % 360;
-      const rawOklch: OklchColor = {
-        l: clamp(spec.l, 0.02, 0.98),
-        c: clamp(spec.c, 0.005, 0.25),
-        h: targetH,
-      };
-      colors.push(createGeneratedColor(`color${i + 1}`, rawOklch));
-    }
-  }
-
-  // Deduplication pass: ensure no duplicate HEX or visually indistinguishable colors (DeltaE < 0.035)
-  const deduplicatedColors = deduplicateColors(colors);
-
-  // Find or fallback core roles directly from deduplicated colors array (Single Source of Truth)
-  const shadow = deduplicatedColors.find((c) => c.role === 'shadow') || deduplicatedColors[0];
-  const base = deduplicatedColors.find((c) => c.role === 'base') || deduplicatedColors[1] || deduplicatedColors[0];
-  const highlight = deduplicatedColors.find((c) => c.role === 'highlight') || deduplicatedColors[deduplicatedColors.length - 1] || base;
-  const accent = deduplicatedColors.find((c) => c.role === 'accent') || highlight || base;
+  const shadow = deduplicated.find((c) => c.role === 'shadow') || deduplicated[0];
+  const base = deduplicated.find((c) => c.role === 'base') || deduplicated[1] || deduplicated[0];
+  const highlight = deduplicated.find((c) => c.role === 'highlight') || deduplicated[2] || base;
+  const accent = deduplicated.find((c) => c.role === 'accent') || deduplicated[3] || highlight;
 
   return {
-    colors: deduplicatedColors,
-    count,
+    colors: deduplicated,
+    count: 4,
     shadow,
     base,
     highlight,

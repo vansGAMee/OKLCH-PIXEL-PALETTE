@@ -4,6 +4,7 @@
  */
 import { describe, test, expect } from 'vitest';
 import { generatePalette } from '../generator';
+import { extendPalette } from '../extendPalette';
 import { inspectPalette } from '../qualityInspector';
 import { parseGpl } from '../../import/parsers/parseGpl';
 import { parseJson } from '../../import/parsers/parseJson';
@@ -13,7 +14,7 @@ describe('Studio State & Performance Integration', () => {
     const start = performance.now();
     for (let i = 0; i < 50; i++) {
       const hueHex = `#${((i * 5) % 255).toString(16).padStart(2, '0')}21b6`;
-      generatePalette(hueHex, 'splitComplementary', 0, 4);
+      generatePalette(hueHex, 'splitComplementary', 0);
     }
     const elapsed = performance.now() - start;
     const avgPerCall = elapsed / 50;
@@ -21,7 +22,7 @@ describe('Studio State & Performance Integration', () => {
   });
 
   test('qualityInspector inspects generated palette under 1ms', () => {
-    const palette = generatePalette('#5b21b6', 'splitComplementary', 0, 4);
+    const palette = generatePalette('#5b21b6', 'splitComplementary', 0);
     const start = performance.now();
     for (let i = 0; i < 50; i++) {
       inspectPalette(palette);
@@ -47,10 +48,11 @@ Columns: 4
   });
 
   test('importing exported JSON format roundtrips cleanly', () => {
-    const palette = generatePalette('#7c3aed', 'analogous', 2, 5);
+    const palette = generatePalette('#7c3aed', 'analogous', 2);
+    const displayColors = extendPalette(palette, 5);
     const jsonStr = JSON.stringify({
       name: 'Import Test',
-      colors: palette.colors,
+      colors: displayColors,
     });
     const parsed = parseJson(jsonStr);
     expect(parsed.error).toBeUndefined();

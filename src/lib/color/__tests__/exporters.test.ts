@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generatePalette } from '../generator';
+import { extendPalette } from '../extendPalette';
+import { Palette } from '@/types/palette';
 import {
   sanitizeFilename,
   generateGplString,
@@ -11,8 +13,9 @@ import {
 } from '../exporters';
 
 describe('Artist Palette Exporters Unit Tests', () => {
-  const p2 = generatePalette('#5b21b6', 'splitComplementary', 0, 2);
-  const p9 = generatePalette('#5b21b6', 'splitComplementary', 0, 9);
+  const p4 = generatePalette('#5b21b6', 'splitComplementary', 0);
+  const p2: Palette = { ...p4, count: 2, colors: [p4.shadow, p4.base] };
+  const p9: Palette = { ...p4, count: 9, colors: extendPalette(p4, 9) };
 
   describe('Sanitize Filename', () => {
     it('produces cross-platform safe filenames', () => {

@@ -1,60 +1,73 @@
 /**
  * inference.ts
- * Lazy-loads ONNX model + WASM runtime.
- * One session, one inference at a time.
- * No React logic; no ontology rules; pure neural inference.
+ * Multilingual semantic palette generation using local multilingual-e5-small encoder
+ * + project-trained palette regression head (palette-head.onnx).
+ * Runs completely locally in browser/Node via ONNX WASM & @huggingface/transformers.
  */
 'use client';
 
 import type { AiPaletteIntent } from './paletteAdapter';
-import { PalettaTokenizer, normalizeText, stablePromptHash } from './tokenizer';
+import { normalizeText, stablePromptHash } from './tokenizer';
 import { decodeCnnOutput } from './paletteAdapter';
 
-// ONNX runtime is loaded lazily
-let sessionPromise: Promise<import('onnxruntime-web').InferenceSession> | null = null;
-let tokenizerInstance: PalettaTokenizer | null = null;
+let encoderPromise: Promise<{
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tokenizer: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  model: any;
+}> | null = null;
+let headSessionPromise: Promise<import('onnxruntime-web').InferenceSession> | null = null;
 
-const MODEL_PATH = '/models/paletta-v1.onnx';
-const VOCAB_PATH = '/models/paletta-v1.vocab.json';
+const HEAD_MODEL_PATH = '/models/palette-head.onnx';
+const ENCODER_MODEL_ID = 'multilingual-e5-small';
 
-let customVocabData: Record<string, number> | null = null;
-let customModelData: ArrayBuffer | Uint8Array | string | null = null;
+let customHeadModelData: ArrayBuffer | Uint8Array | string | null = null;
 
-export function setTestArtifacts(vocab: Record<string, number>, model: ArrayBuffer | Uint8Array | string) {
-  customVocabData = vocab;
-  customModelData = model;
-  sessionPromise = null;
-  tokenizerInstance = null;
+export function setTestArtifacts(_vocab: Record<string, number>, model: ArrayBuffer | Uint8Array | string) {
+  customHeadModelData = model;
+  headSessionPromise = null;
+  encoderPromise = null;
 }
 
-async function getTokenizer(): Promise<PalettaTokenizer> {
-  if (tokenizerInstance) return tokenizerInstance;
-  let vocab: Record<string, number>;
-  if (customVocabData) {
-    vocab = customVocabData;
-  } else {
-    const res = await fetch(VOCAB_PATH);
-    if (!res.ok) throw new Error(`Failed to load vocab: ${res.status}`);
-    vocab = await res.json();
-  }
-  tokenizerInstance = new PalettaTokenizer(vocab, 96);
-  return tokenizerInstance;
+async function getEncoder() {
+  if (encoderPromise) return encoderPromise;
+
+  encoderPromise = (async () => {
+    const { AutoTokenizer, AutoModel, env } = await import('@huggingface/transformers');
+    env.allowLocalModels = true;
+    env.allowRemoteModels = false;
+    env.localModelPath = typeof window !== 'undefined' ? '/models/' : './public/models/';
+
+    if (typeof window !== 'undefined') {
+      if (env.backends?.onnx?.wasm) {
+        env.backends.onnx.wasm.wasmPaths = '/ort/';
+        env.backends.onnx.wasm.numThreads = 1;
+        env.backends.onnx.wasm.proxy = false;
+      }
+    }
+
+    const tokenizer = await AutoTokenizer.from_pretrained(ENCODER_MODEL_ID);
+    const model = await AutoModel.from_pretrained(ENCODER_MODEL_ID, {
+      dtype: 'q8',
+    });
+
+    return { tokenizer, model };
+  })();
+
+  return encoderPromise;
 }
 
-async function getSession(): Promise<import('onnxruntime-web').InferenceSession> {
-  if (sessionPromise) return sessionPromise;
+async function getHeadSession(): Promise<import('onnxruntime-web').InferenceSession> {
+  if (headSessionPromise) return headSessionPromise;
 
-  sessionPromise = (async () => {
-    // Dynamic import to keep ORT off the critical path
+  headSessionPromise = (async () => {
     const ort = await import('onnxruntime-web');
-
-    // WASM config: single thread, browser vs Node paths
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.proxy = false;
+
     if (typeof window !== 'undefined') {
       ort.env.wasm.wasmPaths = '/ort/';
     } else {
-      // In Node/Vitest test environment, point to local directory
       try {
         const path = await import('path');
         ort.env.wasm.wasmPaths = path.join(process.cwd(), 'public/ort/') + path.sep;
@@ -63,8 +76,7 @@ async function getSession(): Promise<import('onnxruntime-web').InferenceSession>
       }
     }
 
-    const modelSource = customModelData || MODEL_PATH;
-    // Cast to any to satisfy overloaded create signature across browser (path string) & node (buffer)
+    const modelSource = customHeadModelData || (typeof window !== 'undefined' ? HEAD_MODEL_PATH : './public/models/palette-head.onnx');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const session = await (ort.InferenceSession.create as any)(modelSource, {
       executionProviders: ['wasm'],
@@ -72,7 +84,7 @@ async function getSession(): Promise<import('onnxruntime-web').InferenceSession>
     return session;
   })();
 
-  return sessionPromise;
+  return headSessionPromise;
 }
 
 let inferenceInProgress = false;
@@ -89,20 +101,55 @@ export async function inferPaletteIntent(prompt: string): Promise<AiPaletteInten
 
   inferenceInProgress = true;
   try {
-    const [tokenizer, session] = await Promise.all([getTokenizer(), getSession()]);
+    const [{ tokenizer, model }, headSession] = await Promise.all([getEncoder(), getHeadSession()]);
     const ort = await import('onnxruntime-web');
 
-    const ids = tokenizer.tokenize(normalized);
+    // Tokenize text prompt
+    const inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
+    const outputs = await model(inputs);
 
-    // Build int64 tensor [1, 96]
-    const inputData = new BigInt64Array(ids.map(id => BigInt(id)));
-    const inputTensor = new ort.Tensor('int64', inputData, [1, 96]);
+    // Mean pooling over tokens using attention mask
+    const lastHiddenState = outputs.last_hidden_state;
+    const data = lastHiddenState.data as Float32Array;
+    const [, seqLen, hiddenDim] = lastHiddenState.dims;
+    const mask = inputs.attention_mask.data as BigInt64Array | Int32Array | number[];
 
-    const feeds: Record<string, import('onnxruntime-web').Tensor> = { token_ids: inputTensor };
-    const results = await session.run(feeds);
+    const meanPooled = new Float32Array(hiddenDim);
+    let totalWeight = 0;
 
-    const output = results['output'];
-    if (!output) throw new Error('No output from model');
+    for (let s = 0; s < seqLen; s++) {
+      const m = Number(mask[s]);
+      if (m > 0) {
+        totalWeight += m;
+        const offset = s * hiddenDim;
+        for (let d = 0; d < hiddenDim; d++) {
+          meanPooled[d] += data[offset + d] * m;
+        }
+      }
+    }
+
+    if (totalWeight > 0) {
+      for (let d = 0; d < hiddenDim; d++) {
+        meanPooled[d] /= totalWeight;
+      }
+    }
+
+    // L2 normalization
+    let normSq = 0;
+    for (let d = 0; d < hiddenDim; d++) {
+      normSq += meanPooled[d] * meanPooled[d];
+    }
+    const norm = Math.sqrt(Math.max(1e-12, normSq));
+    for (let d = 0; d < hiddenDim; d++) {
+      meanPooled[d] /= norm;
+    }
+
+    // Pass embedding [1, 384] to palette head ONNX model
+    const inputTensor = new ort.Tensor('float32', meanPooled, [1, 384]);
+    const results = await headSession.run({ embedding: inputTensor });
+
+    const output = results['logits'] || results[Object.keys(results)[0]];
+    if (!output) throw new Error('No output from palette head model');
 
     const rawData = output.data as Float32Array;
     const intent = decodeCnnOutput(rawData);

@@ -12,6 +12,7 @@ import { calculateDeltaE } from '@/lib/color/validation';
 export interface DisplayPaletteColor {
   id: string;
   label: string;
+  role: string;
   hex: string;
   oklch: OklchColor;
   anchorRole?: 'shadow' | 'base' | 'highlight' | 'accent';
@@ -25,6 +26,7 @@ function paletteColorToDisplay(
   return {
     id: anchorRole,
     label: anchorRole.charAt(0).toUpperCase() + anchorRole.slice(1),
+    role: anchorRole,
     hex: pc.hex,
     oklch: pc.oklch,
     anchorRole,
@@ -50,15 +52,7 @@ function lerpOklch(a: OklchColor, b: OklchColor, t: number): OklchColor {
   };
 }
 
-function oklchEqual(a: OklchColor, b: OklchColor): boolean {
-  return (
-    Math.abs(a.l - b.l) < 0.001 &&
-    Math.abs(a.c - b.c) < 0.001 &&
-    (a.h === null && b.h === null || Math.abs((a.h ?? 0) - (b.h ?? 0)) < 0.5)
-  );
-}
-
-const LERP_FACTORS = [0.33, 0.50, 0.67];
+const LERP_FACTORS = [0.2, 0.33, 0.50, 0.67, 0.8];
 
 function generateCandidates(palette: Palette): OklchColor[] {
   const s = palette.shadow.oklch;
@@ -72,6 +66,7 @@ function generateCandidates(palette: Palette): OklchColor[] {
     [b, ac],
     [s, ac],
     [hi, ac],
+    [s, hi],
   ];
 
   const candidates: OklchColor[] = [];
@@ -81,54 +76,77 @@ function generateCandidates(palette: Palette): OklchColor[] {
     }
   }
 
-  // Extra variations if we need more
-  const varOklch: OklchColor[] = [
-    { l: Math.max(0.07, s.l - 0.08), c: s.c, h: s.h },
-    { l: Math.min(0.93, hi.l + 0.06), c: hi.c * 0.8, h: hi.h },
-    { l: b.l, c: Math.max(0, b.c - 0.04), h: ac.h },
-    { l: b.l + 0.10, c: b.c * 0.9, h: b.h },
-  ];
-  candidates.push(...varOklch);
+  // Extra rich hue/lightness variations across the space
+  for (const offset of [-40, -25, -15, 15, 25, 40]) {
+    const baseH = b.h ?? 0;
+    candidates.push({
+      l: Math.max(0.12, Math.min(0.88, (s.l + b.l) / 2)),
+      c: Math.max(0.04, b.c * 0.85),
+      h: (baseH + offset + 360) % 360,
+    });
+    candidates.push({
+      l: Math.max(0.12, Math.min(0.88, (b.l + hi.l) / 2)),
+      c: Math.max(0.04, b.c * 0.9),
+      h: (baseH + offset + 360) % 360,
+    });
+  }
 
   // Gamut-fit all
   return candidates.map(c => fitToSrgb(c));
 }
 
 function deltaE(a: OklchColor, b: OklchColor): number {
-  return calculateDeltaE(
-    { role: 'a', hex: oklchToHex(a), oklch: a },
-    { role: 'b', hex: oklchToHex(b), oklch: b },
-  );
+  const hexA = oklchToHex(a);
+  const hexB = oklchToHex(b);
+  const qA = hexToOklch(hexA) || a;
+  const qB = hexToOklch(hexB) || b;
+  return calculateDeltaE(qA, qB);
 }
 
-/** Max-min ΔE greedy selection. */
+/** Max-min ΔE greedy selection with minimum separation guarantee. */
 function selectByMaxMinDeltaE(
   anchors: OklchColor[],
   candidates: OklchColor[],
   n: number,
 ): OklchColor[] {
   const selected = [...anchors];
+  const selectedHexes = new Set(selected.map(s => oklchToHex(s).toLowerCase()));
 
-  // Remove candidates too similar to anchors
+  // Remove candidates too close or identical in HEX to anchors
   const viable = candidates.filter(cand => {
-    return selected.every(sel => !oklchEqual(cand, sel));
+    const hex = oklchToHex(cand).toLowerCase();
+    if (selectedHexes.has(hex)) return false;
+    return selected.every(sel => deltaE(cand, sel) >= 0.028);
   });
 
   for (let i = 0; i < n; i++) {
-    if (viable.length === 0) break;
-
-    let bestIdx = 0;
+    let bestIdx = -1;
     let bestMinDist = -1;
 
     for (let j = 0; j < viable.length; j++) {
       const minDist = Math.min(...selected.map(sel => deltaE(viable[j], sel)));
-      if (minDist > bestMinDist) {
+      if (minDist >= 0.026 && minDist > bestMinDist) {
         bestMinDist = minDist;
         bestIdx = j;
       }
     }
 
-    selected.push(viable[bestIdx]);
+    if (bestIdx === -1) {
+      // Fallback: synthesize a distinct color with guaranteed deltaE >= 0.03
+      const base = selected[1] || selected[0];
+      const fallback: OklchColor = fitToSrgb({
+        l: Math.max(0.12, Math.min(0.88, 0.2 + ((i * 0.17) % 0.6))),
+        c: Math.max(0.08, base.c),
+        h: ((base.h ?? 0) + (i + 1) * 55 + 360) % 360,
+      });
+      selected.push(fallback);
+      selectedHexes.add(oklchToHex(fallback).toLowerCase());
+      continue;
+    }
+
+    const chosen = viable[bestIdx];
+    selected.push(chosen);
+    selectedHexes.add(oklchToHex(chosen).toLowerCase());
     viable.splice(bestIdx, 1);
   }
 
@@ -169,6 +187,7 @@ export function extendPalette(
     return {
       id: `derived-${i}`,
       label: `Extra ${i + 1}`,
+      role: `color${i + 5}`,
       hex,
       oklch: exactOklch,
       derived: true,

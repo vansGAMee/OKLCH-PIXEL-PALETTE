@@ -1,0 +1,489 @@
+{
+  "color_anchors": [
+    {
+      "id": "purple",
+      "hue": 298.0,
+      "lightness": 0.45,
+      "relativeChroma": 0.75,
+      "harmony": "splitComplementary",
+      "en_terms": ["purple", "violet", "amethyst", "lavender", "lilac", "plum", "eggplant", "grape", "royal purple", "deep purple", "magic purple", "neon purple", "dark purple", "bright purple", "mystic violet", "glowing purple"],
+      "ru_terms": ["фиолетовый", "аметистовый", "сиреневый", "лавандовый", "сливовый", "баклажановый", "темно-фиолетовый", "ярко-фиолетовый", "неоновый фиолетовый", "магический фиолетовый", "аметист", "лаванда", "сирень", "королевский фиолетовый"]
+    },
+    {
+      "id": "red",
+      "hue": 26.0,
+      "lightness": 0.48,
+      "relativeChroma": 0.85,
+      "harmony": "complementary",
+      "en_terms": ["red", "crimson", "scarlet", "ruby", "blood red", "cherry", "dark red", "bright red", "fiery red", "carmine", "flame red", "brick red", "vampire red"],
+      "ru_terms": ["красный", "алый", "багровый", "рубиновый", "кровавый", "темно-красный", "ярко-красный", "огненно-красный", "вишневый", "пламенный", "малиново-красный", "рубин"]
+    },
+    {
+      "id": "green",
+      "hue": 145.0,
+      "lightness": 0.52,
+      "relativeChroma": 0.70,
+      "harmony": "analogous",
+      "en_terms": ["green", "emerald", "forest green", "grass green", "leaf green", "dark green", "bright green", "lush green", "moss green", "pine green", "jungle green"],
+      "ru_terms": ["зеленый", "изумрудный", "травяной", "лесной зеленый", "темно-зеленый", "ярко-зеленый", "хвойный", "моховой", "изумруд", "зелень", "сочный зеленый"]
+    },
+    {
+      "id": "lime_mint",
+      "hue": 130.0,
+      "lightness": 0.72,
+      "relativeChroma": 0.80,
+      "harmony": "analogous",
+      "en_terms": ["lime", "mint", "toxic green", "neon green", "acid green", "lime green", "minty", "radioactive green", "bright lime"],
+      "ru_terms": ["лаймовый", "мятный", "токсичный зеленый", "неоновый зеленый", "кислотный зеленый", "салатовый", "ядовито-зеленый", "радиоактивный зеленый", "лайм", "мята"]
+    },
+    {
+      "id": "blue",
+      "hue": 248.0,
+      "lightness": 0.46,
+      "relativeChroma": 0.75,
+      "harmony": "complementary",
+      "en_terms": ["blue", "navy", "dark blue", "sapphire", "indigo", "ocean blue", "deep blue", "midnight blue", "royal blue", "cobalt", "electric blue"],
+      "ru_terms": ["синий", "темно-синий", "индиго", "сапфировый", "океанический синий", "глубокий синий", "полночный синий", "королевский синий", "кобальт", "сапфир", "ультрамарин"]
+    },
+    {
+      "id": "cyan",
+      "hue": 198.0,
+      "lightness": 0.68,
+      "relativeChroma": 0.65,
+      "harmony": "splitComplementary",
+      "en_terms": ["cyan", "turquoise", "aquamarine", "teal", "light blue", "sky blue", "azure", "ice blue", "aqua", "seafoam"],
+      "ru_terms": ["бирюзовый", "голубой", "аквамарин", "морская волна", "лазурный", "небесный", "лазурь", "бирюза", "светло-голубой", "ледяной голубой"]
+    },
+    {
+      "id": "yellow",
+      "hue": 98.0,
+      "lightness": 0.82,
+      "relativeChroma": 0.75,
+      "harmony": "analogous",
+      "en_terms": ["yellow", "lemon", "bright yellow", "sunny yellow", "canary", "light yellow", "sunshine", "golden yellow", "neon yellow"],
+      "ru_terms": ["желтый", "лимонный", "ярко-желтый", "солнечный желтый", "светло-желтый", "солнечный", "лимон", "канареечный"]
+    },
+    {
+      "id": "gold",
+      "hue": 88.0,
+      "lightness": 0.74,
+      "relativeChroma": 0.80,
+      "harmony": "analogous",
+      "en_terms": ["gold", "golden", "amber", "luxury gold", "shimmering gold", "honey", "metallic gold"],
+      "ru_terms": ["золотой", "золото", "янтарный", "янтарь", "роскошное золото", "медовый", "чистое золото"]
+    },
+    {
+      "id": "orange",
+      "hue": 66.0,
+      "lightness": 0.62,
+      "relativeChroma": 0.80,
+      "harmony": "analogous",
+      "en_terms": ["orange", "tangerine", "bright orange", "flame orange", "mandarin", "sunset orange", "pumpkin", "neon orange"],
+      "ru_terms": ["оранжевый", "рыжий", "мандариновый", "ярко-оранжевый", "пламенно-оранжевый", "закатный оранжевый", "тыква", "апельсин"]
+    },
+    {
+      "id": "brown_rust",
+      "hue": 58.0,
+      "lightness": 0.38,
+      "relativeChroma": 0.45,
+      "harmony": "analogous",
+      "en_terms": ["brown", "rust", "rusty", "chocolate", "coffee", "wood", "chestnut", "earthy brown", "dark brown", "terracotta", "leather"],
+      "ru_terms": ["коричневый", "ржавый", "ржавчина", "шоколадный", "кофейный", "древесный", "каштановый", "землистый", "темно-коричневый", "терракотовый", "кожа"]
+    },
+    {
+      "id": "beige",
+      "hue": 78.0,
+      "lightness": 0.82,
+      "relativeChroma": 0.22,
+      "harmony": "analogous",
+      "en_terms": ["beige", "sand", "warm sand", "desert sand", "cream", "ivory", "nude", "pale beige", "wheat"],
+      "ru_terms": ["бежевый", "песочный", "песок", "кремовый", "слоновая кость", "пастельно-бежевый", "теплый песок"]
+    },
+    {
+      "id": "pink",
+      "hue": 358.0,
+      "lightness": 0.72,
+      "relativeChroma": 0.60,
+      "harmony": "analogous",
+      "en_terms": ["pink", "rose", "sakura", "cherry blossom", "bubblegum", "soft pink", "pastel pink", "blush pink", "coral pink"],
+      "ru_terms": ["розовый", "сакура", "нежно-розовый", "пастельно-розовый", "вишневый цвет", "роза", "зефирный", "клубничный"]
+    },
+    {
+      "id": "magenta",
+      "hue": 332.0,
+      "lightness": 0.52,
+      "relativeChroma": 0.85,
+      "harmony": "splitComplementary",
+      "en_terms": ["magenta", "fuchsia", "hot pink", "neon pink", "electric magenta", "bright fuchsia"],
+      "ru_terms": ["пурпурный", "фуксия", "ярко-розовый", "неоновый розовый", "электрический пурпурный", "маджента"]
+    },
+    {
+      "id": "burgundy",
+      "hue": 22.0,
+      "lightness": 0.28,
+      "relativeChroma": 0.48,
+      "harmony": "splitComplementary",
+      "en_terms": ["burgundy", "maroon", "wine", "dark wine", "bordeaux", "claret", "dark cherry"],
+      "ru_terms": ["бордовый", "бордо", "винный", "темно-вишневый", "марсала", "гнилая вишня"]
+    },
+    {
+      "id": "black_dark",
+      "hue": 260.0,
+      "lightness": 0.12,
+      "relativeChroma": 0.08,
+      "harmony": "analogous",
+      "en_terms": ["black", "dark", "pitch black", "midnight", "shadow", "obsidian", "charcoal", "ebony", "deep shadow"],
+      "ru_terms": ["черный", "темный", "полная тьма", "ночной", "смоляной", "обсидиан", "антрацит", "глубокая тень"]
+    },
+    {
+      "id": "white_light",
+      "hue": 100.0,
+      "lightness": 0.92,
+      "relativeChroma": 0.05,
+      "harmony": "analogous",
+      "en_terms": ["white", "pure white", "snow white", "bright white", "milk white", "clean white"],
+      "ru_terms": ["белый", "белоснежный", "чистый белый", "молочный", "снежный", "светлый"]
+    },
+    {
+      "id": "gray",
+      "hue": 240.0,
+      "lightness": 0.50,
+      "relativeChroma": 0.04,
+      "harmony": "analogous",
+      "en_terms": ["gray", "grey", "silver", "ash", "steel", "concrete", "smoke", "slate", "neutral gray"],
+      "ru_terms": ["серый", "серебряный", "пепельный", "стальной", "бетонный", "дымчатый", "графитовый", "нейтральный серый"]
+    }
+  ],
+  "thematic_concepts": [
+    {
+      "id": "winter_forest",
+      "hue": 232.0,
+      "lightness": 0.28,
+      "relativeChroma": 0.40,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "winter starry forest", "cold winter forest", "snowy pine forest at night", "starry winter night in forest",
+        "frozen forest under starry sky", "night winter woods", "dark snowy forest", "deep cold winter forest"
+      ],
+      "ru_phrases": [
+        "зимний звездный лес", "холодный зимний лес", "снежный хвойный лес ночью", "звездная зимняя ночь в лесу",
+        "замерзший лес под звездным небом", "ночной зимний лес", "темный снежный лес", "морозный лес под звездами"
+      ]
+    },
+    {
+      "id": "rusty_factory",
+      "hue": 52.0,
+      "lightness": 0.44,
+      "relativeChroma": 0.55,
+      "harmony": "complementary",
+      "en_phrases": [
+        "rusty abandoned factory at sunset", "rusty factory at sunset", "abandoned industrial warehouse sunset",
+        "rusty industrial plant in evening glow", "decaying factory at dusk", "abandoned rusty machinery at sunset"
+      ],
+      "ru_phrases": [
+        "ржавый завод на закате", "заброшенный завод на закате", "ржавая фабрика на закате",
+        "старый завод в лучах заката", "заброшенная промзона на закате", "ржавый индустриальный цех на закате"
+      ]
+    },
+    {
+      "id": "spring_sakura",
+      "hue": 356.0,
+      "lightness": 0.78,
+      "relativeChroma": 0.42,
+      "harmony": "analogous",
+      "en_phrases": [
+        "soft spring sakura", "gentle spring cherry blossom", "blooming spring sakura garden",
+        "delicate pink sakura petals", "spring cherry blossoms in morning light", "pastel spring sakura"
+      ],
+      "ru_phrases": [
+        "нежная весенняя сакура", "весенняя цветущая сакура", "нежные лепестки сакуры весной",
+        "сакура в утреннем весеннем саду", "цветущая японская сакура", "нежный розовый сад сакуры"
+      ]
+    },
+    {
+      "id": "toxic_swamp",
+      "hue": 138.0,
+      "lightness": 0.42,
+      "relativeChroma": 0.72,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "toxic green swamp", "radioactive toxic swamp", "poisonous green marsh",
+        "glowing toxic bog", "acidic green swamp water", "hazardous toxic swamp"
+      ],
+      "ru_phrases": [
+        "токсичное зеленое болото", "радиоактивное зеленое болото", "ядовитое зеленое болото",
+        "светящееся токсичное болото", "кислотная трясина", "опасная ядовитая топь"
+      ]
+    },
+    {
+      "id": "foggy_morning",
+      "hue": 215.0,
+      "lightness": 0.75,
+      "relativeChroma": 0.18,
+      "harmony": "analogous",
+      "en_phrases": [
+        "foggy cold morning", "cold misty morning", "pale foggy dawn over hills",
+        "chilly morning fog", "silent foggy morning lake", "gloomy cold mist at sunrise"
+      ],
+      "ru_phrases": [
+        "туманное холодное утро", "морозное туманное утро", "холодный утренний туман",
+        "рассветный туман над озером", "тихое туманное утро", "сырое туманное утро"
+      ]
+    },
+    {
+      "id": "moonlit_ocean",
+      "hue": 242.0,
+      "lightness": 0.26,
+      "relativeChroma": 0.45,
+      "harmony": "complementary",
+      "en_phrases": [
+        "moonlit ocean", "night ocean under full moon", "deep oceanic water at night",
+        "dark sea waves in moonlight", "nocturnal ocean reflecting moon", "calm dark ocean under moon"
+      ],
+      "ru_phrases": [
+        "ночной океан под луной", "океан в лунном свете", "глубокое море ночью под луной",
+        "темные океанские волны под луной", "ночные морские волны в лунном свете", "тихий ночной океан под полной луной"
+      ]
+    },
+    {
+      "id": "cozy_cafe",
+      "hue": 68.0,
+      "lightness": 0.52,
+      "relativeChroma": 0.48,
+      "harmony": "analogous",
+      "en_phrases": [
+        "warm cozy autumn cafe", "cozy coffee shop in autumn", "warm cafe with cinnamon and coffee",
+        "autumn coffee house with warm lights", "cozy wooden cafe interior in fall", "warm autumn bakery cafe"
+      ],
+      "ru_phrases": [
+        "уютная осенняя кофейня", "теплая кофейня осенью", "уютное кафе с запахом кофе и корицы",
+        "осеннее кафе с теплым светом", "уютная деревянная кофейня осенью", "теплая осенняя кофейня"
+      ]
+    },
+    {
+      "id": "cyberpunk_neon",
+      "hue": 312.0,
+      "lightness": 0.42,
+      "relativeChroma": 0.85,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "neon cyberpunk rain", "cyberpunk street in rain with neon lights", "neon cyberpunk night city",
+        "rainy cyberpunk alley with glowing signs", "futuristic cyberpunk metropolis in rain", "neon soaked cyberpunk street"
+      ],
+      "ru_phrases": [
+        "неоновый киберпанк под дождем", "киберпанк улица под дождем с неоном", "неоновый киберпанк ночной город",
+        "дождливый переулок киберпанка с вывесками", "футуристический киберпанк под дождем", "неоновые огни киберпанка в дождь"
+      ]
+    },
+    {
+      "id": "volcanic_landscape",
+      "hue": 32.0,
+      "lightness": 0.22,
+      "relativeChroma": 0.55,
+      "harmony": "complementary",
+      "en_phrases": [
+        "dark volcanic landscape", "volcanic lava field and black ash", "active volcano night landscape",
+        "glowing magma and obsidian stone", "dark volcanic crater with red glow", "molten lava across dark volcanic earth"
+      ],
+      "ru_phrases": [
+        "темный вулканический пейзаж", "вулканическая лава и черный пепел", "ночной пейзаж вулкана",
+        "раскаленная магма и обсидиан", "темный вулканический кратер с огнем", "потоки лавы на темной вулканической земле"
+      ]
+    },
+    {
+      "id": "desert_sunset",
+      "hue": 62.0,
+      "lightness": 0.58,
+      "relativeChroma": 0.70,
+      "harmony": "analogous",
+      "en_phrases": [
+        "warm desert sunset", "golden desert dunes at sunset", "warm sand dunes under sunset sky",
+        "desert landscape in golden evening light", "burning orange desert sunset", "endless desert dunes at dusk"
+      ],
+      "ru_phrases": [
+        "теплая пустыня на закате", "золотые песчаные дюны на закате", "пустынные барханы в лучах заката",
+        "пески пустыни в золотом вечернем свете", "оранжевый закат над пустыней", "бескрайняя пустыня на закате"
+      ]
+    },
+    {
+      "id": "soviet_hospital",
+      "hue": 162.0,
+      "lightness": 0.54,
+      "relativeChroma": 0.20,
+      "harmony": "analogous",
+      "en_phrases": [
+        "soviet hospital at night", "abandoned hospital corridor", "old hospital hallway with green walls",
+        "cold clinic corridor with fluorescent light", "eerie hospital room at night", "abandoned sanatorium clinic"
+      ],
+      "ru_phrases": [
+        "советская больница ночью", "советская больница", "заброшенный больничный коридор",
+        "старый коридор больницы с зелеными стенами", "холодная поликлиника с флуоресцентным светом", "заброшенная палата больницы"
+      ]
+    },
+    {
+      "id": "dead_mall",
+      "hue": 228.0,
+      "lightness": 0.46,
+      "relativeChroma": 0.16,
+      "harmony": "analogous",
+      "en_phrases": [
+        "dead shopping mall", "empty liminal mall at midnight", "abandoned shopping center",
+        "dead mall with dim fluorescent lighting", "lonely abandoned mall arcade", "silent empty mall hallway"
+      ],
+      "ru_phrases": [
+        "мертвый торговый центр", "пустой заброшенный торговый центр", "заброшенный молл ночью",
+        "пустой торговый центр с тусклым светом", "безлюдный заброшенный торговый комплекс", "мертвый торговый комплекс"
+      ]
+    },
+    {
+      "id": "computer_club",
+      "hue": 240.0,
+      "lightness": 0.32,
+      "relativeChroma": 0.55,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "old retro computer club at night", "vintage 2000s internet cafe", "dark computer gaming club with CRT monitors",
+        "nostalgic computer club room", "retro cyber club with blue monitors", "dark LAN party computer room"
+      ],
+      "ru_phrases": [
+        "старый компьютерный клуб", "компьютерный клуб 2000-х", "темный компьютерный клуб с CRT мониторами",
+        "ностальгический компьютерный клуб", "ночной компьютерный клуб подвал", "старый игровой компьютерный зал"
+      ]
+    },
+    {
+      "id": "robot_mars",
+      "hue": 42.0,
+      "lightness": 0.44,
+      "relativeChroma": 0.58,
+      "harmony": "complementary",
+      "en_phrases": [
+        "lonely robot on Mars", "solitary mars rover in red desert", "lone rover on dusty martian surface",
+        "solitary robot explorer on red planet", "lonely rover on barren red planet Mars"
+      ],
+      "ru_phrases": [
+        "одинокий робот на Марсе", "одинокий марсоход в красной пустыне", "марсоход на пыльной поверхности Марса",
+        "одинокий робот исследователь на красной планете", "грустный марсоход на Марсе"
+      ]
+    },
+    {
+      "id": "grandma_house",
+      "hue": 72.0,
+      "lightness": 0.64,
+      "relativeChroma": 0.35,
+      "harmony": "analogous",
+      "en_phrases": [
+        "cozy grandmother house", "warm granny cottage with wooden stove", "nostalgic grandmother living room",
+        "cozy vintage village house", "warm home kitchen with freshly baked bread"
+      ],
+      "ru_phrases": [
+        "уютный дом бабушки", "теплый деревенский дом бабушки", "бабушкин уютный дом в деревне",
+        "ностальгическая бабушкина комната", "теплая кухня в деревенском доме"
+      ]
+    },
+    {
+      "id": "dirty_basement",
+      "hue": 65.0,
+      "lightness": 0.22,
+      "relativeChroma": 0.18,
+      "harmony": "analogous",
+      "en_phrases": [
+        "dirty damp basement", "dark gloomy underground cellar", "murky grimy basement",
+        "filthy abandoned concrete basement", "damp musty cellar room"
+      ],
+      "ru_phrases": [
+        "грязный подвал", "сырой темный подвал", "грязный сырой погреб",
+        "заброшенный грязный подвал дома", "мрачный темный подвал"
+      ]
+    },
+    {
+      "id": "french_restaurant",
+      "hue": 48.0,
+      "lightness": 0.36,
+      "relativeChroma": 0.42,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "expensive luxury French restaurant", "fine dining French restaurant with candlelight", "upscale romantic Paris bistro",
+        "luxurious golden French dining room", "elegant gourmet French restaurant"
+      ],
+      "ru_phrases": [
+        "дорогой французский ресторан", "элитный французский ресторан при свечах", "роскошный ресторан в Париже",
+        "дорогой ресторан высокой кухни", "роскошный ужин во французском ресторане"
+      ]
+    },
+    {
+      "id": "space_dream",
+      "hue": 275.0,
+      "lightness": 0.24,
+      "relativeChroma": 0.60,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "dream about deep space", "surreal space dream with purple nebula", "floating in cosmos dream",
+        "distant galactic nebula dreamscape", "mystic outer space galaxy dream"
+      ],
+      "ru_phrases": [
+        "сон про космос", "сон о далеком космосе", "сюрреалистичный сон про галактику",
+        "полет в космической туманности во сне", "сон про звезды и космос"
+      ]
+    },
+    {
+      "id": "apocalypse_dream",
+      "hue": 24.0,
+      "lightness": 0.25,
+      "relativeChroma": 0.65,
+      "harmony": "complementary",
+      "en_phrases": [
+        "dream about end of the world", "apocalyptic dream with burning sky", "nightmare about global extinction",
+        "burning ruined city end of world dream", "doomsday sky dreamscape"
+      ],
+      "ru_phrases": [
+        "сон про конец света", "апокалиптический сон с горящим небом", "кошмар про конец света",
+        "горящие руины судного дня во сне", "сон про гибель мира и апокалипсис"
+      ]
+    },
+    {
+      "id": "toxic_love",
+      "hue": 335.0,
+      "lightness": 0.46,
+      "relativeChroma": 0.75,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "toxic love", "dangerous toxic romance", "poisonous passion and heartbreak",
+        "neon toxic obsession", "dark bittersweet toxic love"
+      ],
+      "ru_phrases": [
+        "токсичная любовь", "опасная токсичная любовь", "ядовитая страсть и разбитое сердце",
+        "горькая токсичная привязанность", "неоновая ядовитая любовь"
+      ]
+    },
+    {
+      "id": "amethyst_cave",
+      "hue": 296.0,
+      "lightness": 0.38,
+      "relativeChroma": 0.75,
+      "harmony": "splitComplementary",
+      "en_phrases": [
+        "amethyst cave", "glowing purple crystal cavern", "underground amethyst crystal mine",
+        "magical purple amethyst geodes", "deep crystal cave glowing violet"
+      ],
+      "ru_phrases": [
+        "аметистовая пещера", "пещера с фиолетовыми аметистами", "подземная аметистовая шахта",
+        "светящиеся фиолетовые кристаллы в пещере", "магическая аметистовая грот"
+      ]
+    },
+    {
+      "id": "rainy_cemetery",
+      "hue": 155.0,
+      "lightness": 0.26,
+      "relativeChroma": 0.18,
+      "harmony": "analogous",
+      "en_phrases": [
+        "graveyard after rain", "cemetery after rain", "wet mossy gravestones in rain",
+        "gloomy gothic cemetery under rainfall", "quiet old cemetery in mist and rain"
+      ],
+      "ru_phrases": [
+        "кладбище после дождя", "мокрое кладбище под дождем", "старое кладбище после ливня",
+        "мрачные могильные камни во мху после дождя", "готическое кладбище в дождь"
+      ]
+    }
+  ]
+}

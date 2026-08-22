@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { HarmonyMode, Palette, PaletteColor } from '@/types/palette';
 import { generatePalette } from '@/lib/color/generator';
+import { extendPalette } from '@/lib/color/extendPalette';
 import { ColorPicker } from '@/components/controls/ColorPicker';
 import { HarmonySelector } from '@/components/controls/HarmonySelector';
 import { AiPaletteInput, type AiApplyResult } from '@/components/controls/AiPaletteInput';
@@ -39,68 +40,32 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   const searchParams = useSearchParams();
 
   const [paletteName, setPaletteName] = useState<string>('');
+  const [baseHex, setBaseHex] = useState<string>(DEFAULT_HEX);
+  const [harmony, setHarmony] = useState<HarmonyMode>(DEFAULT_HARMONY);
+  const [seed, setSeed] = useState<number>(DEFAULT_SEED);
+  const [colorCount, setColorCount] = useState<number>(DEFAULT_COLOR_COUNT);
 
-  const [baseHex, setBaseHex] = useState<string>(() => {
-    if (typeof window === 'undefined') return DEFAULT_HEX;
+  // Modal and cloud notification state
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [cloudNotice, setCloudNotice] = useState<string | null>(null);
+
+  // Restore saved state from localStorage safely after hydration
+  useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.baseHex) return parsed.baseHex;
-      }
-    } catch {
-      // Ignore
-    }
-    return DEFAULT_HEX;
-  });
-
-  const [harmony, setHarmony] = useState<HarmonyMode>(() => {
-    if (typeof window === 'undefined') return DEFAULT_HARMONY;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.harmony) return parsed.harmony;
-      }
-    } catch {
-      // Ignore
-    }
-    return DEFAULT_HARMONY;
-  });
-
-  const [seed, setSeed] = useState<number>(() => {
-    if (typeof window === 'undefined') return DEFAULT_SEED;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.seed === 'number') return parsed.seed;
-      }
-    } catch {
-      // Ignore
-    }
-    return DEFAULT_SEED;
-  });
-
-  const [colorCount, setColorCount] = useState<number>(() => {
-    if (typeof window === 'undefined') return DEFAULT_COLOR_COUNT;
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+        if (parsed.baseHex && /^#[0-9a-fA-F]{6}$/.test(parsed.baseHex)) setBaseHex(parsed.baseHex);
+        if (parsed.harmony) setHarmony(parsed.harmony as HarmonyMode);
+        if (typeof parsed.seed === 'number') setSeed(parsed.seed);
         if (typeof parsed.colorCount === 'number' && parsed.colorCount >= 2 && parsed.colorCount <= 9) {
-          return parsed.colorCount;
+          setColorCount(parsed.colorCount);
         }
       }
     } catch {
       // Ignore
     }
-    return DEFAULT_COLOR_COUNT;
-  });
-
-  // Modal and cloud notification state
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [cloudNotice, setCloudNotice] = useState<string | null>(null);
+  }, []);
 
   // Read URL search parameters on load if present
   useEffect(() => {
@@ -136,10 +101,15 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
 
   const deferredHex = useDeferredValue(baseHex);
 
-  // Deferred palette calculation for ultra-smooth dragging performance
+  // Deferred palette calculation (3 arguments: baseHex, harmony, seed)
   const palette: Palette = useMemo(() => {
-    return generatePalette(deferredHex, harmony, seed, colorCount);
-  }, [deferredHex, harmony, seed, colorCount]);
+    return generatePalette(deferredHex, harmony, seed);
+  }, [deferredHex, harmony, seed]);
+
+  // Extended display colors (4 to 9 colors)
+  const displayColors = useMemo(() => {
+    return extendPalette(palette, colorCount);
+  }, [palette, colorCount]);
 
   // Quality Report calculated with useMemo
   const qualityReport = useMemo(() => {
@@ -308,7 +278,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
             <span className="text-[11px] font-mono text-gray-400">{c.clickToCopy}</span>
           </div>
 
-          <PaletteGrid palette={palette} locale={locale} />
+          <PaletteGrid palette={palette} displayColors={displayColors} locale={locale} />
         </section>
 
         {/* Quality Inspector Panel */}

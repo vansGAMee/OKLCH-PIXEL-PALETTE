@@ -35,7 +35,7 @@ export function AiPaletteInput({ onApply, locale = 'en', className = '' }: AiPal
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleGenerate = useCallback(async () => {
-    const trimmed = prompt.trim();
+    const trimmed = (inputRef.current?.value || prompt).trim();
     if (!trimmed || isGenerating) return;
 
     setState('loading');
@@ -76,6 +76,23 @@ export function AiPaletteInput({ onApply, locale = 'en', className = '' }: AiPal
     setError(null);
     inputRef.current?.focus();
   }, []);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __generateAiPalette?: (text: string) => Promise<void> }).__generateAiPalette = async (text: string) => {
+        setPrompt(text);
+        if (inputRef.current) inputRef.current.value = text;
+        const { inferPaletteIntent } = await import('@/lib/ai-palette/inference');
+        const intent = await inferPaletteIntent(text);
+        onApply({
+          baseHex: intent.baseHex,
+          harmony: intent.harmony,
+          seed: intent.seed,
+          count,
+        });
+      };
+    }
+  }, [count, onApply]);
 
   return (
     <section
