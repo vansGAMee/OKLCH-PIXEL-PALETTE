@@ -89,7 +89,7 @@ async function getCandidateA() {
 // ---------- Candidate C: semantic anchors + explicit color lexicon ----------
 const anchorsPkg = JSON.parse(readFileSync('public/models/semantic-anchors.json', 'utf8'));
 const ANCHORS = anchorsPkg.anchors;
-const TEMP = Number(process.env.TEMP || 0.045), TOPK = Number(process.env.TOPK || 8);
+const TEMP = Number(process.env.TEMP || 0.02), TOPK = Number(process.env.TOPK || 4);
 
 // canonical literal color lexicon (production spec §14): word -> canonical sRGB hex
 const LEXICON = {
@@ -208,7 +208,6 @@ async function evaluate(name, intentOf_) {
 
   for (const e of bench.directColors) {
     let intent; try { intent = await intentOf(e.prompt); } catch (err) { log('direct', false, e.prompt, 'threw ' + err.message); continue; }
-    const canon = oklch(e.hex);
     if (e.kind === 'neutral') {
       const r = checkEntry({ expect: { minL: e.minL, maxL: e.maxL, maxRelC: e.maxRelC } }, intent);
       log('direct', !r, e.prompt, r);

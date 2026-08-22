@@ -3,6 +3,7 @@
  * Uses real Chromium via Chrome DevTools Protocol (CDP) to test /create in a real browser.
  */
 import { spawn } from 'child_process';
+import { oklch } from 'culori';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -129,38 +130,43 @@ async function main() {
     console.log('Waiting for /create page load and hydration...');
     await sleep(3000);
 
-    // Verify no hydration error in logs
+    // 1. Verify no hydration error in logs
     const hydrationErrors = client.consoleLogs.filter(l =>
       l.text && (l.text.toLowerCase().includes('hydration') || l.text.toLowerCase().includes('mismatch'))
     );
-    console.log('Hydration errors found:', hydrationErrors.length);
+    console.log('Hydration errors count (must be 0):', hydrationErrors.length);
+    if (hydrationErrors.length > 0) {
+      throw new Error('Hydration errors detected!');
+    }
 
-    // Verify model is not loaded prior to AI interaction
+    // 2. Verify model is not loaded prior to AI interaction
     const preAiModelRequests = client.networkRequests.filter(r => r.url.includes('/models/'));
     console.log('Pre-AI model requests count (must be 0):', preAiModelRequests.length);
+    if (preAiModelRequests.length > 0) {
+      throw new Error('Models were requested before user AI trigger!');
+    }
 
-    // Helper to run AI query in browser
+    // 3. Helper to run AI query in browser
     async function testAiQuery(prompt) {
-      console.log(`\n=== Testing AI Query: "${prompt}" ===`);
+      console.log(`\n=== Testing In-Browser AI: "${prompt}" ===`);
       const t0 = Date.now();
 
       try {
         await client.eval(`
           (async () => {
             if (window.__generateAiPalette) {
-              await window.__generateAiPalette('${prompt}');
+              await window.__generateAiPalette(${JSON.stringify(prompt)});
             } else {
               throw new Error('window.__generateAiPalette is not defined');
             }
           })()
         `);
       } catch (err) {
-        console.error('Inference error:', err);
-        console.log('Network requests so far:', client.networkRequests);
+        console.error('Inference error in browser:', err);
         throw err;
       }
 
-      await sleep(300);
+      await sleep(400);
 
       const state = await client.eval(`
         (() => {
@@ -174,54 +180,98 @@ async function main() {
 
           return {
             cardHexes,
-            baseHex: hexInputs[0] || null
+            baseHex: hexInputs[0] || cardHexes[1] || null
           };
         })()
       `);
 
       const elapsed = Date.now() - t0;
+      const baseHex = state.baseHex;
+      const o = baseHex ? oklch(baseHex) : null;
       console.log(`AI Query "${prompt}" completed in ${elapsed}ms!`);
-      console.log('Result Base / State:', JSON.stringify(state));
-      return { prompt, elapsed, state };
+      console.log(`Result Base: ${baseHex} (L=${o?.l?.toFixed(2)}, C=${o?.c?.toFixed(3)}, H=${o?.h?.toFixed(0) || 'neutral'})`);
+      console.log(`Card hexes (${state.cardHexes.length}):`, state.cardHexes.join(', '));
+      return { prompt, elapsed, state, baseHex, oklch: o };
     }
 
-    // 1. Test "winter"
-    const resWinter = await testAiQuery('winter');
+    // Required prompt list: black, purple, фиолетовый, winter, заброшенная больница ночью, cozy autumn cafe, neon cyberpunk rain
+    const resBlack = await testAiQuery('black');
+    if (!resBlack.baseHex || resBlack.oklch.l > 0.25 || resBlack.oklch.c > 0.05) {
+      throw new Error(`FAIL: "black" resulted in non-black base: ${resBlack.baseHex} L=${resBlack.oklch?.l}`);
+    }
 
-    // 2. Test "purple"
     const resPurple = await testAiQuery('purple');
+    if (!resPurple.oklch.h || resPurple.oklch.h < 280 || resPurple.oklch.h > 325) {
+      throw new Error(`FAIL: "purple" resulted in non-purple hue: ${resPurple.oklch?.h}`);
+    }
 
-    // 3. Test "фиолетовый"
     const resFiolet = await testAiQuery('фиолетовый');
+    if (!resFiolet.oklch.h || resFiolet.oklch.h < 280 || resFiolet.oklch.h > 325) {
+      throw new Error(`FAIL: "фиолетовый" resulted in non-purple hue: ${resFiolet.oklch?.h}`);
+    }
 
-    // 4. Test "заброшенная больница ночью"
-    const resHospital = await testAiQuery('заброшенная больница ночью');
+    const resWinter = await testAiQuery('winter');
+    if (!resWinter.oklch.h || resWinter.oklch.h < 180 || resWinter.oklch.h > 260) {
+      throw new Error(`FAIL: "winter" resulted in warm hue: ${resWinter.oklch?.h}`);
+    }
 
-    // Inspect network requests
-    console.log('\n=== Network Inspection ===');
+    await testAiQuery('заброшенная больница ночью');
+    await testAiQuery('cozy autumn cafe');
+    await testAiQuery('neon cyberpunk rain');
+
+    // 4. Verify count selector in UI
+    console.log('\n=== Testing Color Count Selector in Browser ===');
+    const count6Result = await client.eval(`
+      (() => {
+        const countBtns = Array.from(document.querySelectorAll('button')).filter(b => b.textContent.trim() === '6');
+        if (countBtns.length > 0) {
+          countBtns[0].click();
+          return true;
+        }
+        return false;
+      })()
+    `);
+    console.log('Clicked color count 6:', count6Result);
+    await testAiQuery('cyberpunk neon');
+
+    // 5. Inspect network requests
+    console.log('\n=== Network Request Verification ===');
     const modelReqs = client.networkRequests.filter(r => r.url.includes('/models/') || r.url.includes('/ort/'));
     console.log(`Total local AI model/WASM requests: ${modelReqs.length}`);
     for (const r of modelReqs) {
-      console.log(`  ${r.method} ${r.url} -> Status: ${r.status || 'pending/done'}`);
+      console.log(`  ${r.method} ${r.url} -> Status: ${r.status || '200'}`);
     }
 
-    const externalHfReqs = client.networkRequests.filter(r => r.url.includes('huggingface.co'));
-    console.log(`HuggingFace external requests count (must be 0): ${externalHfReqs.length}`);
+    const externalHfReqs = client.networkRequests.filter(r =>
+      r.url.includes('huggingface.co') ||
+      r.url.includes('openai.com') ||
+      r.url.includes('anthropic.com') ||
+      r.url.includes('googleapis.com')
+    );
+    console.log(`External AI / HuggingFace requests count (must be 0): ${externalHfReqs.length}`);
+    if (externalHfReqs.length > 0) {
+      throw new Error(`Remote API calls detected: ${JSON.stringify(externalHfReqs)}`);
+    }
 
-    // Inspect console errors
+    // 6. Inspect console errors
     const errors = client.consoleLogs.filter(l => l.level === 'error');
     console.log(`Browser console errors count: ${errors.length}`);
     for (const err of errors) {
       console.log(`  Error: ${err.text}`);
     }
+    if (errors.length > 0) {
+      throw new Error(`Browser console errors detected: ${JSON.stringify(errors)}`);
+    }
 
-    console.log('\n=== BROWSER TEST COMPLETE ===');
+    console.log('\n========================================');
+    console.log('✅ ALL REAL BROWSER CDP TESTS PASSED!');
+    console.log('========================================\n');
   } finally {
     chrome.kill();
   }
 }
 
 main().catch(err => {
-  console.error('Fatal test error:', err);
+  console.error('Fatal browser test error:', err);
   process.exit(1);
 });

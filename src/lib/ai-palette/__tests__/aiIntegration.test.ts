@@ -119,6 +119,36 @@ describe('AI Palette End-to-End Multilingual Integration', () => {
     expect(oklchGreenEn.h).toBeLessThanOrEqual(165);
     expect(oklchGreenRu.h).toBeGreaterThanOrEqual(125);
     expect(oklchGreenRu.h).toBeLessThanOrEqual(165);
+
+    // Assert black / черный grounding (never brown, low L, low C)
+    const blackEn = await inferPaletteIntent('black');
+    const blackRu = await inferPaletteIntent('черный');
+    const okBlackEn = hexToOklch(blackEn.baseHex)!;
+    const okBlackRu = hexToOklch(blackRu.baseHex)!;
+    expect(okBlackEn.l).toBeLessThanOrEqual(0.25);
+    expect(okBlackEn.c).toBeLessThanOrEqual(0.05);
+    expect(okBlackRu.l).toBeLessThanOrEqual(0.25);
+    expect(okBlackRu.c).toBeLessThanOrEqual(0.05);
+
+    // Assert white / белый grounding (high L, low C)
+    const whiteEn = await inferPaletteIntent('white');
+    const whiteRu = await inferPaletteIntent('белый');
+    const okWhiteEn = hexToOklch(whiteEn.baseHex)!;
+    const okWhiteRu = hexToOklch(whiteRu.baseHex)!;
+    expect(okWhiteEn.l).toBeGreaterThanOrEqual(0.85);
+    expect(okWhiteEn.c).toBeLessThanOrEqual(0.05);
+    expect(okWhiteRu.l).toBeGreaterThanOrEqual(0.85);
+    expect(okWhiteRu.c).toBeLessThanOrEqual(0.05);
+
+    // Assert winter / зима cool tone grounding (cool hue 180°-260°, never warm brown)
+    const winterEn = await inferPaletteIntent('winter');
+    const winterRu = await inferPaletteIntent('зима');
+    const okWinterEn = hexToOklch(winterEn.baseHex)!;
+    const okWinterRu = hexToOklch(winterRu.baseHex)!;
+    expect(okWinterEn.h).toBeGreaterThanOrEqual(180);
+    expect(okWinterEn.h).toBeLessThanOrEqual(260);
+    expect(okWinterRu.h).toBeGreaterThanOrEqual(180);
+    expect(okWinterRu.h).toBeLessThanOrEqual(260);
   });
 
   it('different semantic prompts do not collapse to identical intents', async () => {

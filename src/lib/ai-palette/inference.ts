@@ -1,14 +1,22 @@
 /**
  * inference.ts
  * Multilingual semantic palette generation using local multilingual-e5-small encoder
- * + project-trained palette regression head (palette-head.onnx).
+ * + precomputed semantic anchors + literal color lexicon.
  * Runs completely locally in browser/Node via ONNX WASM & @huggingface/transformers.
  */
 'use client';
 
 import type { AiPaletteIntent } from './paletteAdapter';
+import { semanticIntentToBase } from './paletteAdapter';
 import { normalizeText, stablePromptHash } from './tokenizer';
-import { decodeCnnOutput } from './paletteAdapter';
+import {
+  blendAnchorIntent,
+  applyColorConstraint,
+  sanitizeSemanticIntent,
+  getSemanticAnchors,
+  setTestAnchors,
+} from './semanticMapper';
+import { matchColorConstraint } from './colorLexicon';
 
 let encoderPromise: Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,17 +24,13 @@ let encoderPromise: Promise<{
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any;
 }> | null = null;
-let headSessionPromise: Promise<import('onnxruntime-web').InferenceSession> | null = null;
 
-const HEAD_MODEL_PATH = '/models/palette-head.onnx';
 const ENCODER_MODEL_ID = 'multilingual-e5-small';
 
-let customHeadModelData: ArrayBuffer | Uint8Array | string | null = null;
-
-export function setTestArtifacts(_vocab: Record<string, number>, model: ArrayBuffer | Uint8Array | string) {
-  customHeadModelData = model;
-  headSessionPromise = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function setTestArtifacts(_vocab?: Record<string, number>, _model?: ArrayBuffer | Uint8Array | string) {
   encoderPromise = null;
+  setTestAnchors(null);
 }
 
 async function getEncoder() {
@@ -57,36 +61,6 @@ async function getEncoder() {
   return encoderPromise;
 }
 
-async function getHeadSession(): Promise<import('onnxruntime-web').InferenceSession> {
-  if (headSessionPromise) return headSessionPromise;
-
-  headSessionPromise = (async () => {
-    const ort = await import('onnxruntime-web');
-    ort.env.wasm.numThreads = 1;
-    ort.env.wasm.proxy = false;
-
-    if (typeof window !== 'undefined') {
-      ort.env.wasm.wasmPaths = '/ort/';
-    } else {
-      try {
-        const path = await import('path');
-        ort.env.wasm.wasmPaths = path.join(process.cwd(), 'public/ort/') + path.sep;
-      } catch {
-        // fallback
-      }
-    }
-
-    const modelSource = customHeadModelData || (typeof window !== 'undefined' ? HEAD_MODEL_PATH : './public/models/palette-head.onnx');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const session = await (ort.InferenceSession.create as any)(modelSource, {
-      executionProviders: ['wasm'],
-    });
-    return session;
-  })();
-
-  return headSessionPromise;
-}
-
 let inferenceInProgress = false;
 
 export async function inferPaletteIntent(prompt: string): Promise<AiPaletteIntent & { seed: number }> {
@@ -101,10 +75,12 @@ export async function inferPaletteIntent(prompt: string): Promise<AiPaletteInten
 
   inferenceInProgress = true;
   try {
-    const [{ tokenizer, model }, headSession] = await Promise.all([getEncoder(), getHeadSession()]);
-    const ort = await import('onnxruntime-web');
+    const [{ tokenizer, model }, anchors] = await Promise.all([
+      getEncoder(),
+      getSemanticAnchors(),
+    ]);
 
-    // Tokenize text prompt
+    // Tokenize text prompt with query: prefix
     const inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
     const outputs = await model(inputs);
 
@@ -144,18 +120,29 @@ export async function inferPaletteIntent(prompt: string): Promise<AiPaletteInten
       meanPooled[d] /= norm;
     }
 
-    // Pass embedding [1, 384] to palette head ONNX model
-    const inputTensor = new ort.Tensor('float32', meanPooled, [1, 384]);
-    const results = await headSession.run({ embedding: inputTensor });
+    // 1. Semantic anchor projection (top-k softmax blend)
+    let intent = blendAnchorIntent(meanPooled, anchors);
 
-    const output = results['logits'] || results[Object.keys(results)[0]];
-    if (!output) throw new Error('No output from palette head model');
+    // 2. Named color constraint (if prompt contains a genuine color word)
+    const colorConstraint = matchColorConstraint(normalized);
+    if (colorConstraint) {
+      intent = applyColorConstraint(colorConstraint.intent, intent, colorConstraint.weight);
+    }
 
-    const rawData = output.data as Float32Array;
-    const intent = decodeCnnOutput(rawData);
+    // 3. Sanitize intent (bounds, NaN/Inf protection)
+    const sanitized = sanitizeSemanticIntent(intent);
+
+    // 4. Gamut-safe baseHex conversion via OKLCH engine
+    const baseHex = semanticIntentToBase(sanitized);
+
+    // 5. Stable prompt seed
     const seed = stablePromptHash(normalized);
 
-    return { ...intent, seed };
+    return {
+      baseHex,
+      harmony: sanitized.harmony,
+      seed,
+    };
   } finally {
     inferenceInProgress = false;
   }

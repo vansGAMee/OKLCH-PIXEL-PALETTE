@@ -28,8 +28,43 @@ export interface AnchorsPackage {
   anchors: SemanticAnchor[];
 }
 
-const TEMPERATURE = 0.02;
-const TOP_K = 4;
+export const TEMPERATURE = 0.02;
+export const TOP_K = 4;
+
+let anchorsPromise: Promise<SemanticAnchor[]> | null = null;
+let customAnchors: SemanticAnchor[] | null = null;
+
+export function setTestAnchors(anchors: SemanticAnchor[] | null) {
+  customAnchors = anchors;
+  anchorsPromise = null;
+}
+
+export async function getSemanticAnchors(): Promise<SemanticAnchor[]> {
+  if (customAnchors) return customAnchors;
+  if (anchorsPromise) return anchorsPromise;
+
+  anchorsPromise = (async () => {
+    if (typeof window !== 'undefined') {
+      const res = await fetch('/models/semantic-anchors.json');
+      if (!res.ok) {
+        throw new Error(`Failed to load semantic anchors: ${res.statusText}`);
+      }
+      const pkg: AnchorsPackage = await res.json();
+      return pkg.anchors;
+    } else {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const raw = await fs.readFile(
+        path.join(process.cwd(), 'public/models/semantic-anchors.json'),
+        'utf8'
+      );
+      const pkg: AnchorsPackage = JSON.parse(raw);
+      return pkg.anchors;
+    }
+  })();
+
+  return anchorsPromise;
+}
 
 function dot(a: ArrayLike<number>, b: ArrayLike<number>): number {
   let s = 0;
@@ -59,7 +94,11 @@ export function blendAnchorIntent(embedding: ArrayLike<number>, anchors: Semanti
   let relC = 0;
   let x = 0;
   let y = 0;
-  const harmonyVotes: Record<HarmonyMode, number> = { analogous: 0, complementary: 0, splitComplementary: 0 };
+  const harmonyVotes: Partial<Record<HarmonyMode, number>> = {
+    analogous: 0,
+    complementary: 0,
+    splitComplementary: 0,
+  };
   for (let j = 0; j < top.length; j++) {
     const it = anchors[top[j].i].intent;
     const w = weights[j];
@@ -68,7 +107,7 @@ export function blendAnchorIntent(embedding: ArrayLike<number>, anchors: Semanti
     const rad = (it.hue * Math.PI) / 180;
     x += w * Math.cos(rad);
     y += w * Math.sin(rad);
-    harmonyVotes[it.harmony] += w;
+    harmonyVotes[it.harmony] = (harmonyVotes[it.harmony] ?? 0) + w;
   }
 
   let hue: number;
@@ -77,7 +116,9 @@ export function blendAnchorIntent(embedding: ArrayLike<number>, anchors: Semanti
   } else {
     hue = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
   }
-  const harmony = (Object.keys(harmonyVotes) as HarmonyMode[]).sort((a, b) => harmonyVotes[b] - harmonyVotes[a])[0];
+  const harmony = ((Object.keys(harmonyVotes) as HarmonyMode[]).sort(
+    (a, b) => (harmonyVotes[b] ?? 0) - (harmonyVotes[a] ?? 0)
+  )[0] || 'analogous') as HarmonyMode;
 
   return {
     l: Math.max(0, Math.min(1, l)),

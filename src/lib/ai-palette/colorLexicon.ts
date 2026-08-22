@@ -22,8 +22,8 @@ interface LexiconEntry {
 
 // Canonical sRGB targets (CSS conventions; burgundy/violet/lavender per documented common usage)
 const ENTRIES: LexiconEntry[] = [
-  { hex: '#000000', aliases: ['black', 'черный'] },
-  { hex: '#ffffff', aliases: ['white', 'белый'] },
+  { hex: '#000000', aliases: ['black', 'черный', 'черно'] },
+  { hex: '#ffffff', aliases: ['white', 'белый', 'бело'] },
   { hex: '#808080', aliases: ['gray', 'grey', 'серый'] },
   { hex: '#c0c0c0', aliases: ['silver', 'серебряный', 'серебристый'] },
   { hex: '#ff0000', aliases: ['red', 'красный'] },
@@ -47,10 +47,10 @@ const ENTRIES: LexiconEntry[] = [
 
 function canonicalIntent(hex: string): LexiconIntent {
   const o = hexToOklch(hex);
-  const l = Number.isFinite(o.l) ? Math.max(0, Math.min(1, o.l)) : 0.5;
-  const hue = Number.isFinite(o.h) ? ((o.h % 360) + 360) % 360 : 0;
+  const l = o && Number.isFinite(o.l) ? Math.max(0, Math.min(1, o.l)) : 0.5;
+  const hue = o && o.h !== null && Number.isFinite(o.h) ? ((o.h % 360) + 360) % 360 : 0;
   const cMax = Math.max(1e-4, maxSrgbChromaAt(l, hue));
-  const relC = Math.max(0, Math.min(1, (Number.isFinite(o.c) ? o.c : 0) / cMax));
+  const relC = Math.max(0, Math.min(1, (o && Number.isFinite(o.c) ? o.c : 0) / cMax));
   return { l, hue, relC };
 }
 
