@@ -33,6 +33,14 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
     applicationCategory: 'DesignApplication',
     operatingSystem: 'Any',
     description: t.hero.subtitle,
+    featureList: [
+      'OKLCH Perceptual Color Palette Generator',
+      'Local In-Browser AI Text-to-Palette Generation',
+      'Lightness Ladder & Perceptual Contrast Analysis',
+      'Pixel Art Sprite Previews',
+      'sRGB Gamut Protection',
+      'PNG, CSS, GPL, JASC PAL & JSON Export',
+    ],
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -316,6 +324,65 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
           </div>
         </section>
 
+        {/* AI Text-to-Palette Section */}
+        <section id="ai-palette" aria-labelledby="ai-generator-heading" className="glass-panel p-8 sm:p-10 rounded-2xl border border-purple-500/20 bg-purple-950/10 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
+                <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                <span>{t.aiSection.badge}</span>
+              </div>
+              <h2 id="ai-generator-heading" className="text-2xl sm:text-3xl font-mono font-bold tracking-tight text-white">
+                {t.aiSection.heading}
+              </h2>
+              <p className="text-sm text-gray-300 font-sans leading-relaxed">
+                {t.aiSection.subtitle}
+              </p>
+            </div>
+            <Link
+              href={createHref}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-xl transition-all shadow-md shadow-purple-900/30 self-start md:self-auto shrink-0"
+            >
+              <span>{t.aiSection.cta}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 space-y-4 text-xs sm:text-sm text-gray-300 font-sans leading-relaxed">
+              <p>
+                {t.aiSection.description}
+              </p>
+              <div className="space-y-2 pt-2">
+                <span className="text-xs font-mono font-bold text-purple-300 block">
+                  {t.aiSection.promptExamplesTitle}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {t.aiSection.prompts.map((promptText, idx) => (
+                    <Link
+                      key={idx}
+                      href={createHref}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-purple-900/30 border border-white/10 hover:border-purple-500/40 text-xs font-mono text-gray-300 hover:text-purple-200 transition-colors"
+                    >
+                      &ldquo;{promptText}&rdquo;
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 glass-panel p-5 rounded-xl border border-white/10 space-y-3 bg-zinc-950/60">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold">
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>{t.aiSection.privacyTitle}</span>
+              </div>
+              <p className="text-xs text-gray-400 font-sans leading-relaxed">
+                {t.aiSection.privacyDesc}
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Why OKLCH Section */}
         <section id="why-oklch" aria-labelledby="why-oklch-heading" className="glass-panel p-8 rounded-2xl border border-white/10 space-y-6">
           <div className="space-y-2 border-b border-white/10 pb-4">
@@ -420,6 +487,16 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
               </summary>
               <div className="pt-3 text-xs sm:text-sm text-gray-300 font-sans leading-relaxed border-t border-white/5 mt-3">
                 {t.faq.a4}
+              </div>
+            </details>
+
+            <details className="glass-panel p-5 rounded-xl border border-white/10 group cursor-pointer">
+              <summary className="font-mono font-bold text-sm text-white flex items-center justify-between select-none">
+                <span>{t.faq.q5}</span>
+                <span className="text-purple-400 font-bold group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="pt-3 text-xs sm:text-sm text-gray-300 font-sans leading-relaxed border-t border-white/5 mt-3">
+                {t.faq.a5}
               </div>
             </details>
           </div>

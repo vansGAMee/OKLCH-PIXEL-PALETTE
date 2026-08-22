@@ -74,6 +74,24 @@ export const messages = {
       item4Title: 'Frontend developers',
       item4Desc: 'Export clear HEX strings and OKLCH color parameters directly to CSS.',
     },
+    aiSection: {
+      badge: 'Local In-Browser AI',
+      heading: 'Generate color palettes from text descriptions',
+      subtitle: 'Describe a mood, scene, or visual direction in plain words — local AI creates a tailored OKLCH starting palette.',
+      description: 'Instead of searching through static palette collections, describe the exact mood or scene you envision. Our local AI model interprets English and Russian natural-language prompts and maps them into balanced, gamut-safe OKLCH color harmonies ready for immediate refinement.',
+      promptExamplesTitle: 'Try prompts like:',
+      prompts: [
+        'winter forest',
+        'deep sea horror',
+        'cozy autumn cafe',
+        'neon cyberpunk rain',
+        'toxic green swamp',
+        'pale pink sunrise',
+      ],
+      privacyTitle: '100% In-Browser & Private',
+      privacyDesc: 'Inference runs locally on your device via ONNX WASM. No OpenAI or Gemini API calls, no cloud latency, and no text sent to remote servers after initial asset download.',
+      cta: 'Try AI Palette Studio',
+    },
     faq: {
       heading: 'Frequently Asked Questions',
       subtitle: 'Learn more about OKLCH color theory and usage.',
@@ -89,6 +107,9 @@ export const messages = {
       q4: 'Why does the tool protect the sRGB gamut?',
       a4:
         'Monitors display colors within standard sRGB boundaries. Gamut protection automatically clamps out-of-bounds OKLCH values so exported colors match what you see on screen without clipping artifacts.',
+      q5: 'How does the AI palette generator work?',
+      a5:
+        'The AI palette generator uses a compact multilingual text encoder and semantic anchor projection running locally in your browser. After model assets load, palette generation runs entirely on your device without requiring a remote AI API.',
     },
     cta: {
       heading: 'Ready to craft your pixel palette?',
@@ -232,6 +253,24 @@ export const messages = {
       item4Title: 'Фронтенд-разработчики',
       item4Desc: 'Быстрый экспорт готовых кодов HEX и OKLCH прямо в код.',
     },
+    aiSection: {
+      badge: 'Локальный ИИ в браузере',
+      heading: 'Генерация цветовых палитр по текстовому описанию',
+      subtitle: 'Опишите настроение, сцену или визуальный образ простыми словами — локальный ИИ создаст стартовую палитру в пространстве OKLCH.',
+      description: 'Вместо долгого поиска по статичным библиотекам палитр просто опишите задуманную сцену. Локальная нейросеть интерпретирует текстовые запросы на русском и английском языках и формирует сбалансированную палитру в пространстве OKLCH с защитой гаммы, готовую для доработки в студии.',
+      promptExamplesTitle: 'Примеры текстовых запросов:',
+      prompts: [
+        'зимний звездный лес',
+        'ужас глубин океана',
+        'уютная осенняя кофейня',
+        'неоновый киберпанк под дождём',
+        'бледно-розовый рассвет',
+        'ржавый завод на закате',
+      ],
+      privacyTitle: 'Конфиденциально и локально',
+      privacyDesc: 'Нейросетевая генерация выполняется прямо на вашем устройстве через ONNX WASM. Запросы не отправляются на удалённые серверы и не требуют платных API.',
+      cta: 'Создать палитру с ИИ',
+    },
     faq: {
       heading: 'Часто задаваемые вопросы',
       subtitle: 'Ответы на популярные вопросы о работе с палитрами OKLCH.',
@@ -247,6 +286,9 @@ export const messages = {
       q4: 'Зачем нужна защита гаммы sRGB?',
       a4:
         'Мониторы отображают цвета в пределах sRGB. Защита гаммы предотвращает появление искажений и гарантирует, что экспортированные цвета будут выглядеть одинаково на всех экранах.',
+      q5: 'Как работает генерация палитр с помощью ИИ?',
+      a5:
+        'Генератор использует компактную мультиязычную модель и семантическое проецирование, работающие локально прямо в вашем браузере. После загрузки ресурсов генерация происходит на устройстве без обращения к сторонним серверам или платным AI API.',
     },
     cta: {
       heading: 'Готовы собрать свою палитру?',
