@@ -178,19 +178,19 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   return (
     <div
       lang={locale}
-      className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white"
+      className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white overflow-x-hidden"
     >
       {/* Top Header Navigation */}
       <header className="sticky top-0 z-40 border-b border-white/10 glass-panel backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
           {/* Logo & Brand Title */}
-          <Link href={homeHref} className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform">
-              <PaletteIcon className="w-5 h-5" />
+          <Link href={homeHref} className="flex items-center gap-2 sm:gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 transition-all min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform shrink-0">
+              <PaletteIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h1 className="text-sm sm:text-base font-mono font-black tracking-tight text-white flex items-center gap-2">
-                OKLCH PIXEL PALETTE <span className="text-purple-400 font-normal text-xs px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">{t.studioBadge}</span>
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-base font-mono font-black tracking-tight text-white flex items-center gap-1.5 truncate">
+                OKLCH PIXEL PALETTE <span className="text-purple-400 font-normal text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">{t.studioBadge}</span>
               </h1>
               <p className="text-[11px] text-gray-400 font-mono hidden sm:block">
                 {t.subtitle}
@@ -199,15 +199,15 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
           </Link>
 
           {/* Right Header Navigation & Status Stamp */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
             <LanguageSwitcher currentLocale={locale} />
 
             <Link
               href={homeHref}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono text-gray-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-mono text-gray-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <Home className="w-3.5 h-3.5" />
-              <span>{t.homepage}</span>
+              <span className="hidden xs:inline">{t.homepage}</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-gray-400">

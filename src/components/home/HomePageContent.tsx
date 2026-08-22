@@ -52,7 +52,7 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
   return (
     <div
       lang={locale}
-      className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white"
+      className="min-h-screen bg-[#090909] text-[#f7f9fa] flex flex-col justify-between selection:bg-purple-600 selection:text-white overflow-x-hidden"
     >
       {/* Structured Data (JSON-LD) */}
       <script
@@ -66,20 +66,20 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
 
       {/* Navigation Header */}
       <header className="sticky top-0 z-50 border-b border-white/10 glass-panel backdrop-blur-md bg-zinc-950/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
           <Link
             href={homeHref}
-            className="flex items-center gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1"
+            className="flex items-center gap-2 sm:gap-3 group focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-lg p-1 min-w-0"
           >
-            <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform">
-              <Palette className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-900/20 group-hover:scale-105 transition-transform shrink-0">
+              <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <span className="text-sm sm:text-base font-mono font-black tracking-tight text-white">
+            <span className="text-xs sm:text-base font-mono font-black tracking-tight text-white truncate">
               {t.header.title}
             </span>
           </Link>
 
-          <nav aria-label="Main Navigation" className="flex items-center gap-3 sm:gap-6">
+          <nav aria-label="Main Navigation" className="flex items-center gap-1.5 sm:gap-6 shrink-0">
             <LanguageSwitcher currentLocale={locale} />
 
             <a
@@ -111,11 +111,11 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
             )}
             <Link
               href={createHref}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all shadow-md shadow-purple-900/30 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="flex items-center gap-1 px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-lg transition-all shadow-md shadow-purple-900/30 focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
               <span className="hidden sm:inline">{t.header.openStudio}</span>
-              <span className="sm:hidden">Studio</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="sm:hidden text-[11px]">Studio</span>
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </Link>
             <MobileMenu locale={locale} isAuthenticated={isAuthenticated} />
           </nav>
