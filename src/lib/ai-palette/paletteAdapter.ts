@@ -50,6 +50,19 @@ export function maxSrgbChromaAt(l: number, h: number): number {
 }
 
 /**
+ * Convert a semantic intent {l, relC, hue} into a gamut-safe base hex.
+ * relC is relative to the maximum in-gamut chroma at (l, hue).
+ */
+export function semanticIntentToBase(intent: { l: number; relC: number; hue: number }): string {
+  const L = Math.max(0, Math.min(1, intent.l));
+  const H = (((intent.hue % 360) + 360) % 360);
+  const relC = Math.max(0, Math.min(1, intent.relC));
+  const cMax = maxSrgbChromaAt(L, H);
+  const C = relC * cMax * INTERIOR_MARGIN;
+  return oklchToHex(fitToSrgb({ l: L, c: C, h: H }));
+}
+
+/**
  * Decode CNN output [7] into palette intent.
  * Throws on NaN / Infinity / shape error.
  */

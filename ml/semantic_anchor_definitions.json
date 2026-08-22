@@ -1,0 +1,2714 @@
+[
+ {
+  "id": "black",
+  "category": "color",
+  "intent": {
+   "hue": 0,
+   "l": 0.1,
+   "relC": 0.05,
+   "harmony": "analogous"
+  },
+  "en": "black color, absolute darkness, ink",
+  "ru": "черный цвет, абсолютная темнота, чернила"
+ },
+ {
+  "id": "white",
+  "category": "color",
+  "intent": {
+   "hue": 95,
+   "l": 0.95,
+   "relC": 0.04,
+   "harmony": "analogous"
+  },
+  "en": "white color, pure light, snow white",
+  "ru": "белый цвет, чистый свет, белоснежный"
+ },
+ {
+  "id": "gray",
+  "category": "color",
+  "intent": {
+   "hue": 230,
+   "l": 0.52,
+   "relC": 0.06,
+   "harmony": "analogous"
+  },
+  "en": "gray color, neutral tone",
+  "ru": "серый цвет, нейтральный тон"
+ },
+ {
+  "id": "silver",
+  "category": "color",
+  "intent": {
+   "hue": 230,
+   "l": 0.78,
+   "relC": 0.08,
+   "harmony": "analogous"
+  },
+  "en": "silver color, metallic shine",
+  "ru": "серебряный цвет, металлический блеск"
+ },
+ {
+  "id": "charcoal",
+  "category": "color",
+  "intent": {
+   "hue": 60,
+   "l": 0.2,
+   "relC": 0.1,
+   "harmony": "analogous"
+  },
+  "en": "charcoal, burnt wood black",
+  "ru": "древесный уголь, обугленное дерево"
+ },
+ {
+  "id": "ivory",
+  "category": "color",
+  "intent": {
+   "hue": 90,
+   "l": 0.9,
+   "relC": 0.1,
+   "harmony": "analogous"
+  },
+  "en": "ivory, warm off-white",
+  "ru": "слоновая кость, теплый бело-кремовый"
+ },
+ {
+  "id": "cream",
+  "category": "color",
+  "intent": {
+   "hue": 85,
+   "l": 0.88,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "cream, soft warm white",
+  "ru": "сливки, кремовый, мягкий теплый белый"
+ },
+ {
+  "id": "beige",
+  "category": "color",
+  "intent": {
+   "hue": 80,
+   "l": 0.8,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "beige, sand neutral",
+  "ru": "бежевый, песочный нейтральный"
+ },
+ {
+  "id": "red",
+  "category": "color",
+  "intent": {
+   "hue": 26,
+   "l": 0.5,
+   "relC": 0.85,
+   "harmony": "complementary"
+  },
+  "en": "red color, passion red",
+  "ru": "красный цвет, страстный красный"
+ },
+ {
+  "id": "crimson",
+  "category": "color",
+  "intent": {
+   "hue": 22,
+   "l": 0.45,
+   "relC": 0.85,
+   "harmony": "complementary"
+  },
+  "en": "crimson, deep red",
+  "ru": "багровый, темно-красный"
+ },
+ {
+  "id": "scarlet",
+  "category": "color",
+  "intent": {
+   "hue": 18,
+   "l": 0.55,
+   "relC": 0.85,
+   "harmony": "complementary"
+  },
+  "en": "scarlet, bright red",
+  "ru": "алый, ярко-красный"
+ },
+ {
+  "id": "orange",
+  "category": "color",
+  "intent": {
+   "hue": 55,
+   "l": 0.6,
+   "relC": 0.8,
+   "harmony": "analogous"
+  },
+  "en": "orange color, vivid orange",
+  "ru": "оранжевый цвет, яркий оранжевый"
+ },
+ {
+  "id": "amber",
+  "category": "color",
+  "intent": {
+   "hue": 70,
+   "l": 0.6,
+   "relC": 0.8,
+   "harmony": "analogous"
+  },
+  "en": "amber, warm golden orange",
+  "ru": "янтарный, тепло-золотистый"
+ },
+ {
+  "id": "yellow",
+  "category": "color",
+  "intent": {
+   "hue": 95,
+   "l": 0.75,
+   "relC": 0.85,
+   "harmony": "analogous"
+  },
+  "en": "yellow color, sunny yellow",
+  "ru": "желтый цвет, солнечный желтый"
+ },
+ {
+  "id": "gold",
+  "category": "color",
+  "intent": {
+   "hue": 85,
+   "l": 0.7,
+   "relC": 0.8,
+   "harmony": "analogous"
+  },
+  "en": "gold, golden metal, treasure",
+  "ru": "золото, золотой металл, сокровище"
+ },
+ {
+  "id": "lime",
+  "category": "color",
+  "intent": {
+   "hue": 125,
+   "l": 0.7,
+   "relC": 0.8,
+   "harmony": "analogous"
+  },
+  "en": "lime, acid green",
+  "ru": "лаймовый, кислотно-зеленый"
+ },
+ {
+  "id": "green",
+  "category": "color",
+  "intent": {
+   "hue": 145,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "green color, pure green",
+  "ru": "зеленый цвет, чистый зеленый"
+ },
+ {
+  "id": "emerald",
+  "category": "color",
+  "intent": {
+   "hue": 155,
+   "l": 0.5,
+   "relC": 0.8,
+   "harmony": "splitComplementary"
+  },
+  "en": "emerald, precious green gem",
+  "ru": "изумруд, драгоценный зеленый камень"
+ },
+ {
+  "id": "olive",
+  "category": "color",
+  "intent": {
+   "hue": 110,
+   "l": 0.45,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "olive, muted dark yellow-green",
+  "ru": "оливковый, приглушенный темно-зеленый"
+ },
+ {
+  "id": "mint",
+  "category": "color",
+  "intent": {
+   "hue": 160,
+   "l": 0.75,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "mint, fresh pale green",
+  "ru": "мятный, свежий светло-зеленый"
+ },
+ {
+  "id": "teal",
+  "category": "color",
+  "intent": {
+   "hue": 180,
+   "l": 0.45,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "teal, deep blue-green",
+  "ru": "морская волна, сине-зеленый"
+ },
+ {
+  "id": "cyan",
+  "category": "color",
+  "intent": {
+   "hue": 195,
+   "l": 0.6,
+   "relC": 0.75,
+   "harmony": "splitComplementary"
+  },
+  "en": "cyan color",
+  "ru": "циановый цвет"
+ },
+ {
+  "id": "turquoise",
+  "category": "color",
+  "intent": {
+   "hue": 175,
+   "l": 0.65,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "turquoise, tropical water gem",
+  "ru": "бирюзовый, тропическая вода"
+ },
+ {
+  "id": "aqua",
+  "category": "color",
+  "intent": {
+   "hue": 190,
+   "l": 0.7,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "aqua, clear light water",
+  "ru": "аква, прозрачная светлая вода"
+ },
+ {
+  "id": "blue",
+  "category": "color",
+  "intent": {
+   "hue": 240,
+   "l": 0.45,
+   "relC": 0.75,
+   "harmony": "complementary"
+  },
+  "en": "blue color, pure blue",
+  "ru": "синий цвет, чистый синий"
+ },
+ {
+  "id": "skyblue",
+  "category": "color",
+  "intent": {
+   "hue": 210,
+   "l": 0.7,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "sky blue, clear day sky",
+  "ru": "небесно-голубой, ясное небо"
+ },
+ {
+  "id": "navy",
+  "category": "color",
+  "intent": {
+   "hue": 250,
+   "l": 0.25,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "navy, dark marine blue",
+  "ru": "темно-синий, морской темно-синий"
+ },
+ {
+  "id": "indigo",
+  "category": "color",
+  "intent": {
+   "hue": 270,
+   "l": 0.35,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "indigo, deep violet-blue",
+  "ru": "индиго, глубокий сине-фиолетовый"
+ },
+ {
+  "id": "sapphire",
+  "category": "color",
+  "intent": {
+   "hue": 245,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "sapphire gem, royal blue",
+  "ru": "сапфир, королевский синий"
+ },
+ {
+  "id": "purple",
+  "category": "color",
+  "intent": {
+   "hue": 295,
+   "l": 0.45,
+   "relC": 0.75,
+   "harmony": "splitComplementary"
+  },
+  "en": "purple color, royal purple",
+  "ru": "фиолетовый цвет, королевский пурпур"
+ },
+ {
+  "id": "violet",
+  "category": "color",
+  "intent": {
+   "hue": 290,
+   "l": 0.5,
+   "relC": 0.75,
+   "harmony": "splitComplementary"
+  },
+  "en": "violet color",
+  "ru": "фиолетовый, синевато-лиловый"
+ },
+ {
+  "id": "lavender",
+  "category": "color",
+  "intent": {
+   "hue": 300,
+   "l": 0.75,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "lavender, soft pale purple flower",
+  "ru": "лавандовый, мягкий бледно-лиловый"
+ },
+ {
+  "id": "lilac",
+  "category": "color",
+  "intent": {
+   "hue": 300,
+   "l": 0.7,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "lilac flower, light purple",
+  "ru": "сиреневый, светло-фиолетовый"
+ },
+ {
+  "id": "magenta",
+  "category": "color",
+  "intent": {
+   "hue": 330,
+   "l": 0.5,
+   "relC": 0.85,
+   "harmony": "splitComplementary"
+  },
+  "en": "magenta, vivid purplish red",
+  "ru": "пурпурный, яркий фиолетово-красный"
+ },
+ {
+  "id": "pink",
+  "category": "color",
+  "intent": {
+   "hue": 350,
+   "l": 0.7,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "pink color, soft pink",
+  "ru": "розовый цвет, мягкий розовый"
+ },
+ {
+  "id": "rose",
+  "category": "color",
+  "intent": {
+   "hue": 355,
+   "l": 0.6,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "rose, romantic red-pink flower",
+  "ru": "роза, романтичный красно-розовый"
+ },
+ {
+  "id": "burgundy",
+  "category": "color",
+  "intent": {
+   "hue": 15,
+   "l": 0.3,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "burgundy, dark wine red",
+  "ru": "бордовый, темный винный"
+ },
+ {
+  "id": "maroon",
+  "category": "color",
+  "intent": {
+   "hue": 20,
+   "l": 0.35,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "maroon, brownish red",
+  "ru": "темно-бордовый, каштановый"
+ },
+ {
+  "id": "brown",
+  "category": "color",
+  "intent": {
+   "hue": 55,
+   "l": 0.4,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "brown color, earth",
+  "ru": "коричневый цвет, земля"
+ },
+ {
+  "id": "chocolate",
+  "category": "color",
+  "intent": {
+   "hue": 40,
+   "l": 0.3,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "chocolate, dark cocoa",
+  "ru": "шоколад, темное какао"
+ },
+ {
+  "id": "tan",
+  "category": "color",
+  "intent": {
+   "hue": 65,
+   "l": 0.6,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "tan, sandy leather",
+  "ru": "цвет загара, кожаный песочный"
+ },
+ {
+  "id": "peach",
+  "category": "color",
+  "intent": {
+   "hue": 35,
+   "l": 0.75,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "peach fruit, warm pale orange",
+  "ru": "персик, теплый бледно-оранжевый"
+ },
+ {
+  "id": "coral",
+  "category": "color",
+  "intent": {
+   "hue": 25,
+   "l": 0.65,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "coral, warm sea orange-pink",
+  "ru": "коралловый, оранжево-розовый"
+ },
+ {
+  "id": "salmon",
+  "category": "color",
+  "intent": {
+   "hue": 30,
+   "l": 0.65,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "salmon, soft orange pink",
+  "ru": "лососевый, мягкий оранжево-розовый"
+ },
+ {
+  "id": "rust",
+  "category": "color",
+  "intent": {
+   "hue": 45,
+   "l": 0.45,
+   "relC": 0.65,
+   "harmony": "analogous"
+  },
+  "en": "rust, oxidized iron, corroded metal",
+  "ru": "ржавчина, окисленное железо"
+ },
+ {
+  "id": "copper",
+  "category": "color",
+  "intent": {
+   "hue": 45,
+   "l": 0.5,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "copper metal",
+  "ru": "медь, медный металл"
+ },
+ {
+  "id": "bronze",
+  "category": "color",
+  "intent": {
+   "hue": 55,
+   "l": 0.45,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "bronze, aged metal",
+  "ru": "бронза, старый металл"
+ },
+ {
+  "id": "blood",
+  "category": "color",
+  "intent": {
+   "hue": 20,
+   "l": 0.35,
+   "relC": 0.7,
+   "harmony": "complementary"
+  },
+  "en": "blood, deep red liquid",
+  "ru": "кровь, густая красная жидкость"
+ },
+ {
+  "id": "plum",
+  "category": "color",
+  "intent": {
+   "hue": 300,
+   "l": 0.3,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "plum fruit, dark purple",
+  "ru": "слива, темно-фиолетовый"
+ },
+ {
+  "id": "winter",
+  "category": "season",
+  "intent": {
+   "hue": 225,
+   "l": 0.3,
+   "relC": 0.35,
+   "harmony": "splitComplementary"
+  },
+  "en": "winter season, coldest time of year",
+  "ru": "зима, холодный снежный сезон"
+ },
+ {
+  "id": "snow",
+  "category": "weather",
+  "intent": {
+   "hue": 220,
+   "l": 0.85,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "snow, fresh white snowfall, snow blanket",
+  "ru": "снег, снегопад, белое покрывало"
+ },
+ {
+  "id": "arctic",
+  "category": "nature",
+  "intent": {
+   "hue": 210,
+   "l": 0.75,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "arctic, polar ice",
+  "ru": "арктика, полярный лед"
+ },
+ {
+  "id": "ice",
+  "category": "nature",
+  "intent": {
+   "hue": 200,
+   "l": 0.75,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "ice, frozen transparent",
+  "ru": "лед, замерзшая прозрачность"
+ },
+ {
+  "id": "frost",
+  "category": "weather",
+  "intent": {
+   "hue": 220,
+   "l": 0.8,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "frost, freezing crystals",
+  "ru": "иней, морозные кристаллы"
+ },
+ {
+  "id": "spring",
+  "category": "season",
+  "intent": {
+   "hue": 120,
+   "l": 0.7,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "spring, fresh bloom",
+  "ru": "весна, свежее цветение"
+ },
+ {
+  "id": "summer",
+  "category": "season",
+  "intent": {
+   "hue": 90,
+   "l": 0.65,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "summer, hot sunny season",
+  "ru": "лето, жаркий солнечный сезон"
+ },
+ {
+  "id": "autumn",
+  "category": "season",
+  "intent": {
+   "hue": 55,
+   "l": 0.5,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "autumn, falling leaves season",
+  "ru": "осень, сезон падающих листьев"
+ },
+ {
+  "id": "rain",
+  "category": "weather",
+  "intent": {
+   "hue": 230,
+   "l": 0.45,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "rain, rainy wet weather",
+  "ru": "дождь, дождливая погода"
+ },
+ {
+  "id": "storm",
+  "category": "weather",
+  "intent": {
+   "hue": 240,
+   "l": 0.3,
+   "relC": 0.35,
+   "harmony": "splitComplementary"
+  },
+  "en": "storm, heavy dark clouds",
+  "ru": "гроза, шторм, темные тучи"
+ },
+ {
+  "id": "fog",
+  "category": "weather",
+  "intent": {
+   "hue": 220,
+   "l": 0.7,
+   "relC": 0.12,
+   "harmony": "analogous"
+  },
+  "en": "fog, misty haze",
+  "ru": "туман, дымка"
+ },
+ {
+  "id": "overcast",
+  "category": "weather",
+  "intent": {
+   "hue": 230,
+   "l": 0.6,
+   "relC": 0.1,
+   "harmony": "analogous"
+  },
+  "en": "overcast grey sky",
+  "ru": "пасмурное серое небо"
+ },
+ {
+  "id": "tropical",
+  "category": "nature",
+  "intent": {
+   "hue": 160,
+   "l": 0.55,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "tropical paradise, palm beach",
+  "ru": "тропики, пальмовый пляж"
+ },
+ {
+  "id": "night",
+  "category": "time",
+  "intent": {
+   "hue": 250,
+   "l": 0.15,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "night, darkness after sunset",
+  "ru": "ночь, темнота после заката"
+ },
+ {
+  "id": "midnight",
+  "category": "time",
+  "intent": {
+   "hue": 255,
+   "l": 0.12,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "midnight, deep night",
+  "ru": "полночь, глухая ночь"
+ },
+ {
+  "id": "moonlight",
+  "category": "time",
+  "intent": {
+   "hue": 230,
+   "l": 0.35,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "moonlight, pale night glow",
+  "ru": "лунный свет, бледное ночное свечение"
+ },
+ {
+  "id": "starrysky",
+  "category": "nature",
+  "intent": {
+   "hue": 260,
+   "l": 0.2,
+   "relC": 0.45,
+   "harmony": "splitComplementary"
+  },
+  "en": "starry sky, stars in the night",
+  "ru": "звездное небо, звезды ночью"
+ },
+ {
+  "id": "dawn",
+  "category": "time",
+  "intent": {
+   "hue": 45,
+   "l": 0.65,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "dawn, first light",
+  "ru": "рассвет, первый свет"
+ },
+ {
+  "id": "sunrise",
+  "category": "time",
+  "intent": {
+   "hue": 50,
+   "l": 0.6,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "sunrise, morning sun",
+  "ru": "восход, утреннее солнце"
+ },
+ {
+  "id": "sunset",
+  "category": "time",
+  "intent": {
+   "hue": 45,
+   "l": 0.5,
+   "relC": 0.65,
+   "harmony": "analogous"
+  },
+  "en": "sunset, evening glow",
+  "ru": "закат, вечернее зарево"
+ },
+ {
+  "id": "dusk",
+  "category": "time",
+  "intent": {
+   "hue": 290,
+   "l": 0.3,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "dusk, twilight after sunset",
+  "ru": "сумерки после заката"
+ },
+ {
+  "id": "twilight",
+  "category": "time",
+  "intent": {
+   "hue": 270,
+   "l": 0.3,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "twilight, dim evening light",
+  "ru": "сумерки, тусклый вечерний свет"
+ },
+ {
+  "id": "ocean",
+  "category": "nature",
+  "intent": {
+   "hue": 220,
+   "l": 0.4,
+   "relC": 0.5,
+   "harmony": "complementary"
+  },
+  "en": "ocean, open sea water",
+  "ru": "океан, открытое море"
+ },
+ {
+  "id": "deepsea",
+  "category": "nature",
+  "intent": {
+   "hue": 230,
+   "l": 0.2,
+   "relC": 0.45,
+   "harmony": "splitComplementary"
+  },
+  "en": "deep sea, underwater abyss",
+  "ru": "глубины моря, подводная бездна"
+ },
+ {
+  "id": "sea",
+  "category": "nature",
+  "intent": {
+   "hue": 200,
+   "l": 0.45,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "sea, seaside water",
+  "ru": "море, морская вода"
+ },
+ {
+  "id": "beach",
+  "category": "place",
+  "intent": {
+   "hue": 75,
+   "l": 0.7,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "beach, sand and sun",
+  "ru": "пляж, песок и солнце"
+ },
+ {
+  "id": "desert",
+  "category": "place",
+  "intent": {
+   "hue": 70,
+   "l": 0.6,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "desert, hot sand waste",
+  "ru": "пустыня, раскаленный песок"
+ },
+ {
+  "id": "savanna",
+  "category": "nature",
+  "intent": {
+   "hue": 80,
+   "l": 0.55,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "savanna, dry grassland",
+  "ru": "саванна, сухая трава"
+ },
+ {
+  "id": "forest",
+  "category": "nature",
+  "intent": {
+   "hue": 140,
+   "l": 0.35,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "forest, dense woods and trees",
+  "ru": "лес, густые деревья, чаща"
+ },
+ {
+  "id": "pineforest",
+  "category": "nature",
+  "intent": {
+   "hue": 150,
+   "l": 0.28,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "pines, dark coniferous woods, taiga",
+  "ru": "сосновый бор, ельник, хвойная чаща"
+ },
+ {
+  "id": "jungle",
+  "category": "nature",
+  "intent": {
+   "hue": 135,
+   "l": 0.4,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "jungle, tropical rainforest",
+  "ru": "джунгли, тропический лес"
+ },
+ {
+  "id": "meadow",
+  "category": "nature",
+  "intent": {
+   "hue": 115,
+   "l": 0.6,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "meadow, flowering grass field",
+  "ru": "луг, цветущее поле"
+ },
+ {
+  "id": "volcano",
+  "category": "nature",
+  "intent": {
+   "hue": 25,
+   "l": 0.25,
+   "relC": 0.6,
+   "harmony": "complementary"
+  },
+  "en": "volcano, eruption",
+  "ru": "вулкан, извержение"
+ },
+ {
+  "id": "lava",
+  "category": "nature",
+  "intent": {
+   "hue": 25,
+   "l": 0.35,
+   "relC": 0.75,
+   "harmony": "complementary"
+  },
+  "en": "lava, molten rock",
+  "ru": "лава, расплавленная порода"
+ },
+ {
+  "id": "mountain",
+  "category": "nature",
+  "intent": {
+   "hue": 230,
+   "l": 0.45,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "mountain, rocky peaks",
+  "ru": "горы, скалистые вершины"
+ },
+ {
+  "id": "canyon",
+  "category": "nature",
+  "intent": {
+   "hue": 50,
+   "l": 0.5,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "canyon, red rock gorge",
+  "ru": "каньон, красная скалистая теснина"
+ },
+ {
+  "id": "cave",
+  "category": "place",
+  "intent": {
+   "hue": 80,
+   "l": 0.15,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "cave, dark underground hollow",
+  "ru": "пещера, темная подземная полость"
+ },
+ {
+  "id": "swamp",
+  "category": "nature",
+  "intent": {
+   "hue": 130,
+   "l": 0.35,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "swamp, murky wetland",
+  "ru": "болото, мрачная топь"
+ },
+ {
+  "id": "toxicswamp",
+  "category": "nature",
+  "intent": {
+   "hue": 135,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "toxic swamp, poisonous green ooze",
+  "ru": "токсичное болото, ядовитая жижа"
+ },
+ {
+  "id": "river",
+  "category": "nature",
+  "intent": {
+   "hue": 210,
+   "l": 0.5,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "river flowing water",
+  "ru": "река, текущая вода"
+ },
+ {
+  "id": "lake",
+  "category": "nature",
+  "intent": {
+   "hue": 200,
+   "l": 0.45,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "lake, still water",
+  "ru": "озеро, неподвижная вода"
+ },
+ {
+  "id": "moon",
+  "category": "space",
+  "intent": {
+   "hue": 230,
+   "l": 0.6,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "the moon, lunar surface",
+  "ru": "луна, лунная поверхность"
+ },
+ {
+  "id": "mars",
+  "category": "space",
+  "intent": {
+   "hue": 35,
+   "l": 0.45,
+   "relC": 0.55,
+   "harmony": "splitComplementary"
+  },
+  "en": "mars, red desert planet",
+  "ru": "марс, красная пустынная планета"
+ },
+ {
+  "id": "space",
+  "category": "space",
+  "intent": {
+   "hue": 265,
+   "l": 0.15,
+   "relC": 0.5,
+   "harmony": "splitComplementary"
+  },
+  "en": "outer space, cosmos",
+  "ru": "космос, вселенная"
+ },
+ {
+  "id": "galaxy",
+  "category": "space",
+  "intent": {
+   "hue": 280,
+   "l": 0.2,
+   "relC": 0.55,
+   "harmony": "splitComplementary"
+  },
+  "en": "galaxy, spiral stars",
+  "ru": "галактика, спираль звезд"
+ },
+ {
+  "id": "nebula",
+  "category": "space",
+  "intent": {
+   "hue": 300,
+   "l": 0.3,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "nebula, colorful cosmic cloud",
+  "ru": "туманность, космическое облако"
+ },
+ {
+  "id": "sun",
+  "category": "space",
+  "intent": {
+   "hue": 75,
+   "l": 0.7,
+   "relC": 0.75,
+   "harmony": "analogous"
+  },
+  "en": "the sun, bright solar light",
+  "ru": "солнце, яркий солнечный свет"
+ },
+ {
+  "id": "citynight",
+  "category": "urban",
+  "intent": {
+   "hue": 250,
+   "l": 0.3,
+   "relC": 0.5,
+   "harmony": "splitComplementary"
+  },
+  "en": "city at night, street lights",
+  "ru": "город ночью, огни улиц"
+ },
+ {
+  "id": "neoncity",
+  "category": "urban",
+  "intent": {
+   "hue": 310,
+   "l": 0.4,
+   "relC": 0.8,
+   "harmony": "splitComplementary"
+  },
+  "en": "neon city, glowing signs",
+  "ru": "неоновый город, светящиеся вывески"
+ },
+ {
+  "id": "cyberpunk",
+  "category": "style",
+  "intent": {
+   "hue": 305,
+   "l": 0.4,
+   "relC": 0.85,
+   "harmony": "splitComplementary"
+  },
+  "en": "cyberpunk, neon future dystopia",
+  "ru": "киберпанк, неоновая антиутопия"
+ },
+ {
+  "id": "tokyonight",
+  "category": "urban",
+  "intent": {
+   "hue": 300,
+   "l": 0.35,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "tokyo at night, neon streets",
+  "ru": "токио ночью, неоновые улицы"
+ },
+ {
+  "id": "hospital",
+  "category": "place",
+  "intent": {
+   "hue": 180,
+   "l": 0.72,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "hospital, clean medical clinic",
+  "ru": "больница, чистая медицина"
+ },
+ {
+  "id": "abandonedhospital",
+  "category": "place",
+  "intent": {
+   "hue": 160,
+   "l": 0.35,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "abandoned hospital, creepy ruins",
+  "ru": "заброшенная больница, жуткие руины"
+ },
+ {
+  "id": "morgue",
+  "category": "place",
+  "intent": {
+   "hue": 200,
+   "l": 0.3,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "morgue, cold sterile death",
+  "ru": "морг, холодная стерильность"
+ },
+ {
+  "id": "cemetery",
+  "category": "place",
+  "intent": {
+   "hue": 150,
+   "l": 0.3,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "cemetery, graveyard",
+  "ru": "кладбище, могилы"
+ },
+ {
+  "id": "church",
+  "category": "place",
+  "intent": {
+   "hue": 70,
+   "l": 0.5,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "church, sacred interior",
+  "ru": "церковь, священное убранство"
+ },
+ {
+  "id": "monastery",
+  "category": "place",
+  "intent": {
+   "hue": 80,
+   "l": 0.55,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "monastery, quiet stone halls",
+  "ru": "монастырь, тихие каменные залы"
+ },
+ {
+  "id": "library",
+  "category": "place",
+  "intent": {
+   "hue": 65,
+   "l": 0.4,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "library, old books",
+  "ru": "библиотека, старые книги"
+ },
+ {
+  "id": "school",
+  "category": "place",
+  "intent": {
+   "hue": 65,
+   "l": 0.55,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "school, classroom",
+  "ru": "школа, класс"
+ },
+ {
+  "id": "office",
+  "category": "place",
+  "intent": {
+   "hue": 220,
+   "l": 0.65,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "office, corporate workspace",
+  "ru": "офис, рабочее пространство"
+ },
+ {
+  "id": "factory",
+  "category": "industrial",
+  "intent": {
+   "hue": 55,
+   "l": 0.4,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "factory, industrial plant",
+  "ru": "завод, промышленное предприятие"
+ },
+ {
+  "id": "rustyfactory",
+  "category": "industrial",
+  "intent": {
+   "hue": 45,
+   "l": 0.45,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "rusty abandoned factory",
+  "ru": "ржавый заброшенный завод"
+ },
+ {
+  "id": "industrial",
+  "category": "industrial",
+  "intent": {
+   "hue": 60,
+   "l": 0.4,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "industrial zone, machinery",
+  "ru": "промзона, механизмы"
+ },
+ {
+  "id": "warehouse",
+  "category": "industrial",
+  "intent": {
+   "hue": 65,
+   "l": 0.35,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "warehouse, storage hall",
+  "ru": "склад, хранилище"
+ },
+ {
+  "id": "basement",
+  "category": "place",
+  "intent": {
+   "hue": 70,
+   "l": 0.2,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "basement, damp underground room",
+  "ru": "подвал, сырая подземная комната"
+ },
+ {
+  "id": "bunker",
+  "category": "place",
+  "intent": {
+   "hue": 220,
+   "l": 0.3,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "bunker, concrete shelter",
+  "ru": "бункер, бетонное убежище"
+ },
+ {
+  "id": "prison",
+  "category": "place",
+  "intent": {
+   "hue": 80,
+   "l": 0.3,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "prison, jail cells",
+  "ru": "тюрьма, камеры"
+ },
+ {
+  "id": "subway",
+  "category": "urban",
+  "intent": {
+   "hue": 250,
+   "l": 0.3,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "subway, underground metro",
+  "ru": "метро, подземка"
+ },
+ {
+  "id": "trainstation",
+  "category": "urban",
+  "intent": {
+   "hue": 50,
+   "l": 0.45,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "train station, railway",
+  "ru": "вокзал, железная дорога"
+ },
+ {
+  "id": "hotel",
+  "category": "place",
+  "intent": {
+   "hue": 40,
+   "l": 0.45,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "hotel lobby",
+  "ru": "отель, гостиничный холл"
+ },
+ {
+  "id": "motel",
+  "category": "place",
+  "intent": {
+   "hue": 350,
+   "l": 0.4,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "cheap motel, roadside neon",
+  "ru": "дешевый мотель, придорожный неон"
+ },
+ {
+  "id": "casino",
+  "category": "place",
+  "intent": {
+   "hue": 345,
+   "l": 0.4,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "casino, gambling lights",
+  "ru": "казино, азартные огни"
+ },
+ {
+  "id": "bar",
+  "category": "place",
+  "intent": {
+   "hue": 30,
+   "l": 0.3,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "bar, dim drinking place",
+  "ru": "бар, полумрак"
+ },
+ {
+  "id": "cafe",
+  "category": "place",
+  "intent": {
+   "hue": 60,
+   "l": 0.55,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "cafe, cozy coffee place",
+  "ru": "кафейня, уютное место"
+ },
+ {
+  "id": "restaurant",
+  "category": "place",
+  "intent": {
+   "hue": 45,
+   "l": 0.4,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "restaurant, fine dining",
+  "ru": "ресторан, изысканная кухня"
+ },
+ {
+  "id": "bakery",
+  "category": "place",
+  "intent": {
+   "hue": 65,
+   "l": 0.65,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "bakery, fresh bread",
+  "ru": "пекарня, свежий хлеб"
+ },
+ {
+  "id": "market",
+  "category": "place",
+  "intent": {
+   "hue": 60,
+   "l": 0.55,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "market, bazaar stalls",
+  "ru": "рынок, торговые ряды"
+ },
+ {
+  "id": "deadmall",
+  "category": "place",
+  "intent": {
+   "hue": 230,
+   "l": 0.45,
+   "relC": 0.18,
+   "harmony": "analogous"
+  },
+  "en": "dead shopping mall, empty stores",
+  "ru": "мертвый торговый центр, пустые магазины"
+ },
+ {
+  "id": "museum",
+  "category": "place",
+  "intent": {
+   "hue": 60,
+   "l": 0.5,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "museum, gallery halls",
+  "ru": "музей, залы галереи"
+ },
+ {
+  "id": "theater",
+  "category": "place",
+  "intent": {
+   "hue": 350,
+   "l": 0.35,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "theater, stage curtains",
+  "ru": "театр, сцена и занавес"
+ },
+ {
+  "id": "cinema",
+  "category": "place",
+  "intent": {
+   "hue": 270,
+   "l": 0.2,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "cinema, dark movie hall",
+  "ru": "кинотеатр, темный зал"
+ },
+ {
+  "id": "arcade",
+  "category": "tech",
+  "intent": {
+   "hue": 260,
+   "l": 0.35,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "arcade hall, game machines",
+  "ru": "игровой зал, автоматы"
+ },
+ {
+  "id": "computerclub",
+  "category": "tech",
+  "intent": {
+   "hue": 250,
+   "l": 0.3,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "computer club, old PCs",
+  "ru": "компьютерный клуб, старые ПК"
+ },
+ {
+  "id": "laboratory",
+  "category": "place",
+  "intent": {
+   "hue": 190,
+   "l": 0.7,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "laboratory, sterile science",
+  "ru": "лаборатория, стерильная наука"
+ },
+ {
+  "id": "serverroom",
+  "category": "tech",
+  "intent": {
+   "hue": 230,
+   "l": 0.35,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "server room, racks of machines",
+  "ru": "серверная, стойки с машинами"
+ },
+ {
+  "id": "retro",
+  "category": "style",
+  "intent": {
+   "hue": 45,
+   "l": 0.5,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "retro, vintage seventies",
+  "ru": "ретро, винтаж"
+ },
+ {
+  "id": "synthwave",
+  "category": "style",
+  "intent": {
+   "hue": 310,
+   "l": 0.45,
+   "relC": 0.8,
+   "harmony": "splitComplementary"
+  },
+  "en": "synthwave, eighties retro electronic",
+  "ru": "синтвейв, восьмидесятые"
+ },
+ {
+  "id": "vaporwave",
+  "category": "style",
+  "intent": {
+   "hue": 300,
+   "l": 0.6,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "vaporwave aesthetic",
+  "ru": "вайпорвейв эстетика"
+ },
+ {
+  "id": "vhs",
+  "category": "tech",
+  "intent": {
+   "hue": 180,
+   "l": 0.4,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "old vhs tape, analog video noise",
+  "ru": "старая видеокассета, аналоговый шум"
+ },
+ {
+  "id": "crt",
+  "category": "tech",
+  "intent": {
+   "hue": 180,
+   "l": 0.5,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "old crt monitor glow",
+  "ru": "старый ЭЛТ-монитор"
+ },
+ {
+  "id": "terminal",
+  "category": "tech",
+  "intent": {
+   "hue": 140,
+   "l": 0.35,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "terminal, green on black text",
+  "ru": "терминал, зеленый текст на черном"
+ },
+ {
+  "id": "soviet",
+  "category": "style",
+  "intent": {
+   "hue": 50,
+   "l": 0.45,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "soviet era, soviet style",
+  "ru": "советская эпоха, советский стиль"
+ },
+ {
+  "id": "brutalism",
+  "category": "style",
+  "intent": {
+   "hue": 220,
+   "l": 0.45,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "brutalism, raw concrete",
+  "ru": "брутализм, грубый бетон"
+ },
+ {
+  "id": "concrete",
+  "category": "material",
+  "intent": {
+   "hue": 220,
+   "l": 0.5,
+   "relC": 0.12,
+   "harmony": "analogous"
+  },
+  "en": "concrete, grey cement",
+  "ru": "бетон, серый цемент"
+ },
+ {
+  "id": "asphalt",
+  "category": "material",
+  "intent": {
+   "hue": 230,
+   "l": 0.25,
+   "relC": 0.1,
+   "harmony": "analogous"
+  },
+  "en": "asphalt, road surface",
+  "ru": "асфальт, дорожное покрытие"
+ },
+ {
+  "id": "steel",
+  "category": "material",
+  "intent": {
+   "hue": 230,
+   "l": 0.55,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "steel, cold metal",
+  "ru": "сталь, холодный металл"
+ },
+ {
+  "id": "wood",
+  "category": "material",
+  "intent": {
+   "hue": 65,
+   "l": 0.45,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "wooden material, lumber, timber texture",
+  "ru": "древесина, пиломатериал"
+ },
+ {
+  "id": "leather",
+  "category": "material",
+  "intent": {
+   "hue": 40,
+   "l": 0.35,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "leather, worn brown",
+  "ru": "кожа, потертая коричневая"
+ },
+ {
+  "id": "marble",
+  "category": "material",
+  "intent": {
+   "hue": 230,
+   "l": 0.75,
+   "relC": 0.12,
+   "harmony": "analogous"
+  },
+  "en": "marble, polished stone",
+  "ru": "мрамор, полированный камень"
+ },
+ {
+  "id": "sand",
+  "category": "material",
+  "intent": {
+   "hue": 75,
+   "l": 0.7,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "sand, warm desert grains",
+  "ru": "песок, теплые песчинки"
+ },
+ {
+  "id": "coffee",
+  "category": "food",
+  "intent": {
+   "hue": 50,
+   "l": 0.35,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "coffee, roasted beans",
+  "ru": "кофе, обжаренные зерна"
+ },
+ {
+  "id": "espresso",
+  "category": "food",
+  "intent": {
+   "hue": 35,
+   "l": 0.25,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "espresso, strong dark coffee",
+  "ru": "эспрессо, крепкий темный кофе"
+ },
+ {
+  "id": "tea",
+  "category": "food",
+  "intent": {
+   "hue": 70,
+   "l": 0.55,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "tea, warm cup",
+  "ru": "чай, теплая чашка"
+ },
+ {
+  "id": "matcha",
+  "category": "food",
+  "intent": {
+   "hue": 120,
+   "l": 0.6,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "matcha, green tea powder",
+  "ru": "матча, зеленый чай"
+ },
+ {
+  "id": "wine",
+  "category": "food",
+  "intent": {
+   "hue": 10,
+   "l": 0.3,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "wine, red wine glass",
+  "ru": "вино, бокал красного"
+ },
+ {
+  "id": "whiskey",
+  "category": "food",
+  "intent": {
+   "hue": 55,
+   "l": 0.45,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "whisky, amber liquor",
+  "ru": "виски, янтарный напиток"
+ },
+ {
+  "id": "beer",
+  "category": "food",
+  "intent": {
+   "hue": 80,
+   "l": 0.6,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "beer, golden ale",
+  "ru": "пиво, золотистый эль"
+ },
+ {
+  "id": "water",
+  "category": "food",
+  "intent": {
+   "hue": 210,
+   "l": 0.7,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "pure water, clear drink",
+  "ru": "чистая вода, прозрачный напиток"
+ },
+ {
+  "id": "milk",
+  "category": "food",
+  "intent": {
+   "hue": 90,
+   "l": 0.9,
+   "relC": 0.08,
+   "harmony": "analogous"
+  },
+  "en": "milk, white creamy",
+  "ru": "молоко, белое сливочное"
+ },
+ {
+  "id": "honey",
+  "category": "food",
+  "intent": {
+   "hue": 75,
+   "l": 0.6,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "honey, golden sweet",
+  "ru": "мед, золотистая сладость"
+ },
+ {
+  "id": "candy",
+  "category": "food",
+  "intent": {
+   "hue": 330,
+   "l": 0.65,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "candy, sweets",
+  "ru": "конфеты, сладости"
+ },
+ {
+  "id": "icecream",
+  "category": "food",
+  "intent": {
+   "hue": 180,
+   "l": 0.75,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "ice cream, cold dessert",
+  "ru": "мороженое, холодный десерт"
+ },
+ {
+  "id": "strawberry",
+  "category": "food",
+  "intent": {
+   "hue": 15,
+   "l": 0.55,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "strawberry, ripe red berry",
+  "ru": "клубника, спелая ягода"
+ },
+ {
+  "id": "lemon",
+  "category": "food",
+  "intent": {
+   "hue": 95,
+   "l": 0.75,
+   "relC": 0.8,
+   "harmony": "analogous"
+  },
+  "en": "lemon, sour yellow citrus",
+  "ru": "лимон, кислый цитрус"
+ },
+ {
+  "id": "blueberry",
+  "category": "food",
+  "intent": {
+   "hue": 260,
+   "l": 0.35,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "blueberry, dark blue berry",
+  "ru": "черника, темно-синяя ягода"
+ },
+ {
+  "id": "grape",
+  "category": "food",
+  "intent": {
+   "hue": 300,
+   "l": 0.35,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "grapes, purple fruit",
+  "ru": "виноград, фиолетовый плод"
+ },
+ {
+  "id": "cherry",
+  "category": "food",
+  "intent": {
+   "hue": 15,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "cherry, ripe red fruit",
+  "ru": "вишня, спелый красный плод"
+ },
+ {
+  "id": "tomato",
+  "category": "food",
+  "intent": {
+   "hue": 25,
+   "l": 0.5,
+   "relC": 0.7,
+   "harmony": "analogous"
+  },
+  "en": "tomato, red vegetable",
+  "ru": "помидор, красный овощ"
+ },
+ {
+  "id": "pumpkin",
+  "category": "food",
+  "intent": {
+   "hue": 60,
+   "l": 0.55,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "pumpkin, orange gourd",
+  "ru": "тыква, оранжевая"
+ },
+ {
+  "id": "cinnamon",
+  "category": "food",
+  "intent": {
+   "hue": 45,
+   "l": 0.45,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "cinnamon, warm spice",
+  "ru": "корица, теплая специя"
+ },
+ {
+  "id": "vanilla",
+  "category": "food",
+  "intent": {
+   "hue": 80,
+   "l": 0.8,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "vanilla, soft sweet pale",
+  "ru": "ваниль, мягкий сладкий"
+ },
+ {
+  "id": "alien",
+  "category": "fantasy",
+  "intent": {
+   "hue": 140,
+   "l": 0.5,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "alien, extraterrestrial",
+  "ru": "пришелец, инопланетный"
+ },
+ {
+  "id": "dragon",
+  "category": "fantasy",
+  "intent": {
+   "hue": 30,
+   "l": 0.4,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "dragon, fire scales",
+  "ru": "дракон, огненная чешуя"
+ },
+ {
+  "id": "fairy",
+  "category": "fantasy",
+  "intent": {
+   "hue": 320,
+   "l": 0.7,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "fairy, tiny magic lights",
+  "ru": "фея, волшебные огоньки"
+ },
+ {
+  "id": "magic",
+  "category": "fantasy",
+  "intent": {
+   "hue": 290,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "magic, arcane spells",
+  "ru": "магия, тайные заклинания"
+ },
+ {
+  "id": "darkmagic",
+  "category": "fantasy",
+  "intent": {
+   "hue": 280,
+   "l": 0.25,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "dark magic, forbidden sorcery",
+  "ru": "темная магия, запретное колдовство"
+ },
+ {
+  "id": "enchantedforest",
+  "category": "fantasy",
+  "intent": {
+   "hue": 150,
+   "l": 0.4,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "enchanted forest, fairytale woods",
+  "ru": "волшебный лес, сказочная чаща"
+ },
+ {
+  "id": "unicorn",
+  "category": "fantasy",
+  "intent": {
+   "hue": 330,
+   "l": 0.75,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "unicorn, pastel fantasy",
+  "ru": "единорог, пасторальная сказка"
+ },
+ {
+  "id": "mermaid",
+  "category": "fantasy",
+  "intent": {
+   "hue": 180,
+   "l": 0.5,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "mermaid, sea maiden",
+  "ru": "русалка, морская дева"
+ },
+ {
+  "id": "ghost",
+  "category": "horror",
+  "intent": {
+   "hue": 220,
+   "l": 0.75,
+   "relC": 0.1,
+   "harmony": "analogous"
+  },
+  "en": "ghost, pale apparition",
+  "ru": "призрак, бледное видение"
+ },
+ {
+  "id": "vampire",
+  "category": "horror",
+  "intent": {
+   "hue": 15,
+   "l": 0.2,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "vampire, gothic blood",
+  "ru": "вампир, готическая кровь"
+ },
+ {
+  "id": "zombie",
+  "category": "horror",
+  "intent": {
+   "hue": 110,
+   "l": 0.4,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "zombie, rotting undead",
+  "ru": "зомби, гниющие мертвецы"
+ },
+ {
+  "id": "witch",
+  "category": "fantasy",
+  "intent": {
+   "hue": 270,
+   "l": 0.25,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "witch, dark sorceress",
+  "ru": "ведьма, темная колдунья"
+ },
+ {
+  "id": "pirate",
+  "category": "fantasy",
+  "intent": {
+   "hue": 50,
+   "l": 0.35,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "pirate, sea rover",
+  "ru": "пират, морской разбойник"
+ },
+ {
+  "id": "royal",
+  "category": "style",
+  "intent": {
+   "hue": 275,
+   "l": 0.35,
+   "relC": 0.55,
+   "harmony": "splitComplementary"
+  },
+  "en": "royal, regal palace",
+  "ru": "королевский, дворцовый"
+ },
+ {
+  "id": "knight",
+  "category": "fantasy",
+  "intent": {
+   "hue": 230,
+   "l": 0.4,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "knight, steel armor",
+  "ru": "рыцарь, стальная броня"
+ },
+ {
+  "id": "love",
+  "category": "mood",
+  "intent": {
+   "hue": 350,
+   "l": 0.55,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "love, romantic feeling",
+  "ru": "любовь, романтическое чувство"
+ },
+ {
+  "id": "romance",
+  "category": "mood",
+  "intent": {
+   "hue": 345,
+   "l": 0.6,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "romance, tender evening",
+  "ru": "романтика, нежный вечер"
+ },
+ {
+  "id": "toxiclove",
+  "category": "mood",
+  "intent": {
+   "hue": 335,
+   "l": 0.45,
+   "relC": 0.75,
+   "harmony": "splitComplementary"
+  },
+  "en": "toxic love, poisonous passion",
+  "ru": "токсичная любовь, ядовитая страсть"
+ },
+ {
+  "id": "passion",
+  "category": "mood",
+  "intent": {
+   "hue": 20,
+   "l": 0.5,
+   "relC": 0.75,
+   "harmony": "complementary"
+  },
+  "en": "passion, burning desire",
+  "ru": "страсть, жгучее желание"
+ },
+ {
+  "id": "anger",
+  "category": "mood",
+  "intent": {
+   "hue": 25,
+   "l": 0.45,
+   "relC": 0.7,
+   "harmony": "complementary"
+  },
+  "en": "anger, fury",
+  "ru": "злость, ярость"
+ },
+ {
+  "id": "calm",
+  "category": "mood",
+  "intent": {
+   "hue": 210,
+   "l": 0.6,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "calm, peaceful stillness",
+  "ru": "покой, безмятежность"
+ },
+ {
+  "id": "loneliness",
+  "category": "mood",
+  "intent": {
+   "hue": 235,
+   "l": 0.3,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "loneliness, empty solitude",
+  "ru": "одиночество, пустота"
+ },
+ {
+  "id": "sadness",
+  "category": "mood",
+  "intent": {
+   "hue": 240,
+   "l": 0.4,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "sadness, sorrow",
+  "ru": "грусть, печаль"
+ },
+ {
+  "id": "melancholy",
+  "category": "mood",
+  "intent": {
+   "hue": 250,
+   "l": 0.4,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "melancholy, wistful dusk",
+  "ru": "меланхолия, тоскливые сумерки"
+ },
+ {
+  "id": "nostalgia",
+  "category": "mood",
+  "intent": {
+   "hue": 55,
+   "l": 0.5,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "nostalgia, warm old memories",
+  "ru": "ностальгия, теплые старые воспоминания"
+ },
+ {
+  "id": "dream",
+  "category": "mood",
+  "intent": {
+   "hue": 280,
+   "l": 0.5,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "dream, soft sleep visions",
+  "ru": "сон, мягкие видения"
+ },
+ {
+  "id": "nightmare",
+  "category": "mood",
+  "intent": {
+   "hue": 270,
+   "l": 0.15,
+   "relC": 0.45,
+   "harmony": "splitComplementary"
+  },
+  "en": "nightmare, terrifying dream",
+  "ru": "кошмар, ужасный сон"
+ },
+ {
+  "id": "hope",
+  "category": "mood",
+  "intent": {
+   "hue": 80,
+   "l": 0.65,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "hope, morning light",
+  "ru": "надежда, утренний свет"
+ },
+ {
+  "id": "joy",
+  "category": "mood",
+  "intent": {
+   "hue": 60,
+   "l": 0.7,
+   "relC": 0.6,
+   "harmony": "analogous"
+  },
+  "en": "joy, bright happiness",
+  "ru": "радость, светлое счастье"
+ },
+ {
+  "id": "fear",
+  "category": "mood",
+  "intent": {
+   "hue": 250,
+   "l": 0.2,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "fear, dread darkness",
+  "ru": "страх, темный ужас"
+ },
+ {
+  "id": "horror",
+  "category": "mood",
+  "intent": {
+   "hue": 265,
+   "l": 0.15,
+   "relC": 0.4,
+   "harmony": "splitComplementary"
+  },
+  "en": "horror, dread and darkness",
+  "ru": "хоррор, мрак и ужас"
+ },
+ {
+  "id": "danger",
+  "category": "mood",
+  "intent": {
+   "hue": 15,
+   "l": 0.45,
+   "relC": 0.65,
+   "harmony": "complementary"
+  },
+  "en": "danger, alarm",
+  "ru": "опасность, тревога"
+ },
+ {
+  "id": "toxic",
+  "category": "mood",
+  "intent": {
+   "hue": 130,
+   "l": 0.5,
+   "relC": 0.7,
+   "harmony": "splitComplementary"
+  },
+  "en": "toxic, poisonous",
+  "ru": "токсичный, ядовитый"
+ },
+ {
+  "id": "radioactive",
+  "category": "mood",
+  "intent": {
+   "hue": 120,
+   "l": 0.6,
+   "relC": 0.8,
+   "harmony": "splitComplementary"
+  },
+  "en": "radioactive, glowing hazard",
+  "ru": "радиоактивный, светящаяся угроза"
+ },
+ {
+  "id": "death",
+  "category": "mood",
+  "intent": {
+   "hue": 250,
+   "l": 0.15,
+   "relC": 0.15,
+   "harmony": "analogous"
+  },
+  "en": "death, mourning",
+  "ru": "смерть, траур"
+ },
+ {
+  "id": "luxury",
+  "category": "mood",
+  "intent": {
+   "hue": 45,
+   "l": 0.4,
+   "relC": 0.55,
+   "harmony": "splitComplementary"
+  },
+  "en": "luxury, rich expensive gold",
+  "ru": "роскошь, богатое золото"
+ },
+ {
+  "id": "elegance",
+  "category": "mood",
+  "intent": {
+   "hue": 340,
+   "l": 0.45,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "elegant, refined style",
+  "ru": "элегантность, утонченность"
+ },
+ {
+  "id": "cozy",
+  "category": "mood",
+  "intent": {
+   "hue": 60,
+   "l": 0.55,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "cozy, warm comfortable",
+  "ru": "уют, тепло и комфорт"
+ },
+ {
+  "id": "warmth",
+  "category": "mood",
+  "intent": {
+   "hue": 55,
+   "l": 0.55,
+   "relC": 0.55,
+   "harmony": "analogous"
+  },
+  "en": "warm, warmness",
+  "ru": "тепло, теплота"
+ },
+ {
+  "id": "cold",
+  "category": "mood",
+  "intent": {
+   "hue": 225,
+   "l": 0.5,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "cold, icy chill",
+  "ru": "холод, ледяной озноб"
+ },
+ {
+  "id": "fresh",
+  "category": "mood",
+  "intent": {
+   "hue": 160,
+   "l": 0.65,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "fresh, crisp clean",
+  "ru": "свежесть, чистота"
+ },
+ {
+  "id": "freedom",
+  "category": "mood",
+  "intent": {
+   "hue": 190,
+   "l": 0.65,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "freedom, open sky",
+  "ru": "свобода, открытое небо"
+ },
+ {
+  "id": "energy",
+  "category": "mood",
+  "intent": {
+   "hue": 40,
+   "l": 0.6,
+   "relC": 0.75,
+   "harmony": "splitComplementary"
+  },
+  "en": "energy, powerful drive",
+  "ru": "энергия, мощный заряд"
+ },
+ {
+  "id": "mystery",
+  "category": "mood",
+  "intent": {
+   "hue": 275,
+   "l": 0.25,
+   "relC": 0.5,
+   "harmony": "analogous"
+  },
+  "en": "mystery, secret enigma",
+  "ru": "тайна, загадка"
+ },
+ {
+  "id": "space_dream",
+  "category": "mood",
+  "intent": {
+   "hue": 290,
+   "l": 0.35,
+   "relC": 0.6,
+   "harmony": "splitComplementary"
+  },
+  "en": "dream about space, cosmic dream",
+  "ru": "сон про космос"
+ },
+ {
+  "id": "fire",
+  "category": "nature",
+  "intent": {
+   "hue": 35,
+   "l": 0.5,
+   "relC": 0.7,
+   "harmony": "complementary"
+  },
+  "en": "fire, burning flames",
+  "ru": "огонь, пламя, пожар"
+ },
+ {
+  "id": "flame",
+  "category": "nature",
+  "intent": {
+   "hue": 45,
+   "l": 0.55,
+   "relC": 0.7,
+   "harmony": "complementary"
+  },
+  "en": "flame, candle fire",
+  "ru": "пламя, огонь свечи"
+ },
+ {
+  "id": "sakura",
+  "category": "nature",
+  "intent": {
+   "hue": 350,
+   "l": 0.72,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "cherry blossom, sakura flowers",
+  "ru": "цветение сакуры, вишневый цвет"
+ },
+ {
+  "id": "chalkboard",
+  "category": "object",
+  "intent": {
+   "hue": 150,
+   "l": 0.3,
+   "relC": 0.3,
+   "harmony": "analogous"
+  },
+  "en": "school chalkboard, green blackboard",
+  "ru": "школьная доска, грифельная доска"
+ },
+ {
+  "id": "robot",
+  "category": "tech",
+  "intent": {
+   "hue": 230,
+   "l": 0.5,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "robot, machine android",
+  "ru": "робот, механический андроид"
+ },
+ {
+  "id": "mine",
+  "category": "industrial",
+  "intent": {
+   "hue": 60,
+   "l": 0.15,
+   "relC": 0.2,
+   "harmony": "analogous"
+  },
+  "en": "mine, coal shaft underground",
+  "ru": "шахта, угольная штольня"
+ },
+ {
+  "id": "icecave",
+  "category": "nature",
+  "intent": {
+   "hue": 200,
+   "l": 0.6,
+   "relC": 0.35,
+   "harmony": "analogous"
+  },
+  "en": "ice cave, frozen grotto",
+  "ru": "ледяная пещера, замерзший грот"
+ },
+ {
+  "id": "smog",
+  "category": "weather",
+  "intent": {
+   "hue": 70,
+   "l": 0.45,
+   "relC": 0.25,
+   "harmony": "analogous"
+  },
+  "en": "smog, dirty city air",
+  "ru": "смог, грязный городской воздух"
+ },
+ {
+  "id": "grandmahome",
+  "category": "place",
+  "intent": {
+   "hue": 65,
+   "l": 0.6,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "grandma's cozy old house, family home warmth",
+  "ru": "бабушкин уютный старый дом, семейное тепло"
+ },
+ {
+  "id": "vinyl",
+  "category": "tech",
+  "intent": {
+   "hue": 45,
+   "l": 0.4,
+   "relC": 0.45,
+   "harmony": "analogous"
+  },
+  "en": "vinyl record player, old radio, turntable",
+  "ru": "виниловый проигрыватель, старое радио, радиола"
+ },
+ {
+  "id": "swimmingpool",
+  "category": "place",
+  "intent": {
+   "hue": 190,
+   "l": 0.6,
+   "relC": 0.4,
+   "harmony": "analogous"
+  },
+  "en": "swimming pool, pool water",
+  "ru": "бассейн, вода бассейна"
+ }
+]
