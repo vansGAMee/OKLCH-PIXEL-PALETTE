@@ -4,9 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { isSupabaseAvailable } from '@/lib/supabase/client';
 
 export const metadata: Metadata = {
-  title: 'OKLCH Palette Generator — AI & Perceptual Color Engine for Pixel Art, Games and UI',
+  title: 'AI OKLCH Palette Generator for Pixel Art & UI',
   description:
-    'Generate balanced OKLCH color palettes from text descriptions with local AI or manual harmonies. 2–9 colors, pixel art sprite previews, lightness ladder and CSS/PNG export.',
+    'Generate balanced OKLCH color palettes from text descriptions or color harmonies with local in-browser AI and sprite previews.',
   alternates: {
     canonical: 'https://oklchpalette.ru/',
     languages: {
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'OKLCH Palette Generator — AI & Perceptual Color Engine for Pixel Art, Games and UI',
+    title: 'AI OKLCH Palette Generator for Pixel Art & UI',
     description:
-      'Generate balanced OKLCH color palettes from text descriptions with local AI or manual harmonies. 2–9 colors, pixel art sprite previews, lightness ladder and CSS/PNG export.',
+      'Generate balanced OKLCH color palettes from text descriptions or color harmonies with local in-browser AI and sprite previews.',
     url: 'https://oklchpalette.ru/',
     siteName: 'OKLCH Pixel Palette',
     locale: 'en_US',
@@ -27,9 +27,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OKLCH Palette Generator — AI & Perceptual Color Engine for Pixel Art, Games and UI',
+    title: 'AI OKLCH Palette Generator for Pixel Art & UI',
     description:
-      'Generate balanced OKLCH color palettes from text descriptions with local AI or manual harmonies. 2–9 colors, pixel art sprite previews, lightness ladder and CSS/PNG export.',
+      'Generate balanced OKLCH color palettes from text descriptions or color harmonies with local in-browser AI and sprite previews.',
   },
 };
 

@@ -128,19 +128,19 @@ export default function OklchForPixelArtGuide() {
 
           {/* Section 3 */}
           <section className="space-y-4">
-            <h2 className="text-xl font-mono font-bold text-white">Starting from mood or scene: AI palette generation</h2>
+            <h2 className="text-xl font-mono font-bold text-white">Starting from text: AI palette generation</h2>
             <p className="text-sm text-gray-300 font-sans leading-relaxed">
-              When designing game sprites or environments, you often know the atmosphere or setting (for instance, <em>&quot;deep sea horror&quot;</em>, <em>&quot;autumn forest tavern&quot;</em>, or <em>&quot;неоновый киберпанк&quot;</em>) before picking specific HEX values.
+              When creating sprites or environments, you often have a scene in mind (such as <em>&quot;deep sea horror&quot;</em>, <em>&quot;autumn forest&quot;</em>, or <em>&quot;неоновый киберпанк&quot;</em>) before picking exact HEX values.
             </p>
             <p className="text-sm text-gray-300 font-sans leading-relaxed">
-              In the <Link href="/create" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">OKLCH Palette Studio</Link>, you can describe your scene in plain English or Russian. A local in-browser AI model maps the text to an initial base color and harmony in OKLCH, generating a calibrated starting palette with sRGB gamut protection that you can immediately refine.
+              In the <Link href="/create" className="text-purple-400 hover:text-purple-300 underline underline-offset-2">OKLCH Studio</Link>, you can describe your scene in English or Russian. A local in-browser model turns the prompt into a starting OKLCH palette with balanced lightness steps that you can edit and export.
             </p>
           </section>
 
           {/* CTA */}
           <section className="glass-panel rounded-2xl border border-purple-500/30 p-8 text-center space-y-4">
             <h2 className="text-xl font-mono font-bold text-white">Try it in the Studio</h2>
-            <p className="text-sm text-gray-300">Generate OKLCH palettes from text descriptions or manual harmony rules with real-time lightness analysis.</p>
+            <p className="text-sm text-gray-300">Generate OKLCH palettes from text descriptions or color harmony rules with real-time lightness analysis.</p>
             <Link
               href="/create"
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-mono font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-xl transition-all shadow-lg shadow-purple-900/40"

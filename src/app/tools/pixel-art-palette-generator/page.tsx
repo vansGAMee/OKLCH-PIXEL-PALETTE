@@ -3,21 +3,21 @@ import Link from 'next/link';
 import { Palette, Terminal, ChevronRight, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Free OKLCH Pixel Art & AI Palette Generator | CSS & Sprite Export',
-  description: 'Build balanced 2–9 color pixel-art palettes in OKLCH using manual harmonies or local AI text descriptions. Preview sprites, analyze lightness and export CSS, PAL, GPL, PNG.',
+  title: 'Pixel Art & AI Palette Generator | OKLCH Color Engine',
+  description: 'Generate balanced pixel art palettes in OKLCH from text prompts or color harmonies, preview sprites, and export CSS or palette files.',
   alternates: { canonical: 'https://oklchpalette.ru/tools/pixel-art-palette-generator' },
   openGraph: {
-    title: 'Free OKLCH Pixel Art & AI Palette Generator | CSS & Sprite Export',
-    description: 'Build balanced pixel-art palettes using local AI or manual OKLCH harmonies, preview sprites, and export CSS or artist palette files.',
+    title: 'Pixel Art & AI Palette Generator | OKLCH Color Engine',
+    description: 'Generate balanced pixel art palettes in OKLCH from text prompts or color harmonies, preview sprites, and export CSS or palette files.',
     type: 'website',
   },
 };
 
 const FEATURES = [
-  { title: 'AI Text-to-Palette', desc: 'Describe scenes or moods in natural language (EN & RU) to generate calibrated OKLCH starting palettes with local in-browser AI.' },
+  { title: 'AI Text Prompts', desc: 'Describe a scene or mood in English or Russian to generate a starting OKLCH palette locally in the browser.' },
   { title: 'Perceptual Lightness', desc: 'OKLCH L-channel gives perfectly even light-to-dark steps — critical for shading in pixel art.' },
   { title: '6 Harmony Modes', desc: 'Complementary, Split-Complementary, Analogous, Triadic, Tetradic, Monochromatic.' },
-  { title: 'sRGB Gamut Guard', desc: 'Every generated color is clamped to sRGB with Delta E verification — no out-of-gamut surprises.' },
+  { title: 'sRGB Gamut Fitting', desc: 'Every generated color is fitted to the sRGB gamut while preserving hue and distinction.' },
   { title: 'Lightness Ladder', desc: 'Visual bar chart sorted by L-value so you can see lightness distribution instantly.' },
   { title: 'Live Pixel Preview', desc: 'See your palette on a potion, gem, shield, and hero sprite before exporting.' },
   { title: 'CSS & Artist Export', desc: 'CSS variables with HEX fallbacks, GPL (GIMP), JASC PAL (Aseprite), HEX, JSON, and branded PNG.' },
@@ -110,7 +110,7 @@ export default function PixelArtPaletteGeneratorPage() {
             </div>
             <div className="glass-panel rounded-xl border border-white/10 p-5 space-y-2">
               <dt className="text-sm font-mono font-bold text-white">How does AI palette generation work?</dt>
-              <dd className="text-xs text-gray-300 font-sans">Type any scene, mood, or environment description (such as &ldquo;autumn forest&rdquo; or &ldquo;neon cyber rain&rdquo;). The local in-browser AI model maps the text to an OKLCH base color and harmony without calling external cloud APIs.</dd>
+              <dd className="text-xs text-gray-300 font-sans">Enter a scene or mood description. A local in-browser model maps the text to an OKLCH base color and harmony rule without contacting external AI APIs.</dd>
             </div>
             <div className="glass-panel rounded-xl border border-white/10 p-5 space-y-2">
               <dt className="text-sm font-mono font-bold text-white">What software accepts the export files?</dt>

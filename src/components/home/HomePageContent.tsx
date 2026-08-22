@@ -34,11 +34,11 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
     operatingSystem: 'Any',
     description: t.hero.subtitle,
     featureList: [
-      'OKLCH Perceptual Color Palette Generator',
-      'Local In-Browser AI Text-to-Palette Generation',
+      'OKLCH Color Palette Generator',
+      'Local In-Browser AI Palette Generation from Text',
       'Lightness Ladder & Perceptual Contrast Analysis',
       'Pixel Art Sprite Previews',
-      'sRGB Gamut Protection',
+      'sRGB Gamut Fitting',
       'PNG, CSS, GPL, JASC PAL & JSON Export',
     ],
     offers: {
