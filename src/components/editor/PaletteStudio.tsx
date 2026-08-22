@@ -173,6 +173,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   }, [isRu, palette, paletteName]);
 
   const homeHref = locale === 'ru' ? '/ru' : '/';
+  const urlPrompt = searchParams?.get('prompt') || searchParams?.get('q') || '';
 
   return (
     <div
@@ -235,7 +236,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
 
         {/* AI Palette Generation */}
         <section aria-label={isRu ? 'AI генерация' : 'AI generation'}>
-          <AiPaletteInput onApply={handleAiApply} locale={locale} />
+          <AiPaletteInput onApply={handleAiApply} locale={locale} initialPrompt={urlPrompt} />
         </section>
 
         {/* Palette Name Section */}

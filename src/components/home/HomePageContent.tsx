@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Palette, Sparkles, Sliders, Eye, BarChart2, ShieldCheck, Download, ChevronRight, Terminal } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { MobileMenu } from '@/components/layout/MobileMenu';
+import { HomeAiPromptBox } from '@/components/home/HomeAiPromptBox';
 import { Locale, messages } from '@/i18n/messages';
 
 interface HomePageContentProps {
@@ -325,7 +326,9 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
         </section>
 
         {/* AI Text-to-Palette Section */}
-        <section id="ai-palette" aria-labelledby="ai-generator-heading" className="glass-panel p-8 sm:p-10 rounded-2xl border border-purple-500/20 bg-purple-950/10 space-y-8">
+        <section id="ai-palette" aria-labelledby="ai-generator-heading" className="relative overflow-hidden glass-panel p-8 sm:p-10 rounded-2xl border border-purple-500/30 bg-gradient-to-b from-purple-950/20 via-zinc-950/60 to-zinc-950/90 shadow-2xl shadow-purple-950/20 space-y-8">
+          <div className="absolute -top-24 -right-24 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
             <div className="space-y-3 max-w-2xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono">
@@ -349,29 +352,18 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-7 space-y-4 text-xs sm:text-sm text-gray-300 font-sans leading-relaxed">
+            <div className="lg:col-span-7 space-y-6 text-xs sm:text-sm text-gray-300 font-sans leading-relaxed">
               <p>
                 {t.aiSection.description}
               </p>
-              <div className="space-y-2 pt-2">
-                <span className="text-xs font-mono font-bold text-purple-300 block">
-                  {t.aiSection.promptExamplesTitle}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {t.aiSection.prompts.map((promptText, idx) => (
-                    <Link
-                      key={idx}
-                      href={createHref}
-                      className="px-3 py-1.5 rounded-lg bg-zinc-900/90 hover:bg-purple-900/30 border border-white/10 hover:border-purple-500/40 text-xs font-mono text-gray-300 hover:text-purple-200 transition-colors"
-                    >
-                      &ldquo;{promptText}&rdquo;
-                    </Link>
-                  ))}
-                </div>
+
+              {/* Interactive AI Prompt Entry */}
+              <div className="pt-1">
+                <HomeAiPromptBox locale={locale} prompts={t.aiSection.prompts} />
               </div>
             </div>
 
-            <div className="lg:col-span-5 glass-panel p-5 rounded-xl border border-white/10 space-y-3 bg-zinc-950/60">
+            <div className="lg:col-span-5 glass-panel p-6 rounded-xl border border-white/10 space-y-4 bg-zinc-950/70">
               <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>{t.aiSection.privacyTitle}</span>
@@ -379,6 +371,10 @@ export function HomePageContent({ locale = 'en', isAuthenticated = false }: Home
               <p className="text-xs text-gray-400 font-sans leading-relaxed">
                 {t.aiSection.privacyDesc}
               </p>
+              <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-gray-500">
+                <span>ONNX WebAssembly</span>
+                <span className="text-purple-400">0% Cloud Latency</span>
+              </div>
             </div>
           </div>
         </section>
