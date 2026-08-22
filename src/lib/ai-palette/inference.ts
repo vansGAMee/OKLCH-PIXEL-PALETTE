@@ -18,26 +18,53 @@ import {
 } from './semanticMapper';
 import { matchColorConstraint } from './colorLexicon';
 
-let encoderPromise: Promise<{
+export interface EncoderSession {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tokenizer: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   model: any;
-}> | null = null;
+}
+
+let encoderPromise: Promise<EncoderSession> | null = null;
+let customEncoderLoader: (() => Promise<EncoderSession>) | null = null;
 
 const ENCODER_MODEL_ID = 'multilingual-e5-small';
+
+export function setTestEncoderLoader(loader: (() => Promise<EncoderSession>) | null) {
+  customEncoderLoader = loader;
+  encoderPromise = null;
+}
+
+export function resetEncoderSession() {
+  encoderPromise = null;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function setTestArtifacts(_vocab?: Record<string, number>, _model?: ArrayBuffer | Uint8Array | string) {
   encoderPromise = null;
+  customEncoderLoader = null;
   setTestAnchors(null);
 }
 
-async function getEncoder() {
+export async function getEncoder() {
   if (encoderPromise) return encoderPromise;
 
-  encoderPromise = (async () => {
-    const { AutoTokenizer, AutoModel, env } = await import('@huggingface/transformers');
+  const loadPromise = (async () => {
+    if (customEncoderLoader) {
+      return await customEncoderLoader();
+    }
+
+    let transformersModule: typeof import('@huggingface/transformers');
+    try {
+      transformersModule = await import('@huggingface/transformers');
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      const e = new Error(`AI ONNX/WASM runtime load failed while importing @huggingface/transformers: ${detail}`);
+      (e as { cause?: unknown }).cause = err;
+      throw e;
+    }
+
+    const { AutoTokenizer, AutoModel, env } = transformersModule;
     env.allowLocalModels = true;
     env.allowRemoteModels = false;
     env.localModelPath = typeof window !== 'undefined' ? '/models/' : './public/models/';
@@ -50,13 +77,39 @@ async function getEncoder() {
       }
     }
 
-    const tokenizer = await AutoTokenizer.from_pretrained(ENCODER_MODEL_ID);
-    const model = await AutoModel.from_pretrained(ENCODER_MODEL_ID, {
-      dtype: 'q8',
-    });
+    let tokenizer;
+    try {
+      tokenizer = await AutoTokenizer.from_pretrained(ENCODER_MODEL_ID);
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      const e = new Error(
+        `AI tokenizer load failed for ${ENCODER_MODEL_ID}: GET /models/${ENCODER_MODEL_ID}/tokenizer.json (${detail})`
+      );
+      (e as { cause?: unknown }).cause = err;
+      throw e;
+    }
+
+    let model;
+    try {
+      model = await AutoModel.from_pretrained(ENCODER_MODEL_ID, {
+        dtype: 'q8',
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      const e = new Error(
+        `AI encoder load failed while loading E5 model: GET /models/${ENCODER_MODEL_ID}/onnx/model_quantized.onnx (${detail})`
+      );
+      (e as { cause?: unknown }).cause = err;
+      throw e;
+    }
 
     return { tokenizer, model };
   })();
+
+  encoderPromise = loadPromise.catch((err) => {
+    encoderPromise = null;
+    throw err;
+  });
 
   return encoderPromise;
 }
@@ -81,8 +134,25 @@ export async function inferPaletteIntent(prompt: string): Promise<AiPaletteInten
     ]);
 
     // Tokenize text prompt with query: prefix
-    const inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
-    const outputs = await model(inputs);
+    let inputs;
+    try {
+      inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      const e = new Error(`AI tokenization failed for prompt "${normalized}": ${detail}`);
+      (e as { cause?: unknown }).cause = err;
+      throw e;
+    }
+
+    let outputs;
+    try {
+      outputs = await model(inputs);
+    } catch (err) {
+      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      const e = new Error(`AI model inference failed: ${detail}`);
+      (e as { cause?: unknown }).cause = err;
+      throw e;
+    }
 
     // Mean pooling over tokens using attention mask
     const lastHiddenState = outputs.last_hidden_state;

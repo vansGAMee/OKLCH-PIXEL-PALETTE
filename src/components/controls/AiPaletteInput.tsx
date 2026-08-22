@@ -56,6 +56,7 @@ export function AiPaletteInput({ onApply, locale = 'en', className = '' }: AiPal
       setState('idle');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[AI Palette]', err);
       setError(msg);
       setState('error');
     }
@@ -72,10 +73,8 @@ export function AiPaletteInput({ onApply, locale = 'en', className = '' }: AiPal
   );
 
   const handleRetry = useCallback(() => {
-    setState('idle');
-    setError(null);
-    inputRef.current?.focus();
-  }, []);
+    handleGenerate();
+  }, [handleGenerate]);
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {

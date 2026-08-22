@@ -43,25 +43,57 @@ export async function getSemanticAnchors(): Promise<SemanticAnchor[]> {
   if (customAnchors) return customAnchors;
   if (anchorsPromise) return anchorsPromise;
 
-  anchorsPromise = (async () => {
+  const loadPromise = (async () => {
     if (typeof window !== 'undefined') {
-      const res = await fetch('/models/semantic-anchors.json');
-      if (!res.ok) {
-        throw new Error(`Failed to load semantic anchors: ${res.statusText}`);
+      const url = '/models/semantic-anchors.json';
+      let lastError: unknown;
+
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status} ${res.statusText}`);
+          }
+          const pkg: AnchorsPackage = await res.json();
+          if (!pkg?.anchors || !Array.isArray(pkg.anchors)) {
+            throw new Error('Invalid semantic anchors format: missing anchors array');
+          }
+          return pkg.anchors;
+        } catch (err) {
+          lastError = err;
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 250));
+          }
+        }
       }
-      const pkg: AnchorsPackage = await res.json();
-      return pkg.anchors;
+
+      const detail = lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
+      const error = new Error(`AI semantic anchors load failed: GET ${url} (${detail})`);
+      (error as { cause?: unknown }).cause = lastError;
+      throw error;
     } else {
-      const fs = await import('node:fs/promises');
-      const path = await import('node:path');
-      const raw = await fs.readFile(
-        path.join(process.cwd(), 'public/models/semantic-anchors.json'),
-        'utf8'
-      );
-      const pkg: AnchorsPackage = JSON.parse(raw);
-      return pkg.anchors;
+      try {
+        const fs = await import('node:fs/promises');
+        const path = await import('node:path');
+        const raw = await fs.readFile(
+          path.join(process.cwd(), 'public/models/semantic-anchors.json'),
+          'utf8'
+        );
+        const pkg: AnchorsPackage = JSON.parse(raw);
+        return pkg.anchors;
+      } catch (err) {
+        const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        const error = new Error(`AI semantic anchors load failed (fs): ${detail}`);
+        (error as { cause?: unknown }).cause = err;
+        throw error;
+      }
     }
   })();
+
+  anchorsPromise = loadPromise.catch((err) => {
+    anchorsPromise = null;
+    throw err;
+  });
 
   return anchorsPromise;
 }
