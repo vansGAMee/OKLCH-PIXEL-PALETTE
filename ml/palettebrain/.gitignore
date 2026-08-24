@@ -1,0 +1,7 @@
+__pycache__/
+data/*.npz
+checkpoints/*.pt
+checkpoints/*.json
+artifacts/*.onnx
+artifacts/*.json
+.smoke/

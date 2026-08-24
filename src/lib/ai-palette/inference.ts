@@ -1,13 +1,13 @@
 /**
- * inference.ts
- * Multilingual semantic palette generation using local multilingual-e5-small encoder
- * + precomputed semantic anchors + literal color lexicon.
- * Runs completely locally in browser/Node via ONNX WASM & @huggingface/transformers.
+ * Local browser inference for the legacy semantic baseline and PaletteBrain v2.
+ * Neural runtimes and weights are loaded only when an AI function is called.
  */
 'use client';
 
-import type { AiPaletteIntent } from './paletteAdapter';
-import { semanticIntentToBase } from './paletteAdapter';
+import type { OklchColor } from '@/types/palette';
+import { isInSrgbGamut } from '@/lib/color/gamut';
+import type { AiPaletteIntent, PaletteDecoderTensor } from './paletteAdapter';
+import { decodePaletteOutput, semanticIntentToBase } from './paletteAdapter';
 import { normalizeText, stablePromptHash } from './tokenizer';
 import {
   blendAnchorIntent,
@@ -25,28 +25,114 @@ export interface EncoderSession {
   model: any;
 }
 
-let encoderPromise: Promise<EncoderSession> | null = null;
-let customEncoderLoader: (() => Promise<EncoderSession>) | null = null;
-
-const ENCODER_MODEL_ID = 'multilingual-e5-small';
-
-export function setTestEncoderLoader(loader: (() => Promise<EncoderSession>) | null) {
-  customEncoderLoader = loader;
-  encoderPromise = null;
+export interface GenerateAiPaletteRequest {
+  prompt: string;
+  count: number;
+  seed: number;
+  lockedColors?: Array<{
+    index: number;
+    oklch: {
+      l: number;
+      c: number;
+      h: number | null;
+    };
+  }>;
 }
 
-export function resetEncoderSession() {
+export interface GenerateAiPaletteResult {
+  colors: Array<{
+    l: number;
+    c: number;
+    h: number | null;
+  }>;
+  seed: number;
+  modelVersion: string;
+  inference?: {
+    encoderMs?: number;
+    decoderMs?: number;
+    criticMs?: number;
+    totalMs?: number;
+  };
+  fallback?: boolean;
+}
+
+export interface PaletteDecoderInputTensor {
+  data: Float32Array;
+  dims: readonly number[];
+}
+
+export type PaletteDecoderFeeds = Record<string, PaletteDecoderInputTensor>;
+
+export interface PaletteDecoderSession {
+  modelVersion: string;
+  run(feeds: PaletteDecoderFeeds): Promise<PaletteDecoderTensor>;
+}
+
+const ENCODER_MODEL_ID = 'multilingual-e5-small';
+const ENCODER_EMBEDDING_SIZE = 384;
+const MAX_PALETTE_SIZE = 9;
+const PROMPT_EMBEDDING_CACHE_LIMIT = 16;
+const DECODER_MANIFEST_PATH = '/models/palettebrain-v2.manifest.json';
+const DECODER_MODEL_PATH = '/models/palettebrain-v2-decoder.onnx';
+
+let encoderPromise: Promise<EncoderSession> | null = null;
+let customEncoderLoader: (() => Promise<EncoderSession>) | null = null;
+let encoderRunQueue: Promise<void> = Promise.resolve();
+
+let decoderPromise: Promise<PaletteDecoderSession> | null = null;
+let customDecoderLoader: (() => Promise<PaletteDecoderSession>) | null = null;
+let decoderRunQueue: Promise<void> = Promise.resolve();
+
+const promptEmbeddingCache = new Map<string, Promise<Float32Array>>();
+
+function errorDetail(err: unknown): string {
+  return err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+}
+
+function errorWithCause(message: string, cause: unknown): Error {
+  const error = new Error(message);
+  (error as { cause?: unknown }).cause = cause;
+  return error;
+}
+
+function nowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+export function clearPromptEmbeddingCache(): void {
+  promptEmbeddingCache.clear();
+}
+
+export function setTestEncoderLoader(loader: (() => Promise<EncoderSession>) | null): void {
+  customEncoderLoader = loader;
+  resetEncoderSession();
+}
+
+export function resetEncoderSession(): void {
   encoderPromise = null;
+  clearPromptEmbeddingCache();
+}
+
+export function setTestDecoderLoader(loader: (() => Promise<PaletteDecoderSession>) | null): void {
+  customDecoderLoader = loader;
+  resetDecoderSession();
+}
+
+export function resetDecoderSession(): void {
+  decoderPromise = null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setTestArtifacts(_vocab?: Record<string, number>, _model?: ArrayBuffer | Uint8Array | string) {
+export function setTestArtifacts(_vocab?: Record<string, number>, _model?: ArrayBuffer | Uint8Array | string): void {
   encoderPromise = null;
   customEncoderLoader = null;
+  decoderPromise = null;
+  customDecoderLoader = null;
+  clearPromptEmbeddingCache();
   setTestAnchors(null);
 }
 
-export async function getEncoder() {
+export async function getEncoder(): Promise<EncoderSession> {
   if (encoderPromise) return encoderPromise;
 
   const loadPromise = (async () => {
@@ -58,10 +144,10 @@ export async function getEncoder() {
     try {
       transformersModule = await import('@huggingface/transformers');
     } catch (err) {
-      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      const e = new Error(`AI ONNX/WASM runtime load failed while importing @huggingface/transformers: ${detail}`);
-      (e as { cause?: unknown }).cause = err;
-      throw e;
+      throw errorWithCause(
+        `AI ONNX/WASM runtime load failed while importing @huggingface/transformers: ${errorDetail(err)}`,
+        err,
+      );
     }
 
     const { AutoTokenizer, AutoModel, env } = transformersModule;
@@ -69,38 +155,30 @@ export async function getEncoder() {
     env.allowRemoteModels = false;
     env.localModelPath = typeof window !== 'undefined' ? '/models/' : './public/models/';
 
-    if (typeof window !== 'undefined') {
-      if (env.backends?.onnx?.wasm) {
-        env.backends.onnx.wasm.wasmPaths = '/ort/';
-        env.backends.onnx.wasm.numThreads = 1;
-        env.backends.onnx.wasm.proxy = false;
-      }
+    if (typeof window !== 'undefined' && env.backends?.onnx?.wasm) {
+      env.backends.onnx.wasm.wasmPaths = '/ort/';
+      env.backends.onnx.wasm.numThreads = 1;
+      env.backends.onnx.wasm.proxy = false;
     }
 
     let tokenizer;
     try {
       tokenizer = await AutoTokenizer.from_pretrained(ENCODER_MODEL_ID);
     } catch (err) {
-      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      const e = new Error(
-        `AI tokenizer load failed for ${ENCODER_MODEL_ID}: GET /models/${ENCODER_MODEL_ID}/tokenizer.json (${detail})`
+      throw errorWithCause(
+        `AI tokenizer load failed for ${ENCODER_MODEL_ID}: GET /models/${ENCODER_MODEL_ID}/tokenizer.json (${errorDetail(err)})`,
+        err,
       );
-      (e as { cause?: unknown }).cause = err;
-      throw e;
     }
 
     let model;
     try {
-      model = await AutoModel.from_pretrained(ENCODER_MODEL_ID, {
-        dtype: 'q8',
-      });
+      model = await AutoModel.from_pretrained(ENCODER_MODEL_ID, { dtype: 'q8' });
     } catch (err) {
-      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      const e = new Error(
-        `AI encoder load failed while loading E5 model: GET /models/${ENCODER_MODEL_ID}/onnx/model_quantized.onnx (${detail})`
+      throw errorWithCause(
+        `AI encoder load failed while loading E5 model: GET /models/${ENCODER_MODEL_ID}/onnx/model_quantized.onnx (${errorDetail(err)})`,
+        err,
       );
-      (e as { cause?: unknown }).cause = err;
-      throw e;
     }
 
     return { tokenizer, model };
@@ -114,106 +192,440 @@ export async function getEncoder() {
   return encoderPromise;
 }
 
-let inferenceInProgress = false;
-
-export async function inferPaletteIntent(prompt: string): Promise<AiPaletteIntent & { seed: number }> {
-  if (inferenceInProgress) {
-    throw new Error('Inference already in progress');
+async function loadDecoderManifest(): Promise<{ modelVersion: string; decoderPath: string }> {
+  if (typeof fetch !== 'function') {
+    throw new Error('fetch is unavailable');
   }
 
+  const response = await fetch(DECODER_MANIFEST_PATH, { cache: 'force-cache' });
+  if (!response.ok) {
+    throw new Error(`GET ${DECODER_MANIFEST_PATH} returned ${response.status}`);
+  }
+
+  const raw = await response.json() as unknown;
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('manifest must be a JSON object');
+  }
+
+  const manifest = raw as {
+    modelVersion?: unknown;
+    decoder?: { path?: unknown };
+  };
+  if (typeof manifest.modelVersion !== 'string' || !manifest.modelVersion.trim()) {
+    throw new Error('manifest modelVersion must be a non-empty string');
+  }
+
+  const decoderPath = manifest.decoder?.path;
+  if (decoderPath !== DECODER_MODEL_PATH) {
+    throw new Error(`manifest decoder.path must be ${DECODER_MODEL_PATH}`);
+  }
+
+  return { modelVersion: manifest.modelVersion, decoderPath };
+}
+
+async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
+  let manifest: { modelVersion: string; decoderPath: string };
+  try {
+    manifest = await loadDecoderManifest();
+  } catch (err) {
+    throw errorWithCause(`AI palette decoder manifest load failed: ${errorDetail(err)}`, err);
+  }
+
+  let ort: typeof import('onnxruntime-web');
+  try {
+    ort = await import('onnxruntime-web');
+  } catch (err) {
+    throw errorWithCause(`AI palette decoder runtime load failed: ${errorDetail(err)}`, err);
+  }
+
+  ort.env.wasm.wasmPaths = '/ort/';
+  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.proxy = false;
+
+  let session: import('onnxruntime-web').InferenceSession;
+  try {
+    session = await ort.InferenceSession.create(manifest.decoderPath, {
+      executionProviders: ['wasm'],
+      graphOptimizationLevel: 'all',
+    });
+  } catch (err) {
+    throw errorWithCause(
+      `AI palette decoder load failed for ${manifest.decoderPath}: ${errorDetail(err)}`,
+      err,
+    );
+  }
+
+  return {
+    modelVersion: manifest.modelVersion,
+    async run(feeds) {
+      const ortFeeds: Record<string, import('onnxruntime-web').Tensor> = {};
+      for (const [name, tensor] of Object.entries(feeds)) {
+        ortFeeds[name] = new ort.Tensor('float32', tensor.data, [...tensor.dims]);
+      }
+
+      const outputs = await session.run(ortFeeds);
+      const palette = outputs.palette;
+      if (!palette) {
+        throw new Error('decoder did not return the required "palette" output');
+      }
+      if (palette.type !== 'float32') {
+        throw new Error(`decoder palette output must be float32, got ${palette.type}`);
+      }
+
+      return {
+        data: palette.data as Float32Array,
+        dims: palette.dims,
+      };
+    },
+  };
+}
+
+export async function getPaletteDecoder(): Promise<PaletteDecoderSession> {
+  if (decoderPromise) return decoderPromise;
+
+  const loadPromise = customDecoderLoader
+    ? customDecoderLoader()
+    : createDefaultDecoderSession();
+
+  decoderPromise = loadPromise.catch((err) => {
+    decoderPromise = null;
+    if (err instanceof Error && err.message.startsWith('AI palette decoder')) {
+      throw err;
+    }
+    throw errorWithCause(`AI palette decoder load failed: ${errorDetail(err)}`, err);
+  });
+
+  return decoderPromise;
+}
+
+function enqueueEncoderRun<T>(run: () => Promise<T>): Promise<T> {
+  const result = encoderRunQueue.then(run, run);
+  encoderRunQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+function enqueueDecoderRun<T>(run: () => Promise<T>): Promise<T> {
+  const result = decoderRunQueue.then(run, run);
+  decoderRunQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
+async function computePromptEmbedding(normalized: string): Promise<Float32Array> {
+  const { tokenizer, model } = await getEncoder();
+
+  let inputs;
+  try {
+    inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
+  } catch (err) {
+    throw errorWithCause(`AI tokenization failed for prompt "${normalized}": ${errorDetail(err)}`, err);
+  }
+
+  let outputs: {
+    last_hidden_state?: {
+      dims?: readonly number[];
+      data?: ArrayLike<number>;
+    };
+  };
+  try {
+    outputs = await enqueueEncoderRun(() => model(inputs));
+  } catch (err) {
+    throw errorWithCause(`AI model inference failed: ${errorDetail(err)}`, err);
+  }
+
+  const lastHiddenState = outputs?.last_hidden_state;
+  const dims = lastHiddenState?.dims as readonly number[] | undefined;
+  const data = lastHiddenState?.data as ArrayLike<number> | undefined;
+  const mask = inputs?.attention_mask?.data as ArrayLike<number | bigint> | undefined;
+
+  if (
+    !dims
+    || dims.length !== 3
+    || dims[0] !== 1
+    || dims[2] !== ENCODER_EMBEDDING_SIZE
+    || !Number.isInteger(dims[1])
+    || dims[1] < 1
+  ) {
+    throw new Error(
+      `AI encoder output invalid: expected [1,sequence,${ENCODER_EMBEDDING_SIZE}], got [${dims?.join(',') ?? ''}]`,
+    );
+  }
+
+  const seqLen = dims[1];
+  const hiddenDim = dims[2];
+  if (!data || data.length < seqLen * hiddenDim) {
+    throw new Error('AI encoder output invalid: last_hidden_state data is too short');
+  }
+  if (!mask || mask.length < seqLen) {
+    throw new Error('AI encoder output invalid: attention mask is missing or too short');
+  }
+
+  const meanPooled = new Float32Array(hiddenDim);
+  let totalWeight = 0;
+
+  for (let s = 0; s < seqLen; s++) {
+    const weight = Number(mask[s]);
+    if (weight > 0) {
+      totalWeight += weight;
+      const offset = s * hiddenDim;
+      for (let d = 0; d < hiddenDim; d++) {
+        meanPooled[d] += Number(data[offset + d]) * weight;
+      }
+    }
+  }
+
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+    throw new Error('AI encoder output invalid: attention mask contains no active tokens');
+  }
+
+  let normSq = 0;
+  for (let d = 0; d < hiddenDim; d++) {
+    meanPooled[d] /= totalWeight;
+    normSq += meanPooled[d] * meanPooled[d];
+  }
+
+  if (!Number.isFinite(normSq) || normSq <= 1e-12) {
+    throw new Error('AI encoder output invalid: pooled embedding is not finite and non-zero');
+  }
+
+  const norm = Math.sqrt(normSq);
+  for (let d = 0; d < hiddenDim; d++) {
+    meanPooled[d] /= norm;
+  }
+
+  return meanPooled;
+}
+
+function getCachedPromptEmbedding(normalized: string): Promise<Float32Array> {
+  const key = `${ENCODER_MODEL_ID}\u0000${normalized}`;
+  const cached = promptEmbeddingCache.get(key);
+  if (cached) {
+    // Refresh insertion order so the Map acts as a small LRU.
+    promptEmbeddingCache.delete(key);
+    promptEmbeddingCache.set(key, cached);
+    return cached;
+  }
+
+  const embeddingPromise = computePromptEmbedding(normalized).catch((err) => {
+    if (promptEmbeddingCache.get(key) === embeddingPromise) {
+      promptEmbeddingCache.delete(key);
+    }
+    throw err;
+  });
+  promptEmbeddingCache.set(key, embeddingPromise);
+
+  while (promptEmbeddingCache.size > PROMPT_EMBEDDING_CACHE_LIMIT) {
+    const oldestKey = promptEmbeddingCache.keys().next().value as string | undefined;
+    if (oldestKey === undefined) break;
+    promptEmbeddingCache.delete(oldestKey);
+  }
+
+  return embeddingPromise;
+}
+
+export async function encodePrompt(prompt: string): Promise<Float32Array> {
+  const normalized = normalizeText(prompt);
+  if (!normalized) {
+    throw new Error('Empty prompt');
+  }
+  return (await getCachedPromptEmbedding(normalized)).slice();
+}
+
+/**
+ * Explicit legacy baseline retained for offline CURRENT-vs-NEW comparison.
+ * It intentionally returns one base color and a procedural harmony intent.
+ */
+export async function inferPaletteIntent(prompt: string): Promise<AiPaletteIntent & { seed: number }> {
   const normalized = normalizeText(prompt);
   if (!normalized) {
     throw new Error('Empty prompt');
   }
 
-  inferenceInProgress = true;
-  try {
-    const [{ tokenizer, model }, anchors] = await Promise.all([
-      getEncoder(),
-      getSemanticAnchors(),
-    ]);
+  const [meanPooled, anchors] = await Promise.all([
+    getCachedPromptEmbedding(normalized),
+    getSemanticAnchors(),
+  ]);
 
-    // Tokenize text prompt with query: prefix
-    let inputs;
-    try {
-      inputs = await tokenizer(`query: ${normalized}`, { padding: true, truncation: true });
-    } catch (err) {
-      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      const e = new Error(`AI tokenization failed for prompt "${normalized}": ${detail}`);
-      (e as { cause?: unknown }).cause = err;
-      throw e;
-    }
-
-    let outputs;
-    try {
-      outputs = await model(inputs);
-    } catch (err) {
-      const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-      const e = new Error(`AI model inference failed: ${detail}`);
-      (e as { cause?: unknown }).cause = err;
-      throw e;
-    }
-
-    // Mean pooling over tokens using attention mask
-    const lastHiddenState = outputs.last_hidden_state;
-    const data = lastHiddenState.data as Float32Array;
-    const [, seqLen, hiddenDim] = lastHiddenState.dims;
-    const mask = inputs.attention_mask.data as BigInt64Array | Int32Array | number[];
-
-    const meanPooled = new Float32Array(hiddenDim);
-    let totalWeight = 0;
-
-    for (let s = 0; s < seqLen; s++) {
-      const m = Number(mask[s]);
-      if (m > 0) {
-        totalWeight += m;
-        const offset = s * hiddenDim;
-        for (let d = 0; d < hiddenDim; d++) {
-          meanPooled[d] += data[offset + d] * m;
-        }
-      }
-    }
-
-    if (totalWeight > 0) {
-      for (let d = 0; d < hiddenDim; d++) {
-        meanPooled[d] /= totalWeight;
-      }
-    }
-
-    // L2 normalization
-    let normSq = 0;
-    for (let d = 0; d < hiddenDim; d++) {
-      normSq += meanPooled[d] * meanPooled[d];
-    }
-    const norm = Math.sqrt(Math.max(1e-12, normSq));
-    for (let d = 0; d < hiddenDim; d++) {
-      meanPooled[d] /= norm;
-    }
-
-    // 1. Semantic anchor projection (top-k softmax blend)
-    let intent = blendAnchorIntent(meanPooled, anchors);
-
-    // 2. Named color constraint (if prompt contains a genuine color word)
-    const colorConstraint = matchColorConstraint(normalized);
-    if (colorConstraint) {
-      intent = applyColorConstraint(colorConstraint.intent, intent, colorConstraint.weight);
-    }
-
-    // 3. Sanitize intent (bounds, NaN/Inf protection)
-    const sanitized = sanitizeSemanticIntent(intent);
-
-    // 4. Gamut-safe baseHex conversion via OKLCH engine
-    const baseHex = semanticIntentToBase(sanitized);
-
-    // 5. Stable prompt seed
-    const seed = stablePromptHash(normalized);
-
-    return {
-      baseHex,
-      harmony: sanitized.harmony,
-      seed,
-    };
-  } finally {
-    inferenceInProgress = false;
+  let intent = blendAnchorIntent(meanPooled, anchors);
+  const colorConstraint = matchColorConstraint(normalized);
+  if (colorConstraint) {
+    intent = applyColorConstraint(colorConstraint.intent, intent, colorConstraint.weight);
   }
+
+  const sanitized = sanitizeSemanticIntent(intent);
+  const baseHex = semanticIntentToBase(sanitized);
+  const seed = stablePromptHash(normalized);
+
+  return {
+    baseHex,
+    harmony: sanitized.harmony,
+    seed,
+  };
+}
+
+function validateGenerateRequest(request: GenerateAiPaletteRequest): {
+  normalized: string;
+  lockedByIndex: Map<number, OklchColor>;
+} {
+  if (!request || typeof request.prompt !== 'string') {
+    throw new Error('AI prompt must be a string');
+  }
+
+  const normalized = normalizeText(request.prompt);
+  if (!normalized) {
+    throw new Error('AI prompt must not be empty');
+  }
+
+  if (!Number.isInteger(request.count) || request.count < 2 || request.count > MAX_PALETTE_SIZE) {
+    throw new Error(`AI palette count must be an integer from 2 to ${MAX_PALETTE_SIZE}`);
+  }
+
+  if (
+    !Number.isSafeInteger(request.seed)
+    || request.seed < 0
+    || request.seed > 0xffffffff
+  ) {
+    throw new Error('AI palette seed must be an unsigned 32-bit integer');
+  }
+
+  if (request.lockedColors !== undefined && !Array.isArray(request.lockedColors)) {
+    throw new Error('AI palette lockedColors must be an array');
+  }
+
+  const lockedByIndex = new Map<number, OklchColor>();
+  for (const locked of request.lockedColors ?? []) {
+    if (!locked || !Number.isInteger(locked.index) || locked.index < 0 || locked.index >= request.count) {
+      throw new Error(`Locked color index must be an integer from 0 to ${request.count - 1}`);
+    }
+    if (lockedByIndex.has(locked.index)) {
+      throw new Error(`Duplicate locked color index: ${locked.index}`);
+    }
+
+    const color = locked.oklch;
+    if (
+      !color
+      || !Number.isFinite(color.l)
+      || color.l < 0
+      || color.l > 1
+      || !Number.isFinite(color.c)
+      || color.c < 0
+      || (color.h !== null && !Number.isFinite(color.h))
+    ) {
+      throw new Error(`Locked color at index ${locked.index} is not valid OKLCH`);
+    }
+    if (!isInSrgbGamut(color)) {
+      throw new Error(`Locked color at index ${locked.index} must already be in the sRGB gamut`);
+    }
+
+    lockedByIndex.set(locked.index, { ...color });
+  }
+
+  return { normalized, lockedByIndex };
+}
+
+function createSeedNoise(seed: number): Float32Array {
+  let state = seed >>> 0;
+  const random = (): number => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 0x100000000;
+  };
+
+  const noise = new Float32Array(MAX_PALETTE_SIZE * 4);
+  for (let i = 0; i < noise.length; i += 2) {
+    const u1 = Math.max(random(), Number.EPSILON);
+    const u2 = random();
+    const radius = Math.sqrt(-2 * Math.log(u1));
+    const angle = 2 * Math.PI * u2;
+    noise[i] = radius * Math.cos(angle);
+    noise[i + 1] = radius * Math.sin(angle);
+  }
+  return noise;
+}
+
+function createDecoderFeeds(
+  embedding: Float32Array,
+  count: number,
+  seed: number,
+  lockedByIndex: ReadonlyMap<number, OklchColor>,
+): PaletteDecoderFeeds {
+  if (embedding.length !== ENCODER_EMBEDDING_SIZE) {
+    throw new Error(`Expected a ${ENCODER_EMBEDDING_SIZE}-value text embedding, got ${embedding.length}`);
+  }
+
+  const countMask = new Float32Array(MAX_PALETTE_SIZE);
+  countMask.fill(1, 0, count);
+
+  const lockedMask = new Float32Array(MAX_PALETTE_SIZE);
+  const lockedColors = new Float32Array(MAX_PALETTE_SIZE * 4);
+  for (const [index, color] of lockedByIndex) {
+    lockedMask[index] = 1;
+    const offset = index * 4;
+    lockedColors[offset] = color.l;
+    lockedColors[offset + 1] = color.c;
+    if (color.h !== null) {
+      const radians = color.h * Math.PI / 180;
+      lockedColors[offset + 2] = Math.sin(radians);
+      lockedColors[offset + 3] = Math.cos(radians);
+    }
+  }
+
+  return {
+    text_embedding: { data: embedding, dims: [1, ENCODER_EMBEDDING_SIZE] },
+    count_mask: { data: countMask, dims: [1, MAX_PALETTE_SIZE] },
+    seed_noise: { data: createSeedNoise(seed), dims: [1, MAX_PALETTE_SIZE, 4] },
+    locked_mask: { data: lockedMask, dims: [1, MAX_PALETTE_SIZE] },
+    locked_colors: { data: lockedColors, dims: [1, MAX_PALETTE_SIZE, 4] },
+  };
+}
+
+export async function generateAiPalette(
+  request: GenerateAiPaletteRequest,
+): Promise<GenerateAiPaletteResult> {
+  const totalStartedAt = nowMs();
+  const { normalized, lockedByIndex } = validateGenerateRequest(request);
+
+  const encoderStartedAt = nowMs();
+  const embedding = await getCachedPromptEmbedding(normalized);
+  const encoderMs = nowMs() - encoderStartedAt;
+
+  const decoderStartedAt = nowMs();
+  const decoder = await getPaletteDecoder();
+  const feeds = createDecoderFeeds(embedding, request.count, request.seed, lockedByIndex);
+
+  let output: PaletteDecoderTensor;
+  try {
+    output = await enqueueDecoderRun(() => decoder.run(feeds));
+  } catch (err) {
+    throw errorWithCause(`AI palette decoder inference failed: ${errorDetail(err)}`, err);
+  }
+  const decoderMs = nowMs() - decoderStartedAt;
+
+  let colors: OklchColor[];
+  try {
+    colors = decodePaletteOutput(output, request.count, lockedByIndex);
+  } catch (err) {
+    throw errorWithCause(`AI palette decoder output invalid: ${errorDetail(err)}`, err);
+  }
+
+  // Defense in depth: model and post-processing must never alter locked colors.
+  for (const [index, color] of lockedByIndex) {
+    colors[index] = { ...color };
+  }
+  if (colors.length !== request.count) {
+    throw new Error(`AI palette decoder returned ${colors.length} colors; expected ${request.count}`);
+  }
+
+  return {
+    colors,
+    seed: request.seed,
+    modelVersion: decoder.modelVersion,
+    inference: {
+      encoderMs,
+      decoderMs,
+      totalMs: nowMs() - totalStartedAt,
+    },
+    fallback: false,
+  };
 }

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "palettebrain-v2-decoder-synthetic-v1",
+  "measuredOn": "2026-08-24",
+  "productionReady": false,
+  "pythonOnnxRuntimeCpu": {
+    "threads": 1,
+    "iterations": 200,
+    "scope": "decoder only with cached 384-d embedding",
+    "warmGenerationMs": { "mean": 0.8730045, "median": 0.85425, "p95": 0.9928 },
+    "seedRegenerationMs": { "mean": 0.8663105, "median": 0.85045, "p95": 0.9552 },
+    "countChangeMs": { "mean": 0.871471, "median": 0.8464, "p95": 1.0164 },
+    "lockedRegenerationMs": { "mean": 0.861031, "median": 0.84505, "p95": 0.9447 }
+  },
+  "onnxRuntimeWebNodeWasm": {
+    "iterations": 100,
+    "warmupIterations": 10,
+    "scope": "decoder only under onnxruntime-web WASM in Node.js on this desktop",
+    "meanMs": 0.483925,
+    "medianMs": 0.433,
+    "p95Ms": 0.7703,
+    "minMs": 0.2975,
+    "maxMs": 1.228
+  },
+  "localBrowserUi": {
+    "coldFirstGenerationMs": 4516,
+    "cachedPromptCountChangeWithLockMs": 2,
+    "warmNewRussianPromptMs": 18,
+    "browserConsoleErrors": 0,
+    "mobileViewport": "390x844",
+    "horizontalOverflow": false
+  },
+  "notMeasured": [
+    "mid-range phone inference latency",
+    "WebGPU latency",
+    "human palette preference"
+  ]
+}

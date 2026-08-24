@@ -2,7 +2,7 @@
  * Tests for extendPalette.
  */
 import { describe, it, expect } from 'vitest';
-import { extendPalette } from '../extendPalette';
+import { canonicalizeGeneratedPalette, extendPalette, mergeLockedPalette } from '../extendPalette';
 import { generatePalette } from '../generator';
 
 const BASE_HEX = '#5b21b6';
@@ -18,7 +18,7 @@ function isValidHex(s: string): boolean {
 }
 
 describe('extendPalette', () => {
-  for (const count of [4, 5, 6, 7, 8, 9] as const) {
+  for (const count of [2, 3, 4, 5, 6, 7, 8, 9] as const) {
     it(`count=${count}: returns exactly ${count} colors`, () => {
       const palette = getPalette();
       const result = extendPalette(palette, count);
@@ -49,6 +49,60 @@ describe('extendPalette', () => {
       expect(r1.map(c => c.hex)).toEqual(r2.map(c => c.hex));
     });
   }
+
+  it('counts 2-3 return the requested leading anchors', () => {
+    const palette = getPalette();
+    expect(extendPalette(palette, 2).map((color) => color.hex)).toEqual([
+      palette.shadow.hex,
+      palette.base.hex,
+    ]);
+    expect(extendPalette(palette, 3).map((color) => color.hex)).toEqual([
+      palette.shadow.hex,
+      palette.base.hex,
+      palette.highlight.hex,
+    ]);
+  });
+
+  it('canonical palette count always matches colors length from 2-9', () => {
+    const generated = getPalette();
+    for (const count of [2, 3, 4, 5, 6, 7, 8, 9]) {
+      const palette = canonicalizeGeneratedPalette(generated, count);
+      expect(palette.count).toBe(count);
+      expect(palette.colors).toHaveLength(count);
+      expect(palette.shadow).toBe(palette.colors[0]);
+    }
+  });
+
+  it('preserves locked colors exactly across seed regeneration', () => {
+    const current = canonicalizeGeneratedPalette(getPalette(1), 6);
+    const candidate = canonicalizeGeneratedPalette(getPalette(2), 6);
+    const merged = mergeLockedPalette(current, candidate, new Set([0, 2, 5]));
+
+    for (const index of [0, 2, 5]) {
+      expect(merged.colors[index]).toEqual(current.colors[index]);
+    }
+    expect(merged.seed).toBe(candidate.seed);
+    expect(merged.count).toBe(6);
+  });
+
+  it('ignores out-of-range locks on shrink and preserves locks on grow', () => {
+    const current = canonicalizeGeneratedPalette(getPalette(3), 4);
+    const shrunk = mergeLockedPalette(
+      current,
+      canonicalizeGeneratedPalette(getPalette(4), 2),
+      new Set([0, 3]),
+    );
+    expect(shrunk.colors).toHaveLength(2);
+    expect(shrunk.colors[0]).toEqual(current.colors[0]);
+
+    const grown = mergeLockedPalette(
+      current,
+      canonicalizeGeneratedPalette(getPalette(5), 7),
+      new Set([1]),
+    );
+    expect(grown.colors).toHaveLength(7);
+    expect(grown.colors[1]).toEqual(current.colors[1]);
+  });
 
   it('count=4: exact shadow/base/highlight/accent anchors preserved', () => {
     const palette = getPalette();

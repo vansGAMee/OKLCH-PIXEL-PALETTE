@@ -1,7 +1,7 @@
 /**
  * extendPalette.ts
- * Deterministically extends a 4-color Palette to 4–9 display colors.
- * - count === 4: return original anchors unchanged
+ * Deterministically resizes a generated 4-color Palette to 2–9 colors.
+ * - count 2–4: return the requested number of anchors unchanged
  * - count 5–9: derive additional colors by OKLCH interpolation + max-min ΔE selection
  */
 import type { Palette, PaletteColor, OklchColor } from '@/types/palette';
@@ -17,6 +17,90 @@ export interface DisplayPaletteColor {
   oklch: OklchColor;
   anchorRole?: 'shadow' | 'base' | 'highlight' | 'accent';
   derived: boolean;
+}
+
+export const MIN_PALETTE_COLOR_COUNT = 2;
+export const MAX_PALETTE_COLOR_COUNT = 9;
+
+export function clampPaletteColorCount(count: number): number {
+  return Math.max(MIN_PALETTE_COLOR_COUNT, Math.min(MAX_PALETTE_COLOR_COUNT, Math.round(count)));
+}
+
+function roleForIndex(index: number): string {
+  return ['shadow', 'base', 'highlight', 'accent'][index] ?? `color${index + 1}`;
+}
+
+/**
+ * Builds the single Palette value consumed by the studio and every downstream
+ * preview/export surface. Named roles remain compatibility aliases into colors.
+ */
+export function createCanonicalPalette(
+  colors: readonly PaletteColor[],
+  harmony: Palette['harmony'],
+  seed: number,
+): Palette {
+  if (colors.length < MIN_PALETTE_COLOR_COUNT || colors.length > MAX_PALETTE_COLOR_COUNT) {
+    throw new Error(`Palette must contain ${MIN_PALETTE_COLOR_COUNT}–${MAX_PALETTE_COLOR_COUNT} colors.`);
+  }
+
+  const canonicalColors = colors.map((color, index) => ({
+    role: color.role || roleForIndex(index),
+    hex: color.hex,
+    oklch: { ...color.oklch },
+  }));
+  const last = canonicalColors.length - 1;
+  const findRole = (role: string, fallbackIndex: number) =>
+    canonicalColors.find((color) => color.role === role) ?? canonicalColors[Math.min(fallbackIndex, last)];
+
+  return {
+    colors: canonicalColors,
+    count: canonicalColors.length,
+    shadow: findRole('shadow', 0),
+    base: findRole('base', 1),
+    highlight: findRole('highlight', 2),
+    accent: findRole('accent', 3),
+    harmony,
+    seed,
+  };
+}
+
+/** Replaces only unlocked slots while keeping locked HEX and OKLCH values exact. */
+export function mergeLockedPalette(
+  current: Palette,
+  candidate: Palette,
+  lockedIndices: ReadonlySet<number>,
+): Palette {
+  const colors = candidate.colors.map((color, index) =>
+    lockedIndices.has(index) && current.colors[index] ? current.colors[index] : color
+  );
+  return createCanonicalPalette(colors, candidate.harmony, candidate.seed);
+}
+
+/** Converts direct model OKLCH output to a canonical, gamut-safe Palette. */
+export function createCanonicalPaletteFromOklch(
+  colors: readonly OklchColor[],
+  harmony: Palette['harmony'],
+  seed: number,
+): Palette {
+  const converted = colors.map((color, index): PaletteColor => {
+    if (
+      !Number.isFinite(color.l) ||
+      !Number.isFinite(color.c) ||
+      (color.h !== null && !Number.isFinite(color.h))
+    ) {
+      throw new Error(`AI returned an invalid OKLCH color at index ${index}.`);
+    }
+
+    const fitted = fitToSrgb(color);
+    const hex = oklchToHex(fitted);
+    return {
+      role: roleForIndex(index),
+      hex,
+      oklch: hexToOklch(hex) ?? fitted,
+    };
+  });
+
+  return createCanonicalPalette(converted, harmony, seed);
 }
 
 function paletteColorToDisplay(
@@ -154,15 +238,15 @@ function selectByMaxMinDeltaE(
 }
 
 /**
- * Extend a 4-color Palette to the requested display count (4–9).
- * count === 4: anchors only, unchanged.
+ * Resize a 4-color Palette to the requested display count (2–9).
+ * count 2–4: requested anchors only, unchanged.
  * count 5–9: anchors + derived colors, deterministic.
  */
 export function extendPalette(
   palette: Palette,
   count: number,
 ): DisplayPaletteColor[] {
-  const safeCount = Math.max(4, Math.min(9, Math.round(count)));
+  const safeCount = clampPaletteColorCount(count);
 
   const anchors: DisplayPaletteColor[] = [
     paletteColorToDisplay(palette.shadow, 'shadow'),
@@ -171,8 +255,8 @@ export function extendPalette(
     paletteColorToDisplay(palette.accent, 'accent'),
   ];
 
-  if (safeCount === 4) {
-    return anchors;
+  if (safeCount <= 4) {
+    return anchors.slice(0, safeCount);
   }
 
   const needed = safeCount - 4;
@@ -195,4 +279,9 @@ export function extendPalette(
   });
 
   return [...anchors, ...derivedColors];
+}
+
+/** Turns the deterministic manual generator output into the canonical Palette. */
+export function canonicalizeGeneratedPalette(palette: Palette, count: number): Palette {
+  return createCanonicalPalette(extendPalette(palette, count), palette.harmony, palette.seed);
 }

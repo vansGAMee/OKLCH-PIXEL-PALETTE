@@ -2,23 +2,24 @@
 
 import React from 'react';
 import { LayoutGroup } from 'motion/react';
-import { Palette, PaletteColor } from '@/types/palette';
-import { DisplayPaletteColor } from '@/lib/color/extendPalette';
+import { Palette } from '@/types/palette';
 import { Locale } from '@/i18n/messages';
 import { ColorCard } from './ColorCard';
 
 interface PaletteGridProps {
   palette: Palette;
-  displayColors?: (DisplayPaletteColor | PaletteColor)[];
+  lockedIndices?: ReadonlySet<number>;
+  onToggleLock?: (index: number) => void;
   locale?: Locale;
 }
 
-export const PaletteGrid: React.FC<PaletteGridProps> = React.memo(function PaletteGridComponent({ palette, displayColors, locale = 'en' }: PaletteGridProps) {
-  const colors = displayColors && displayColors.length > 0
-    ? displayColors
-    : (palette.colors && palette.colors.length > 0
-      ? palette.colors
-      : [palette.shadow, palette.base, palette.highlight, palette.accent]);
+export const PaletteGrid: React.FC<PaletteGridProps> = React.memo(function PaletteGridComponent({
+  palette,
+  lockedIndices,
+  onToggleLock,
+  locale = 'en',
+}: PaletteGridProps) {
+  const colors = palette.colors;
 
   const getGridColsClass = (count: number) => {
     switch (count) {
@@ -42,6 +43,8 @@ export const PaletteGrid: React.FC<PaletteGridProps> = React.memo(function Palet
             color={color}
             index={idx}
             totalColors={colors.length}
+            isLocked={lockedIndices?.has(idx) ?? false}
+            onToggleLock={onToggleLock ? () => onToggleLock(idx) : undefined}
             locale={locale}
           />
         ))}

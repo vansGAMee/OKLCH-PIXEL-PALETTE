@@ -6,6 +6,8 @@ export type HarmonyMode =
   | 'tetradic'
   | 'monochromatic';
 
+export type PaletteGenerationMode = 'manual' | 'ai';
+
 export type PaletteRole = 'shadow' | 'base' | 'highlight' | 'accent' | string;
 
 export type PaletteColor = {

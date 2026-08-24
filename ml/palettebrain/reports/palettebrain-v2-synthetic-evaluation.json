@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "palettebrain-v2-decoder-synthetic-v1",
+  "status": "synthetic_baseline_evaluation",
+  "productionReady": false,
+  "training": {
+    "epochs": 20,
+    "elapsedSeconds": 58.8365856,
+    "trainExamples": 15560,
+    "validationExamples": 1920,
+    "testExamples": 1936,
+    "parameterCount": 94725,
+    "bestValidationLoss": 1.0277583797772725
+  },
+  "test": {
+    "exactCountRate": 1.0,
+    "finiteActiveRate": 1.0,
+    "inactiveOutputAbsMax": 0.0,
+    "srgbGamutPassRate": 1.0,
+    "duplicatePairRate": 0.01618457300275482,
+    "freeLightnessMae": 0.04726378992199898,
+    "freeChromaMae": 0.014299149625003338,
+    "freeHueMaeDegrees": 29.877912521362305,
+    "learnedLockedCloseRate": 0.09160892994611239,
+    "runtimeLockGuardRequired": true
+  },
+  "onnx": {
+    "sizeBytes": 406476,
+    "sha256": "ec18a0caacc5ce315f8821de3f162a0649291a1d66a3e897fd60799020cbc56a",
+    "pytorchOnnxMaxError": 0.000004649162292480469
+  },
+  "semanticBenchmark": {
+    "promptCount": 112,
+    "languages": { "en": 56, "ru": 56 },
+    "counts": [2, 3, 4, 5, 6, 7, 8, 9],
+    "hasHumanRatings": false
+  },
+  "warning": "Metrics compare with deterministic synthetic targets. They do not establish human preference or production palette quality."
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "modelVersion": "palettebrain-v2-decoder-synthetic-v1",
+  "status": "synthetic_baseline_only",
+  "productionReady": false,
+  "warning": "Trained on deterministic synthetic targets. Human palette quality has not been established.",
+  "encoder": {
+    "modelId": "multilingual-e5-small",
+    "embeddingSize": 384
+  },
+  "decoder": {
+    "path": "/models/palettebrain-v2-decoder.onnx",
+    "sha256": "ec18a0caacc5ce315f8821de3f162a0649291a1d66a3e897fd60799020cbc56a",
+    "sizeBytes": 406476,
+    "parameterCount": 94725,
+    "trainingDataKind": "deterministic_synthetic_baseline",
+    "pytorchOnnxMaxError": 0.000004649162292480469,
+    "inputs": {
+      "text_embedding": [1, 384],
+      "count_mask": [1, 9],
+      "seed_noise": [1, 9, 4],
+      "locked_mask": [1, 9],
+      "locked_colors": [1, 9, 4]
+    },
+    "outputs": {
+      "palette": [1, 9, 5]
+    }
+  }
+}

@@ -20,11 +20,12 @@ import {
 interface ActionToolbarProps {
   palette: Palette;
   colorCount: number;
-  onColorCountChange: (count: number) => void;
+  onColorCountChange?: (count: number) => void;
   onNewVariation: () => void;
   onReset: () => void;
   onOpenImport?: () => void;
   onCloudSave?: () => void;
+  onExport?: (format: string) => void;
   locale?: Locale;
 }
 
@@ -36,6 +37,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
   onReset,
   onOpenImport,
   onCloudSave,
+  onExport,
   locale = 'en',
 }: ActionToolbarProps) {
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -44,6 +46,13 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
   const exp = messages[locale].export;
 
   const baseFilename = sanitizeFilename(`pixel-palette-${palette.base.hex.replace('#', '')}`);
+
+  const notifyExport = (format: string) => {
+    if (!onExport) return;
+    void Promise.resolve()
+      .then(() => onExport(format))
+      .catch((error) => console.error('[Palette Export Feedback]', error));
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -58,42 +67,49 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
 
   const handleExportPng = () => {
     exportPalettePng(palette, `${baseFilename}.png`);
+    notifyExport('png');
     setIsExportOpen(false);
   };
 
   const handleExportGpl = () => {
     const content = generateGplString(palette, locale);
     downloadTextFile(content, `${baseFilename}.gpl`, 'text/plain;charset=utf-8');
+    notifyExport('gpl');
     setIsExportOpen(false);
   };
 
   const handleExportJasc = () => {
     const content = generateJascPalString(palette);
     downloadTextFile(content, `${baseFilename}.pal`, 'text/plain;charset=utf-8');
+    notifyExport('jasc-pal');
     setIsExportOpen(false);
   };
 
   const handleExportHex = () => {
     const content = generateHexListString(palette);
     downloadTextFile(content, `${baseFilename}.hex`, 'text/plain;charset=utf-8');
+    notifyExport('hex');
     setIsExportOpen(false);
   };
 
   const handleExportTxt = () => {
     const content = generateTxtString(palette, locale);
     downloadTextFile(content, `${baseFilename}.txt`, 'text/plain;charset=utf-8');
+    notifyExport('txt');
     setIsExportOpen(false);
   };
 
   const handleExportJson = () => {
     const content = generateJsonString(palette, locale);
     downloadTextFile(content, `${baseFilename}.json`, 'application/json;charset=utf-8');
+    notifyExport('json');
     setIsExportOpen(false);
   };
 
   const handleExportCss = () => {
     const content = generateCssString(palette);
     downloadTextFile(content, `${baseFilename}.css`, 'text/css;charset=utf-8');
+    notifyExport('css');
     setIsExportOpen(false);
   };
 
@@ -110,13 +126,13 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
         </div>
 
         {/* Color Count Selector (2 to 9) */}
-        <div className="flex items-center gap-2">
+        {onColorCountChange && <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-gray-400">{t.countTitle}:</span>
           <div className="flex items-center bg-zinc-900 p-1 rounded-xl border border-white/10 gap-0.5 overflow-x-auto">
             {[2, 3, 4, 5, 6, 7, 8, 9].map((cnt) => (
               <button
                 key={cnt}
-                onClick={() => onColorCountChange(cnt)}
+                onClick={() => onColorCountChange?.(cnt)}
                 aria-label={`Select ${cnt} colors`}
                 className={`w-7 h-7 text-xs font-mono rounded-lg transition-all flex items-center justify-center font-bold cursor-pointer ${
                   colorCount === cnt
@@ -128,7 +144,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Buttons Row */}
@@ -167,7 +183,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = React.memo(function A
           className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-mono font-bold tracking-wider shadow-lg shadow-purple-900/30 border border-purple-400/40 flex items-center gap-2 transition-all cursor-pointer"
         >
           <RefreshCw className="w-4 h-4" />
-          <span>{t.newVariation}</span>
+          <span>{locale === 'ru' ? 'Обновить незакреплённые' : 'Regenerate unlocked'}</span>
         </motion.button>
 
         {/* Reset Button */}

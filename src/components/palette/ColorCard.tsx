@@ -5,16 +5,25 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { PaletteColor } from '@/types/palette';
 import { Locale, messages } from '@/i18n/messages';
 import { getPaletteColorLabel } from '@/lib/color/colorNaming';
-import { Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronUp, Lock, LockOpen } from 'lucide-react';
 
 interface ColorCardProps {
   color: PaletteColor;
   index: number;
   totalColors?: number;
+  isLocked?: boolean;
+  onToggleLock?: () => void;
   locale?: Locale;
 }
 
-export const ColorCard = React.memo(function ColorCardComponent({ color, index, totalColors = 4, locale = 'en' }: ColorCardProps) {
+export const ColorCard = React.memo(function ColorCardComponent({
+  color,
+  index,
+  totalColors = 4,
+  isLocked = false,
+  onToggleLock,
+  locale = 'en',
+}: ColorCardProps) {
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const shouldReduceMotion = useReducedMotion();
@@ -50,7 +59,9 @@ export const ColorCard = React.memo(function ColorCardComponent({ color, index, 
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
-      className="group relative flex flex-col rounded-2xl overflow-hidden shadow-xl border border-white/10 transition-all hover:border-purple-500/40 focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer"
+      className={`group relative flex flex-col rounded-2xl overflow-hidden shadow-xl border transition-all focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:outline-none cursor-pointer ${
+        isLocked ? 'border-amber-400/70 ring-1 ring-amber-400/30' : 'border-white/10 hover:border-purple-500/40'
+      }`}
       style={{
         backgroundColor: color.hex,
       }}
@@ -69,11 +80,37 @@ export const ColorCard = React.memo(function ColorCardComponent({ color, index, 
           >
             {label}
           </span>
-          {color.role === 'base' && (
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white font-bold shadow-md">
-              {locale === 'ru' ? 'Базовый' : 'Primary Base'}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {color.role === 'base' && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white font-bold shadow-md">
+                {locale === 'ru' ? 'Базовый' : 'Primary Base'}
+              </span>
+            )}
+            {onToggleLock && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleLock();
+                }}
+                onKeyDown={(event) => event.stopPropagation()}
+                aria-pressed={isLocked}
+                aria-label={isLocked
+                  ? (locale === 'ru' ? 'Открепить цвет' : `Unlock ${label}`)
+                  : (locale === 'ru' ? 'Закрепить цвет' : `Lock ${label}`)}
+                title={isLocked
+                  ? (locale === 'ru' ? 'Открепить' : 'Unlock color')
+                  : (locale === 'ru' ? 'Закрепить' : 'Lock color')}
+                className={`p-2 rounded-lg border backdrop-blur-md transition-all ${
+                  isLocked
+                    ? 'bg-amber-400 text-zinc-950 border-amber-200 shadow-md'
+                    : `${badgeBg} ${textColor} hover:scale-105`
+                }`}
+              >
+                {isLocked ? <Lock className="w-3.5 h-3.5" /> : <LockOpen className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Center/Bottom Copy Display */}
