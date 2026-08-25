@@ -1,0 +1,845 @@
+{
+  "schemaVersion": 1,
+  "benchmarkId": "benchmark_visual_semantic_v1",
+  "description": "Visual semantic grounding and concept understanding benchmark for PaletteBrain",
+  "categories": {
+    "weather_atmosphere": [
+      {
+        "id": "rain",
+        "prompt": "rain",
+        "lang": "en",
+        "contrast_against": "desert",
+        "expected_tones": [
+          "cool_slate",
+          "blue_gray",
+          "muted_cyan",
+          "deep_wet_neutral"
+        ],
+        "forbidden_tones": [
+          "vivid_orange",
+          "desert_sand"
+        ]
+      },
+      {
+        "id": "дождь",
+        "prompt": "дождь",
+        "lang": "ru",
+        "contrast_against": "пустыня",
+        "expected_tones": [
+          "cool_slate",
+          "blue_gray",
+          "muted_cyan",
+          "deep_wet_neutral"
+        ],
+        "forbidden_tones": [
+          "vivid_orange",
+          "desert_sand"
+        ]
+      },
+      {
+        "id": "fog",
+        "prompt": "fog",
+        "lang": "en",
+        "contrast_against": "neon_cyberpunk",
+        "expected_tones": [
+          "muted_gray",
+          "soft_light_slate",
+          "mist_blue",
+          "pale_neutral"
+        ]
+      },
+      {
+        "id": "туман",
+        "prompt": "туман",
+        "lang": "ru",
+        "contrast_against": "неоновый киберпанк",
+        "expected_tones": [
+          "muted_gray",
+          "soft_light_slate",
+          "mist_blue",
+          "pale_neutral"
+        ]
+      },
+      {
+        "id": "snow",
+        "prompt": "snow",
+        "lang": "en",
+        "contrast_against": "fire",
+        "expected_tones": [
+          "pure_white",
+          "icy_blue",
+          "cool_pale",
+          "frost_slate"
+        ]
+      },
+      {
+        "id": "снег",
+        "prompt": "снег",
+        "lang": "ru",
+        "contrast_against": "огонь",
+        "expected_tones": [
+          "pure_white",
+          "icy_blue",
+          "cool_pale",
+          "frost_slate"
+        ]
+      },
+      {
+        "id": "storm",
+        "prompt": "storm",
+        "lang": "en",
+        "contrast_against": "pastel_storybook",
+        "expected_tones": [
+          "dark_slate",
+          "deep_indigo",
+          "electric_flash",
+          "stormy_gray"
+        ]
+      },
+      {
+        "id": "гроза",
+        "prompt": "гроза",
+        "lang": "ru",
+        "contrast_against": "пастельная сказка",
+        "expected_tones": [
+          "dark_slate",
+          "deep_indigo",
+          "electric_flash",
+          "stormy_gray"
+        ]
+      },
+      {
+        "id": "frost",
+        "prompt": "frost",
+        "lang": "en",
+        "expected_tones": [
+          "icy_cyan",
+          "frost_white",
+          "pale_cool_blue"
+        ]
+      },
+      {
+        "id": "мороз",
+        "prompt": "мороз",
+        "lang": "ru",
+        "expected_tones": [
+          "icy_cyan",
+          "frost_white",
+          "pale_cool_blue"
+        ]
+      },
+      {
+        "id": "humid_summer_rain",
+        "prompt": "humid summer rain",
+        "lang": "en",
+        "expected_tones": [
+          "lush_green",
+          "wet_slate",
+          "deep_emerald",
+          "warm_vapor"
+        ]
+      },
+      {
+        "id": "cold_autumn_rain",
+        "prompt": "cold autumn rain",
+        "lang": "en",
+        "expected_tones": [
+          "cold_slate",
+          "muted_rust",
+          "decay_leaf",
+          "dark_wet_gray"
+        ]
+      }
+    ],
+    "environments": [
+      {
+        "id": "forest",
+        "prompt": "forest",
+        "lang": "en",
+        "contrast_against": "ocean",
+        "expected_tones": [
+          "pine_green",
+          "deep_moss",
+          "earth_bark",
+          "canopy_green"
+        ]
+      },
+      {
+        "id": "лес",
+        "prompt": "лес",
+        "lang": "ru",
+        "contrast_against": "океан",
+        "expected_tones": [
+          "pine_green",
+          "deep_moss",
+          "earth_bark",
+          "canopy_green"
+        ]
+      },
+      {
+        "id": "winter_forest",
+        "prompt": "winter forest",
+        "lang": "en",
+        "contrast_against": "tropical_jungle",
+        "expected_tones": [
+          "snow_white",
+          "dark_evergreen",
+          "bark_brown",
+          "slate_shadow"
+        ]
+      },
+      {
+        "id": "зимний_лес",
+        "prompt": "зимний лес",
+        "lang": "ru",
+        "contrast_against": "тропические джунгли",
+        "expected_tones": [
+          "snow_white",
+          "dark_evergreen",
+          "bark_brown",
+          "slate_shadow"
+        ]
+      },
+      {
+        "id": "swamp",
+        "prompt": "swamp",
+        "lang": "en",
+        "expected_tones": [
+          "murky_olive",
+          "swamp_green",
+          "dark_water",
+          "decay_brown"
+        ]
+      },
+      {
+        "id": "desert",
+        "prompt": "desert",
+        "lang": "en",
+        "contrast_against": "deep_sea",
+        "expected_tones": [
+          "sand_ochre",
+          "warm_terracotta",
+          "sun_yellow",
+          "arid_tan"
+        ]
+      },
+      {
+        "id": "ocean",
+        "prompt": "ocean",
+        "lang": "en",
+        "contrast_against": "desert",
+        "expected_tones": [
+          "deep_cyan",
+          "ocean_blue",
+          "wave_foam",
+          "cerulean"
+        ]
+      },
+      {
+        "id": "deep_sea",
+        "prompt": "deep sea",
+        "lang": "en",
+        "contrast_against": "desert",
+        "expected_tones": [
+          "abyssal_black",
+          "deep_indigo",
+          "bioluminescent_cyan",
+          "navy"
+        ]
+      },
+      {
+        "id": "city_at_night",
+        "prompt": "city at night",
+        "lang": "en",
+        "contrast_against": "sunny_day",
+        "expected_tones": [
+          "midnight_navy",
+          "asphalt_black",
+          "street_lamp_gold",
+          "neon_glow"
+        ]
+      },
+      {
+        "id": "abandoned_hospital",
+        "prompt": "abandoned hospital",
+        "lang": "en",
+        "contrast_against": "warm_kitchen",
+        "expected_tones": [
+          "decay_teal",
+          "mold_green",
+          "rust_peel",
+          "faded_white"
+        ]
+      },
+      {
+        "id": "kitchen",
+        "prompt": "kitchen",
+        "lang": "en",
+        "expected_tones": [
+          "warm_cream",
+          "terracotta",
+          "wood_brown",
+          "copper_glow"
+        ]
+      },
+      {
+        "id": "cathedral",
+        "prompt": "cathedral",
+        "lang": "en",
+        "expected_tones": [
+          "stone_gray",
+          "stained_glass_jewel",
+          "gold_leaf",
+          "shadow_black"
+        ]
+      },
+      {
+        "id": "nightclub",
+        "prompt": "nightclub",
+        "lang": "en",
+        "expected_tones": [
+          "dark_violet",
+          "neon_magenta",
+          "laser_cyan",
+          "club_black"
+        ]
+      },
+      {
+        "id": "greenhouse",
+        "prompt": "greenhouse",
+        "lang": "en",
+        "expected_tones": [
+          "translucent_glass",
+          "botanical_green",
+          "leaf_chartreuse",
+          "damp_soil"
+        ]
+      }
+    ],
+    "light": [
+      {
+        "id": "moonlight",
+        "prompt": "moonlight",
+        "lang": "en",
+        "contrast_against": "sunset",
+        "expected_tones": [
+          "silver_blue",
+          "pale_indigo",
+          "cool_white",
+          "lunar_slate"
+        ]
+      },
+      {
+        "id": "лунный_свет",
+        "prompt": "лунный свет",
+        "lang": "ru",
+        "contrast_against": "закат",
+        "expected_tones": [
+          "silver_blue",
+          "pale_indigo",
+          "cool_white",
+          "lunar_slate"
+        ]
+      },
+      {
+        "id": "sunset",
+        "prompt": "sunset",
+        "lang": "en",
+        "contrast_against": "moonlight",
+        "expected_tones": [
+          "vivid_orange",
+          "crimson_magenta",
+          "golden_yellow",
+          "dusk_purple"
+        ]
+      },
+      {
+        "id": "закат",
+        "prompt": "закат",
+        "lang": "ru",
+        "contrast_against": "лунный свет",
+        "expected_tones": [
+          "vivid_orange",
+          "crimson_magenta",
+          "golden_yellow",
+          "dusk_purple"
+        ]
+      },
+      {
+        "id": "candlelight",
+        "prompt": "candlelight",
+        "lang": "en",
+        "expected_tones": [
+          "warm_amber",
+          "flicker_gold",
+          "deep_shadow",
+          "wax_cream"
+        ]
+      },
+      {
+        "id": "neon_light",
+        "prompt": "neon light",
+        "lang": "en",
+        "expected_tones": [
+          "electric_magenta",
+          "cyber_cyan",
+          "neon_green",
+          "black_backdrop"
+        ]
+      },
+      {
+        "id": "sodium_streetlights",
+        "prompt": "sodium streetlights",
+        "lang": "en",
+        "expected_tones": [
+          "amber_orange",
+          "sodium_yellow",
+          "asphalt_dark",
+          "night_fog"
+        ]
+      },
+      {
+        "id": "overcast_daylight",
+        "prompt": "overcast daylight",
+        "lang": "en",
+        "expected_tones": [
+          "diffuse_gray",
+          "pale_neutral",
+          "soft_sky",
+          "muted_earth"
+        ]
+      }
+    ],
+    "material": [
+      {
+        "id": "rust",
+        "prompt": "rust",
+        "lang": "en",
+        "contrast_against": "ice",
+        "expected_tones": [
+          "rust_orange",
+          "iron_brown",
+          "oxidized_red",
+          "dark_metal"
+        ]
+      },
+      {
+        "id": "ржавчина",
+        "prompt": "ржавчина",
+        "lang": "ru",
+        "contrast_against": "лёд",
+        "expected_tones": [
+          "rust_orange",
+          "iron_brown",
+          "oxidized_red",
+          "dark_metal"
+        ]
+      },
+      {
+        "id": "glass",
+        "prompt": "glass",
+        "lang": "en",
+        "expected_tones": [
+          "translucent_cyan",
+          "refraction_white",
+          "soft_teal",
+          "specular_highlight"
+        ]
+      },
+      {
+        "id": "стекло",
+        "prompt": "стекло",
+        "lang": "ru",
+        "expected_tones": [
+          "translucent_cyan",
+          "refraction_white",
+          "soft_teal",
+          "specular_highlight"
+        ]
+      },
+      {
+        "id": "velvet",
+        "prompt": "velvet",
+        "lang": "en",
+        "expected_tones": [
+          "deep_crimson",
+          "rich_plum",
+          "shadow_black",
+          "fabric_sheen"
+        ]
+      },
+      {
+        "id": "gold",
+        "prompt": "gold",
+        "lang": "en",
+        "expected_tones": [
+          "shimmer_gold",
+          "rich_amber",
+          "warm_ochre",
+          "specular_yellow"
+        ]
+      },
+      {
+        "id": "золото",
+        "prompt": "золото",
+        "lang": "ru",
+        "expected_tones": [
+          "shimmer_gold",
+          "rich_amber",
+          "warm_ochre",
+          "specular_yellow"
+        ]
+      },
+      {
+        "id": "blood",
+        "prompt": "blood",
+        "lang": "en",
+        "expected_tones": [
+          "crimson_red",
+          "arterial_scarlet",
+          "deep_maroon",
+          "dark_coagulate"
+        ]
+      },
+      {
+        "id": "кровь",
+        "prompt": "кровь",
+        "lang": "ru",
+        "expected_tones": [
+          "crimson_red",
+          "arterial_scarlet",
+          "deep_maroon",
+          "dark_coagulate"
+        ]
+      },
+      {
+        "id": "ice",
+        "prompt": "ice",
+        "lang": "en",
+        "contrast_against": "rust",
+        "expected_tones": [
+          "glacial_cyan",
+          "frost_white",
+          "crystal_blue",
+          "clear_slate"
+        ]
+      },
+      {
+        "id": "лёд",
+        "prompt": "лёд",
+        "lang": "ru",
+        "contrast_against": "ржавчина",
+        "expected_tones": [
+          "glacial_cyan",
+          "frost_white",
+          "crystal_blue",
+          "clear_slate"
+        ]
+      }
+    ],
+    "style_art": [
+      {
+        "id": "film_noir",
+        "prompt": "film noir",
+        "lang": "en",
+        "contrast_against": "pastel_storybook",
+        "expected_tones": [
+          "high_contrast_black",
+          "dramatic_white",
+          "shadow_charcoal",
+          "silver_gray"
+        ]
+      },
+      {
+        "id": "фильм_нуар",
+        "prompt": "фильм нуар",
+        "lang": "ru",
+        "contrast_against": "пастельная сказка",
+        "expected_tones": [
+          "high_contrast_black",
+          "dramatic_white",
+          "shadow_charcoal",
+          "silver_gray"
+        ]
+      },
+      {
+        "id": "watercolor",
+        "prompt": "watercolor",
+        "lang": "en",
+        "expected_tones": [
+          "soft_wash",
+          "translucent_pigment",
+          "paper_white",
+          "fluid_blend"
+        ]
+      },
+      {
+        "id": "акварель",
+        "prompt": "акварель",
+        "lang": "ru",
+        "expected_tones": [
+          "soft_wash",
+          "translucent_pigment",
+          "paper_white",
+          "fluid_blend"
+        ]
+      },
+      {
+        "id": "gothic",
+        "prompt": "gothic",
+        "lang": "en",
+        "expected_tones": [
+          "somber_black",
+          "stained_burgundy",
+          "stone_gray",
+          "aged_gold"
+        ]
+      },
+      {
+        "id": "готика",
+        "prompt": "готика",
+        "lang": "ru",
+        "expected_tones": [
+          "somber_black",
+          "stained_burgundy",
+          "stone_gray",
+          "aged_gold"
+        ]
+      },
+      {
+        "id": "art_deco",
+        "prompt": "art deco",
+        "lang": "en",
+        "expected_tones": [
+          "gold_gilt",
+          "emerald_green",
+          "lacquer_black",
+          "champagne"
+        ]
+      },
+      {
+        "id": "constructivist_poster",
+        "prompt": "constructivist poster",
+        "lang": "en",
+        "expected_tones": [
+          "bold_red",
+          "industrial_black",
+          "paper_cream",
+          "heavy_charcoal"
+        ]
+      },
+      {
+        "id": "cyberpunk",
+        "prompt": "cyberpunk",
+        "lang": "en",
+        "contrast_against": "watercolor",
+        "expected_tones": [
+          "neon_cyan",
+          "hot_magenta",
+          "asphalt_black",
+          "acid_yellow"
+        ]
+      }
+    ],
+    "compositional_complex": [
+      {
+        "id": "winter_forest_at_night",
+        "prompt": "winter forest at night",
+        "lang": "en"
+      },
+      {
+        "id": "зимний_лес_ночью",
+        "prompt": "зимний лес ночью",
+        "lang": "ru"
+      },
+      {
+        "id": "frozen_vineyard_at_midnight",
+        "prompt": "frozen vineyard at midnight",
+        "lang": "en"
+      },
+      {
+        "id": "abandoned_hospital_in_winter_at_night",
+        "prompt": "abandoned hospital in winter at night",
+        "lang": "en"
+      },
+      {
+        "id": "warm_peaceful_kitchen_from_childhood",
+        "prompt": "warm peaceful kitchen from childhood",
+        "lang": "en"
+      },
+      {
+        "id": "toxic_cyberpunk_greenhouse",
+        "prompt": "toxic cyberpunk greenhouse",
+        "lang": "en"
+      },
+      {
+        "id": "gothic_cathedral_under_moonlight",
+        "prompt": "gothic cathedral under moonlight",
+        "lang": "en"
+      },
+      {
+        "id": "dirty_grape",
+        "prompt": "dirty grape",
+        "lang": "en"
+      },
+      {
+        "id": "poisonous_grape",
+        "prompt": "poisonous grape",
+        "lang": "en"
+      },
+      {
+        "id": "muted_watercolor_autumn",
+        "prompt": "muted watercolor autumn",
+        "lang": "en"
+      },
+      {
+        "id": "cold_rain_under_sodium_streetlights",
+        "prompt": "cold rain under sodium streetlights",
+        "lang": "en"
+      }
+    ],
+    "emotional_abstract": [
+      {
+        "id": "nostalgia",
+        "prompt": "nostalgia",
+        "lang": "en"
+      },
+      {
+        "id": "ностальгия",
+        "prompt": "ностальгия",
+        "lang": "ru"
+      },
+      {
+        "id": "painful_nostalgia",
+        "prompt": "painful nostalgia",
+        "lang": "en"
+      },
+      {
+        "id": "болезненная_ностальгия",
+        "prompt": "болезненная ностальгия",
+        "lang": "ru"
+      },
+      {
+        "id": "quiet_anxiety",
+        "prompt": "quiet anxiety",
+        "lang": "en"
+      },
+      {
+        "id": "тихая_тревога",
+        "prompt": "тихая тревога",
+        "lang": "ru"
+      },
+      {
+        "id": "loneliness",
+        "prompt": "loneliness",
+        "lang": "en"
+      },
+      {
+        "id": "одиночество",
+        "prompt": "одиночество",
+        "lang": "ru"
+      },
+      {
+        "id": "serenity",
+        "prompt": "serenity",
+        "lang": "en"
+      },
+      {
+        "id": "умиротворение",
+        "prompt": "умиротворение",
+        "lang": "ru"
+      },
+      {
+        "id": "decay",
+        "prompt": "decay",
+        "lang": "en"
+      },
+      {
+        "id": "увядание",
+        "prompt": "увядание",
+        "lang": "ru"
+      }
+    ]
+  },
+  "contrast_pairs": [
+    {
+      "prompt_a": "rain",
+      "prompt_b": "desert",
+      "concept_a": "cool_wet_rain",
+      "concept_b": "hot_arid_desert"
+    },
+    {
+      "prompt_a": "дождь",
+      "prompt_b": "пустыня",
+      "concept_a": "cool_wet_rain",
+      "concept_b": "hot_arid_desert"
+    },
+    {
+      "prompt_a": "snow",
+      "prompt_b": "fire",
+      "concept_a": "cold_ice_snow",
+      "concept_b": "hot_flame_fire"
+    },
+    {
+      "prompt_a": "снег",
+      "prompt_b": "огонь",
+      "concept_a": "cold_ice_snow",
+      "concept_b": "hot_flame_fire"
+    },
+    {
+      "prompt_a": "moonlight",
+      "prompt_b": "sunset",
+      "concept_a": "cool_lunar_night",
+      "concept_b": "warm_solar_dusk"
+    },
+    {
+      "prompt_a": "лунный свет",
+      "prompt_b": "закат",
+      "concept_a": "cool_lunar_night",
+      "concept_b": "warm_solar_dusk"
+    },
+    {
+      "prompt_a": "forest",
+      "prompt_b": "ocean",
+      "concept_a": "terrestrial_green_forest",
+      "concept_b": "marine_blue_ocean"
+    },
+    {
+      "prompt_a": "лес",
+      "prompt_b": "океан",
+      "concept_a": "terrestrial_green_forest",
+      "concept_b": "marine_blue_ocean"
+    },
+    {
+      "prompt_a": "film noir",
+      "prompt_b": "pastel storybook",
+      "concept_a": "monochrome_dramatic_noir",
+      "concept_b": "high_key_soft_pastel"
+    },
+    {
+      "prompt_a": "watercolor",
+      "prompt_b": "neon cyberpunk",
+      "concept_a": "organic_soft_pigment",
+      "concept_b": "synthetic_neon_glow"
+    },
+    {
+      "prompt_a": "warm kitchen",
+      "prompt_b": "abandoned hospital",
+      "concept_a": "cozy_warm_wood_terracotta",
+      "concept_b": "cold_decay_peeling_teal"
+    }
+  ],
+  "critical_prompts": [
+    "rain",
+    "дождь",
+    "fog",
+    "туман",
+    "snow",
+    "moonlight",
+    "watercolor",
+    "film noir",
+    "winter forest at night",
+    "warm peaceful kitchen from childhood",
+    "toxic cyberpunk greenhouse"
+  ]
+}

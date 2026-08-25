@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "palettebrain-semantic-release-v1",
+  "frozenAt": "2026-08-25",
+  "frozenBeforeCandidate1": true,
+  "defaultCount": 5,
+  "seeds": [1, 7, 42, 1337],
+  "groups": {
+    "morphologyModifiers": [
+      "красная", "красное", "красные", "красноватый", "алого цвета",
+      "тёмно-синяя", "синеватый", "deep blue", "pale blue", "neon green", "dirty red"
+    ],
+    "composition": [
+      "scarlet blood", "алая кровь", "dark blood", "тёмная кровь",
+      "fresh blood", "свежая кровь", "red and blue", "красный и синий",
+      "black and gold", "чёрный и золотой"
+    ],
+    "grapes": [
+      "grape", "виноград", "green grape", "зелёный виноград",
+      "purple grape", "фиолетовый виноград", "dirty grape", "грязный виноград",
+      "rotten grape", "гнилой виноград", "frozen grape", "замёрзший виноград",
+      "poisonous grape", "ядовитый виноград", "grape under moonlight", "виноград под лунным светом"
+    ],
+    "forests": [
+      "forest", "winter forest", "burning forest", "dead forest", "enchanted forest",
+      "forest at sunrise", "forest at night"
+    ],
+    "scenes": [
+      "winter forest", "winter forest at night", "зимний лес ночью",
+      "abandoned hospital at night", "abandoned hospital in winter at night",
+      "заброшенная больница зимой ночью", "toxic greenhouse", "sunset over a dead city",
+      "warm childhood kitchen", "тёплая кухня из детства", "toxic cyberpunk greenhouse",
+      "frozen vineyard at midnight", "cold fluorescent office", "rusted industrial wasteland"
+    ],
+    "abstractEmotional": [
+      "nostalgia", "painful nostalgia", "болезненная ностальгия", "loneliness",
+      "quiet anxiety", "false hope", "euphoria", "decay",
+      "nostalgia for a place that never existed"
+    ],
+    "artisticLanguage": [
+      "film noir", "art deco nightclub", "bauhaus poster", "soviet constructivist poster",
+      "gothic cathedral at night", "baroque interior", "impressionist summer garden",
+      "muted watercolor landscape", "muted watercolor autumn", "gouache children's illustration",
+      "old oil painting", "neon cyberpunk alley", "vaporwave shopping mall",
+      "solarpunk greenhouse", "dark fantasy swamp", "retro arcade CRT", "old CRT arcade",
+      "high-contrast pixel-art dungeon", "pastel storybook village"
+    ],
+    "falseLexicalTriggers": [
+      "black hole", "white noise", "orange fruit", "rose garden", "red panda"
+    ]
+  },
+  "modifierPairs": [
+    ["grape", "dirty grape"],
+    ["grape", "frozen grape"],
+    ["grape", "poisonous grape"],
+    ["forest", "burning forest"],
+    ["forest", "forest at night"],
+    ["red", "dark red"],
+    ["blue", "pale blue"]
+  ],
+  "translationPairs": [
+    ["red", "красный"],
+    ["scarlet blood", "алая кровь"],
+    ["poisonous grape", "ядовитый виноград"],
+    ["winter forest at night", "зимний лес ночью"],
+    ["painful nostalgia", "болезненная ностальгия"]
+  ],
+  "requiredSanityOutputs": [
+    "red", "красный", "scarlet", "алый", "scarlet blood", "алая кровь",
+    "grape", "виноград", "dirty grape", "грязный виноград", "poisonous grape",
+    "ядовитый виноград", "frozen grape", "замёрзший виноград", "winter forest at night",
+    "зимний лес ночью", "painful nostalgia", "болезненная ностальгия", "film noir",
+    "art deco nightclub", "muted watercolor autumn", "soviet constructivist poster",
+    "not red", "без красного", "black hole", "white noise", "orange fruit",
+    "red panda", "red and blue", "красный и синий"
+  ]
+}

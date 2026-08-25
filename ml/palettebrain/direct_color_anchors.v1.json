@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "datasetVersion": "palettebrain-direct-color-anchors-v1",
+  "license": "project-owned",
+  "paletteOrigin": "synthetic",
+  "semanticAlignment": "direct",
+  "families": [
+    {
+      "id": "red",
+      "anchorHex": "#e31b35",
+      "terms": [
+        ["red", "en", "base"], ["scarlet", "en", "base"], ["crimson", "en", "base"],
+        ["красный", "ru", "base"], ["красная", "ru", "base"], ["красное", "ru", "base"],
+        ["красные", "ru", "base"], ["красноватый", "ru", "base"], ["алый", "ru", "base"],
+        ["алого цвета", "ru", "base"], ["bright red", "en", "bright"],
+        ["ярко-красный", "ru", "bright"], ["dark red", "en", "dark"],
+        ["тёмно-красный", "ru", "dark"], ["dirty red", "en", "dirty"],
+        ["scarlet blood", "en", "base"], ["алая кровь", "ru", "base"],
+        ["dark blood", "en", "dark"], ["тёмная кровь", "ru", "dark"],
+        ["fresh blood", "en", "bright"], ["свежая кровь", "ru", "bright"]
+      ]
+    },
+    {
+      "id": "blue",
+      "anchorHex": "#2457d6",
+      "terms": [
+        ["blue", "en", "base"], ["синий", "ru", "base"], ["синяя", "ru", "base"],
+        ["синее", "ru", "base"], ["синие", "ru", "base"], ["синеватый", "ru", "base"],
+        ["deep blue", "en", "deep"], ["dark blue", "en", "dark"],
+        ["тёмно-синяя", "ru", "dark"], ["pale blue", "en", "pale"]
+      ]
+    },
+    {
+      "id": "green",
+      "anchorHex": "#18a957",
+      "terms": [
+        ["green", "en", "base"], ["зелёный", "ru", "base"], ["зеленый", "ru", "base"],
+        ["зелёная", "ru", "base"], ["neon green", "en", "neon"],
+        ["green grape", "en", "base"], ["зелёный виноград", "ru", "base"]
+      ]
+    },
+    {
+      "id": "yellow",
+      "anchorHex": "#f2cc0c",
+      "terms": [["yellow", "en", "base"], ["жёлтый", "ru", "base"], ["желтый", "ru", "base"]]
+    },
+    {
+      "id": "orange",
+      "anchorHex": "#f47a18",
+      "terms": [["orange", "en", "base"], ["оранжевый", "ru", "base"]]
+    },
+    {
+      "id": "purple",
+      "anchorHex": "#8b3fd1",
+      "terms": [
+        ["purple", "en", "base"], ["violet", "en", "base"], ["фиолетовый", "ru", "base"],
+        ["purple grape", "en", "base"], ["фиолетовый виноград", "ru", "base"]
+      ]
+    },
+    {
+      "id": "pink",
+      "anchorHex": "#ed4d9a",
+      "terms": [["pink", "en", "base"], ["розовый", "ru", "base"]]
+    },
+    {
+      "id": "cyan",
+      "anchorHex": "#08b9cf",
+      "terms": [["cyan", "en", "base"], ["голубой", "ru", "base"], ["бирюзовый", "ru", "base"]]
+    },
+    {
+      "id": "gold",
+      "anchorHex": "#d9a514",
+      "terms": [["gold", "en", "base"], ["golden", "en", "base"], ["золотой", "ru", "base"]]
+    },
+    {
+      "id": "black",
+      "anchorHex": "#111318",
+      "terms": [["black", "en", "base"], ["чёрный", "ru", "base"], ["черный", "ru", "base"]]
+    },
+    {
+      "id": "white",
+      "anchorHex": "#f5f4ef",
+      "terms": [["white", "en", "base"], ["белый", "ru", "base"]]
+    },
+    {
+      "id": "gray",
+      "anchorHex": "#777b82",
+      "terms": [["gray", "en", "base"], ["grey", "en", "base"], ["серый", "ru", "base"]]
+    }
+  ],
+  "explicitPalettes": [
+    {
+      "id": "red-blue",
+      "texts": [["red and blue", "en"], ["красный и синий", "ru"]],
+      "colors": ["#120d18", "#541124", "#9d1731", "#f04a54", "#173b8f", "#2457d6", "#82a7ff", "#bfc8eb", "#eee8dc"]
+    },
+    {
+      "id": "black-gold",
+      "texts": [["black and gold", "en"], ["чёрный и золотой", "ru"]],
+      "colors": ["#090a0c", "#242128", "#3f351b", "#765b16", "#a47d12", "#d5a716", "#f3d77a", "#fff3bf", "#f2eee0"]
+    },
+    {
+      "id": "exclude-red",
+      "texts": [
+        ["not red", "en"], ["anything but red", "en"],
+        ["без красного", "ru"], ["любой цвет кроме красного", "ru"]
+      ],
+      "colors": ["#101923", "#1d3550", "#174f72", "#237c77", "#439a8b", "#6aa763", "#9eba71", "#d1bd65", "#e9e5d6"]
+    },
+    {
+      "id": "blue-no-cyan",
+      "texts": [["blue but no cyan", "en"], ["синий, но без голубого", "ru"]],
+      "colors": ["#090d22", "#101740", "#17245a", "#263d96", "#3659d1", "#4966bd", "#7189e7", "#aab8eb", "#d8dcf1"]
+    },
+    {
+      "id": "forest-no-green",
+      "texts": [["forest without green", "en"], ["лес без зелёного", "ru"]],
+      "colors": ["#181416", "#2a1e1b", "#472b26", "#79402d", "#96502f", "#b56838", "#d19b62", "#e1b987", "#d9c8a6"]
+    }
+  ]
+}

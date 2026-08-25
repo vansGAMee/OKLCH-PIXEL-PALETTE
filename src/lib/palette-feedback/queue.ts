@@ -82,10 +82,25 @@ export class PaletteFeedbackQueue {
   enqueue(input: PaletteFeedbackEventInput): boolean {
     if (!this.isEnabled()) return false;
 
+    // Validate 384-d embedding if provided
+    if (input.promptRepresentation?.kind === 'embedding') {
+      const emb = input.promptRepresentation.value;
+      if (!Array.isArray(emb) || emb.length !== 384 || emb.some((v) => typeof v !== 'number' || !Number.isFinite(v))) {
+        return false;
+      }
+    }
+
     const event: PaletteFeedbackEvent = {
       ...input,
       schemaVersion: PALETTE_FEEDBACK_SCHEMA_VERSION,
       palette: input.palette.map((color) => ({ ...color })),
+      editedPalette: input.editedPalette?.map((color) => ({ ...color })),
+      locks: input.locks ? [...input.locks] : undefined,
+      promptRepresentation: input.promptRepresentation
+        ? input.promptRepresentation.kind === 'embedding'
+          ? { kind: 'embedding', value: [...input.promptRepresentation.value] }
+          : { kind: 'embedding_hash', value: input.promptRepresentation.value }
+        : undefined,
       createdAt: this.now().toISOString(),
     };
     const queued = [...readQueue(this.storage), event].slice(-MAX_QUEUE_SIZE);

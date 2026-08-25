@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "palettebrain-e5-parity-v1",
+  "frozenAt": "2026-08-25",
+  "prompts": [
+    { "id": "english", "text": "frozen vineyard at midnight under pale moonlight" },
+    { "id": "russian", "text": "заброшенная больница зимой ночью в холодном свете" },
+    { "id": "punctuation", "text": "Red—blue; gold?! #pixel-art / watercolor..." },
+    { "id": "mixed", "text": "токсичный cyberpunk greenhouse ночью, muted neon зелень" },
+    { "id": "long", "text": "A dreamlike painted city with rain, glass, rust, gardens, fluorescent shadows, old posters, quiet anxiety and warm memories", "repeat": 12 },
+    { "id": "near-context-limit", "text": "winter forest moonlight abandoned hospital toxic greenhouse watercolor constructivist poster painful nostalgia", "repeat": 90 }
+  ],
+  "releaseThresholds": {
+    "meanCosine": 0.995,
+    "minimumCosine": 0.99
+  }
+}

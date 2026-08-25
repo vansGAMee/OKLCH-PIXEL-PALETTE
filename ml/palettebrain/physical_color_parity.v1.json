@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": "palettebrain-culori-python-parity-v1",
+  "tolerance": 0.000002,
+  "hexCases": [
+    { "id": "saturated-red", "hex": "#ff0000", "oklab": [0.627955364, 0.224863068, 0.125846277] },
+    { "id": "saturated-blue", "hex": "#0000ff", "oklab": [0.452013718, -0.032456975, -0.311528166] },
+    { "id": "green", "hex": "#00a000", "oklab": [0.611495836, -0.1650678, 0.126682286] },
+    { "id": "near-black", "hex": "#08090b", "oklab": [0.139450819, -0.000604665, -0.004787813] },
+    { "id": "near-white", "hex": "#f8f7f2", "oklab": [0.975522152, -0.00085683, 0.006641638] },
+    { "id": "gray", "hex": "#777777", "oklab": [0.569262403, 0.0, 0.0] },
+    { "id": "gamut-red-edge", "hex": "#ff0033", "oklab": [0.630669462, 0.233529158, 0.102096641] },
+    { "id": "gamut-cyan-edge", "hex": "#00ffd5", "oklab": [0.892676472, -0.167816258, 0.015028869] },
+    { "id": "gamut-purple-edge", "hex": "#7f00ff", "oklab": [0.529355654, 0.117380729, -0.268541783] }
+  ],
+  "oklchCases": [
+    { "id": "hue-near-zero", "oklch": [0.6, 0.1, 0.1], "srgb": [0.692446553, 0.398828329, 0.492356122] },
+    { "id": "hue-near-360", "oklch": [0.6, 0.1, 359.9], "srgb": [0.692201045, 0.398852171, 0.493226319] }
+  ]
+}

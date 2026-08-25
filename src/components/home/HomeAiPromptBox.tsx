@@ -50,7 +50,7 @@ export function HomeAiPromptBox({ locale, prompts }: HomeAiPromptBoxProps) {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={isRu ? 'Например: зимний звездный лес, фиолетовая пещера...' : 'e.g. winter starry forest, purple cave...'}
-              maxLength={160}
+              maxLength={4096}
               aria-label={isRu ? 'Описание палитры для ИИ' : 'AI Palette prompt description'}
               className="w-full bg-transparent border-none text-sm sm:text-base font-mono text-white placeholder:text-gray-500 focus:outline-none focus:ring-0 py-1"
             />

@@ -1,0 +1,213 @@
+{
+  "schema": "palettebrain-source-manifest/v1",
+  "audited_at": "2026-08-25",
+  "acquisition_policy": {
+    "default_output": "data/raw",
+    "maximum_disk_budget_bytes": 10737418240,
+    "atomic_file_replacement": true,
+    "allowed_hosts": [
+      "colorcombinations.org",
+      "raw.githubusercontent.com"
+    ],
+    "forbidden_content": [
+      "repository clones",
+      "Rang source photographs",
+      "Rang generated previews",
+      "Rang interpolated palette variants"
+    ]
+  },
+  "sources": [
+    {
+      "id": "wada",
+      "title": "A Dictionary of Colour Combinations dataset",
+      "homepage": "https://github.com/mattdesl/dictionary-of-colour-combinations",
+      "revision": {
+        "kind": "git_commit",
+        "value": "c142bd0bc8049ea48db4da5eb397981f047e8ef4",
+        "committed_at": "2020-05-27T13:15:18Z"
+      },
+      "license": {
+        "spdx": "MIT",
+        "evidence": "https://github.com/mattdesl/dictionary-of-colour-combinations/blob/c142bd0bc8049ea48db4da5eb397981f047e8ef4/LICENSE.md",
+        "attribution": "Copyright (c) 2020 Matt DesLauriers. Preserve the MIT copyright and permission notice. Original combinations compiled by Sanzo Wada."
+      },
+      "provenance": {
+        "text_origin": "metadata_derived",
+        "palette_origin": "human_curated",
+        "semantic_alignment": "weak",
+        "source_group_id_template": "wada:plate-{plate_id:03d}",
+        "expected_unique_colors": 159,
+        "expected_palettes": 348,
+        "native_color_count_min": 2,
+        "native_color_count_max": 4
+      }
+    },
+    {
+      "id": "colorcombinations",
+      "title": "The Dictionary of Color Combinations data export",
+      "homepage": "https://colorcombinations.org/data/",
+      "revision": {
+        "kind": "http_snapshot",
+        "associated_repository": "https://github.com/acevaultorg/colorcombinations",
+        "associated_repository_commit": "33efbd9f3bd9a242ecf84cfad367a7e33a9846f6",
+        "observed_etag": "5d4bc5702355ce55e127c8afd63d7b59"
+      },
+      "license": {
+        "spdx": "CC-BY-4.0",
+        "evidence": "https://colorcombinations.org/data/",
+        "methodology": "https://colorcombinations.org/methodology/",
+        "attribution": "Data and editorial metadata from colorcombinations.org, licensed CC BY 4.0. For Wada-derived rows also credit mattdesl's MIT digitisation and Sanzo Wada's original work; identify modifications."
+      },
+      "provenance": {
+        "wada_mirror_slug_regex": "^wada-(\\d{3})-",
+        "wada_mirror_text_origin": "metadata_derived",
+        "wada_mirror_palette_origin": "human_curated",
+        "wada_mirror_semantic_alignment": "metadata_derived",
+        "editorial_text_origin": "human",
+        "editorial_palette_origin": "human_curated",
+        "editorial_semantic_alignment": "direct",
+        "editorial_source_group_id_template": "colorcombinations:editorial:{slug}",
+        "expected_rows": 378,
+        "expected_wada_mirrors": 348,
+        "expected_editorial_palettes": 30
+      }
+    },
+    {
+      "id": "rang",
+      "title": "Rang palette data",
+      "homepage": "https://github.com/mohsennasab/Rang",
+      "revision": {
+        "kind": "git_commit",
+        "value": "a4e4622728f34e77a815dc5abdef52302aabd732",
+        "committed_at": "2026-08-11T22:28:35Z"
+      },
+      "license": {
+        "spdx": "CC0-1.0",
+        "evidence": "https://github.com/mohsennasab/Rang/blob/a4e4622728f34e77a815dc5abdef52302aabd732/LICENSES/README.md",
+        "legal_code": "https://github.com/mohsennasab/Rang/blob/a4e4622728f34e77a815dc5abdef52302aabd732/LICENSES/CC0-1.0.txt",
+        "attribution": "CC0 does not require attribution for the covered palette names, values, descriptions, and ordering; voluntary credit to Rang and Mohsen Tahmasebi Nasab is appreciated."
+      },
+      "provenance": {
+        "text_origin": "human",
+        "palette_origin": "human_curated_extracted",
+        "semantic_alignment": "direct",
+        "source_group_id_template": "rang:{name_slug}",
+        "expected_palettes": 10,
+        "native_color_counts": [5, 7, 9],
+        "permitted_fields": ["name", "colors", "notes", "order"],
+        "source_metadata_policy": "Retain source URL only for provenance; never dereference or ingest image/card_image fields."
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "wada-colors",
+      "source": "wada",
+      "path": "wada/colors.json",
+      "url": "https://raw.githubusercontent.com/mattdesl/dictionary-of-colour-combinations/c142bd0bc8049ea48db4da5eb397981f047e8ef4/colors.json",
+      "bytes": 60245,
+      "sha256": "555f11c32eb8133078fd470dd7d5320533aaa8b636f12fa06a8dd3d0ee2703b4"
+    },
+    {
+      "id": "colorcombinations-palettes",
+      "source": "colorcombinations",
+      "path": "colorcombinations/palettes.csv",
+      "url": "https://colorcombinations.org/data/palettes.csv",
+      "bytes": 217368,
+      "sha256": "d536f170903b236605abf910dcca9374cb8fbe7b7ce8958e6ea570de368c6d21",
+      "etag": "5d4bc5702355ce55e127c8afd63d7b59"
+    },
+    {
+      "id": "rang-gilas",
+      "source": "rang",
+      "path": "rang/palettes/gilas.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/gilas.json",
+      "bytes": 2589,
+      "sha256": "e834b032445c40d921cc44f9f28bff0e5832630e49c12ec026dfa22d4af521e0"
+    },
+    {
+      "id": "rang-golestan",
+      "source": "rang",
+      "path": "rang/palettes/golestan.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/golestan.json",
+      "bytes": 1428,
+      "sha256": "333609326e8ce722d2edf1c0e2ea989ae1d41cde3d49283e719b4c2ef233337b"
+    },
+    {
+      "id": "rang-iwan",
+      "source": "rang",
+      "path": "rang/palettes/iwan.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/iwan.json",
+      "bytes": 3825,
+      "sha256": "84f48573c6202e212cd224efb8f6cbb835b74e03aaa613fb70d1a9e25b424267"
+    },
+    {
+      "id": "rang-kashan",
+      "source": "rang",
+      "path": "rang/palettes/kashan.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/kashan.json",
+      "bytes": 1248,
+      "sha256": "a85183d5b74edcd97c18525bdac74d89e33f66f32191a8fac8ad374a91668db5"
+    },
+    {
+      "id": "rang-khatam",
+      "source": "rang",
+      "path": "rang/palettes/khatam.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/khatam.json",
+      "bytes": 2473,
+      "sha256": "22c54c36606aba8d78834434d3197f0c857998fc30f49334f34e2a347f529c23"
+    },
+    {
+      "id": "rang-mina",
+      "source": "rang",
+      "path": "rang/palettes/mina.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/mina.json",
+      "bytes": 2393,
+      "sha256": "d97dc50ec1a4189186b0b25f1d772d59f1abb0796b6a379c5297805a0c891fad"
+    },
+    {
+      "id": "rang-nasir",
+      "source": "rang",
+      "path": "rang/palettes/nasir.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/nasir.json",
+      "bytes": 2202,
+      "sha256": "4e9d73b74c8d6d78bb98f95c29ea1dcfc9351f3150c48249f252eb316decfe94"
+    },
+    {
+      "id": "rang-rostan",
+      "source": "rang",
+      "path": "rang/palettes/rostan.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/rostan.json",
+      "bytes": 2042,
+      "sha256": "052ab71182f98f69770b181b508e45ffd3696c4b245db381580cf3349e890a3a"
+    },
+    {
+      "id": "rang-shahnameh",
+      "source": "rang",
+      "path": "rang/palettes/shahnameh.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/shahnameh.json",
+      "bytes": 2904,
+      "sha256": "e365257aa9751e5bac42d685eadd983ce94c0089c66a25cfb354e619446edddb"
+    },
+    {
+      "id": "rang-termeh",
+      "source": "rang",
+      "path": "rang/palettes/termeh.json",
+      "url": "https://raw.githubusercontent.com/mohsennasab/Rang/a4e4622728f34e77a815dc5abdef52302aabd732/palettes/termeh.json",
+      "bytes": 1629,
+      "sha256": "9bbc54996e77e559bab1e00e09cdf08233b7025ff0a07571b35b88915ea15c82"
+    }
+  ],
+  "deduplication": {
+    "policy": "The 348 colorcombinations rows whose slug begins wada-NNN are semantic metadata views of the corresponding mattdesl Wada plate, never independent palette supervision.",
+    "verified_exact_wada_mirrors": 348,
+    "verified_exact_hex_order_matches": 348,
+    "verified_against": {
+      "wada_sha256": "555f11c32eb8133078fd470dd7d5320533aaa8b636f12fa06a8dd3d0ee2703b4",
+      "colorcombinations_sha256": "d536f170903b236605abf910dcca9374cb8fbe7b7ce8958e6ea570de368c6d21"
+    },
+    "shared_source_group_id_template": "wada:plate-{plate_id:03d}",
+    "wada_mirror_handling": "Keep colorcombinations title/summary/moods/era as metadata-derived text attached to the Wada source group; do not add its colors as another palette row.",
+    "editorial_handling": "The 30 non-wada rows are independent CC-BY-4.0 editorial palettes with source_group_id colorcombinations:editorial:{slug}."
+  }
+}

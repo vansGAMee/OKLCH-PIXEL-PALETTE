@@ -28,6 +28,8 @@ OUTPUT_CHANNELS = 5
 @dataclass(frozen=True)
 class PaletteDecoderConfig:
     embedding_dim: int = TEXT_EMBEDDING_DIM
+    histogram_bins: int = 390
+    visual_latent_dim: int = 128
     max_colors: int = MAX_COLORS
     seed_channels: int = SEED_CHANNELS
     locked_color_channels: int = LOCKED_COLOR_CHANNELS
@@ -101,6 +103,62 @@ class PaletteSelfAttentionBlock(nn.Module):
         return slots * count_mask.unsqueeze(-1)
 
 
+class VisualPaletteBridge(nn.Module):
+    """Visual Palette Bridge: maps E5 text embedding to Color Distribution Prior and Visual Style Latent."""
+
+    def __init__(
+        self,
+        embedding_dim: int = TEXT_EMBEDDING_DIM,
+        histogram_bins: int = 390,
+        style_latent_dim: int = 128,
+        d_model: int = 64,
+    ) -> None:
+        super().__init__()
+        self.norm = nn.LayerNorm(embedding_dim)
+        self.fc_in = nn.Linear(embedding_dim, 256)
+        self.act = nn.GELU()
+
+        # Residual Block 1
+        self.res1_fc1 = nn.Linear(256, 256)
+        self.res1_fc2 = nn.Linear(256, 256)
+
+        # Residual Block 2
+        self.res2_fc1 = nn.Linear(256, 256)
+        self.res2_fc2 = nn.Linear(256, 256)
+
+        # Output Heads
+        self.color_prior_head = nn.Linear(256, histogram_bins)
+        self.style_latent_head = nn.Linear(256, style_latent_dim)
+
+        # Conditioning projections to PaletteDecoder
+        self.prior_proj = nn.Linear(histogram_bins, 4 * d_model)
+        self.style_proj = nn.Linear(style_latent_dim, d_model)
+
+        # Zero-initialize the conditioning projections so at initialization, C11 matches base exactly
+        nn.init.zeros_(self.prior_proj.weight)
+        nn.init.zeros_(self.prior_proj.bias)
+        nn.init.zeros_(self.style_proj.weight)
+        nn.init.zeros_(self.style_proj.bias)
+
+    def forward(
+        self, text_embedding: Tensor
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        """Return (prior_logits, style_latent, color_tokens, style_token)."""
+        x = self.act(self.fc_in(self.norm(text_embedding)))
+        x = x + self.res1_fc2(self.act(self.res1_fc1(x)))
+        x = x + self.res2_fc2(self.act(self.res2_fc1(x)))
+
+        prior_logits = self.color_prior_head(x)
+        style_latent = self.style_latent_head(x)
+
+        prior_probs = F.softmax(prior_logits, dim=-1)
+        b_size = text_embedding.shape[0]
+        color_tokens = self.prior_proj(prior_probs).view(b_size, 4, -1)
+        style_token = self.style_proj(style_latent).view(b_size, 1, -1)
+
+        return prior_logits, style_latent, color_tokens, style_token
+
+
 class PaletteDecoder(nn.Module):
     """Decode cached text semantics into a complete, lock-aware palette."""
 
@@ -116,6 +174,12 @@ class PaletteDecoder(nn.Module):
             nn.LayerNorm(cfg.embedding_dim),
             nn.Linear(cfg.embedding_dim, cfg.d_model),
             nn.GELU(),
+        )
+        self.bridge = VisualPaletteBridge(
+            cfg.embedding_dim,
+            cfg.histogram_bins,
+            cfg.visual_latent_dim,
+            cfg.d_model,
         )
         self.count_projection = nn.Linear(cfg.max_colors, cfg.d_model)
         self.seed_projection = nn.Linear(cfg.seed_channels, cfg.d_model)
@@ -181,13 +245,26 @@ class PaletteDecoder(nn.Module):
 
         slots = self.query_slots.unsqueeze(0).expand(batch_size, -1, -1)
         text_context = self.text_projection(text_embedding).unsqueeze(1)
+        
+        _, _, color_tokens, style_token = self.bridge(text_embedding)
+        visual_color_context = color_tokens.mean(dim=1, keepdim=True)
+        visual_style_context = style_token
+
         count_context = self.count_projection(active).unsqueeze(1)
         seed_context = self.seed_projection(seed_noise)
         effective_locked_colors = locked_colors * locks.unsqueeze(-1)
         lock_context = self.lock_projection(
             torch.cat((effective_locked_colors, locks.unsqueeze(-1)), dim=-1)
         )
-        slots = slots + text_context + count_context + seed_context + lock_context
+        slots = (
+            slots
+            + text_context
+            + visual_color_context
+            + visual_style_context
+            + count_context
+            + seed_context
+            + lock_context
+        )
         slots = slots * active.unsqueeze(-1)
 
         for block in self.blocks:

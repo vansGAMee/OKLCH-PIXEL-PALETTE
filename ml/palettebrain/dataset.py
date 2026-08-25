@@ -449,6 +449,90 @@ def read_metadata(path: str | Path) -> dict[str, Any]:
         return json.loads(str(archive["metadata_json"].item()))
 
 
+def validate_prepared_archive(archive: Mapping[str, np.ndarray]) -> dict[str, int]:
+    """Validate the complete decoder tensor contract and group split isolation."""
+
+    required = {
+        "embeddings",
+        "counts",
+        "count_masks",
+        "seed_noise",
+        "locked_masks",
+        "locked_colors",
+        "targets",
+        "splits",
+    }
+    missing = sorted(required.difference(archive.keys()))
+    if missing:
+        raise ValueError(f"prepared archive is missing arrays: {', '.join(missing)}")
+
+    rows = int(archive["counts"].shape[0])
+    expected_shapes = {
+        "embeddings": (rows, EMBEDDING_DIM),
+        "counts": (rows,),
+        "count_masks": (rows, MAX_COLORS),
+        "seed_noise": (rows, MAX_COLORS, 4),
+        "locked_masks": (rows, MAX_COLORS),
+        "locked_colors": (rows, MAX_COLORS, 4),
+        "targets": (rows, MAX_COLORS, 5),
+        "splits": (rows,),
+    }
+    for name, shape in expected_shapes.items():
+        if archive[name].shape != shape:
+            raise ValueError(f"{name} must have shape {shape}, got {archive[name].shape}")
+    if rows == 0:
+        raise ValueError("prepared archive must contain at least one row")
+
+    counts = np.asarray(archive["counts"], dtype=np.int64)
+    if np.any((counts < 2) | (counts > MAX_COLORS)):
+        raise ValueError("counts must be in 2..9")
+    masks = np.asarray(archive["count_masks"], dtype=np.float32)
+    expected_masks = np.arange(MAX_COLORS)[None, :] < counts[:, None]
+    if not np.array_equal(masks > 0.5, expected_masks):
+        raise ValueError("count_masks must activate exactly the leading count slots")
+    locked_masks = np.asarray(archive["locked_masks"], dtype=np.float32)
+    if np.any((locked_masks > 0.5) & ~expected_masks):
+        raise ValueError("locked_masks may not lock an inactive slot")
+
+    for name in ("embeddings", "seed_noise", "locked_colors", "targets"):
+        if not np.isfinite(archive[name]).all():
+            raise ValueError(f"{name} contains a non-finite value")
+    embedding_norms = np.linalg.norm(archive["embeddings"], axis=1)
+    if float(np.max(np.abs(embedding_norms - 1.0))) > 5e-3:
+        raise ValueError("embeddings must be L2 normalized")
+    inactive = ~expected_masks
+    if np.any(np.abs(archive["targets"][inactive]) > 1e-7):
+        raise ValueError("inactive targets must be exactly zero")
+    if np.any(np.abs(archive["locked_colors"][locked_masks <= 0.5]) > 1e-7):
+        raise ValueError("unlocked physical lock inputs must be exactly zero")
+    if not set(np.unique(archive["splits"]).tolist()).issubset(set(SPLIT_IDS.values())):
+        raise ValueError("splits contain an unknown split id")
+
+    if "quality_weights" in archive:
+        weights = np.asarray(archive["quality_weights"], dtype=np.float32)
+        if weights.shape != (rows,) or not np.isfinite(weights).all() or np.any(weights <= 0):
+            raise ValueError("quality_weights must be finite positive [N] values")
+
+    if "source_group_ids" in archive:
+        group_ids = np.asarray(archive["source_group_ids"])
+        if group_ids.shape != (rows,):
+            raise ValueError("source_group_ids must have shape [N]")
+        group_splits: dict[str, int] = {}
+        for group_id, split_id in zip(group_ids, archive["splits"], strict=True):
+            key = str(group_id)
+            current = int(split_id)
+            previous = group_splits.setdefault(key, current)
+            if previous != current:
+                raise ValueError(f"source group crosses splits: {key}")
+
+    return {
+        "rows": rows,
+        "train": int(np.sum(archive["splits"] == SPLIT_IDS["train"])),
+        "val": int(np.sum(archive["splits"] == SPLIT_IDS["val"])),
+        "test": int(np.sum(archive["splits"] == SPLIT_IDS["test"])),
+    }
+
+
 class PaletteBrainDataset(Dataset):  # type: ignore[misc]
     """PyTorch view over a prepared PaletteBrain NPZ split."""
 
@@ -464,6 +548,7 @@ class PaletteBrainDataset(Dataset):  # type: ignore[misc]
         if split not in SPLIT_IDS:
             raise ValueError(f"unknown split {split!r}")
         with np.load(path, allow_pickle=False) as archive:
+            validate_prepared_archive({name: archive[name] for name in archive.files})
             indices = np.flatnonzero(archive["splits"] == SPLIT_IDS[split])
             if max_samples is not None:
                 indices = indices[: max(0, int(max_samples))]
@@ -481,6 +566,14 @@ class PaletteBrainDataset(Dataset):  # type: ignore[misc]
                     "targets",
                 )
             }
+            if "quality_weights" in archive.files:
+                self.arrays["quality_weights"] = np.asarray(
+                    archive["quality_weights"][indices], dtype=np.float32
+                )
+            else:
+                self.arrays["quality_weights"] = np.ones(
+                    len(indices), dtype=np.float32
+                )
 
     def __len__(self) -> int:
         return int(self.arrays["counts"].shape[0])
@@ -512,4 +605,11 @@ class PaletteBrainDataset(Dataset):  # type: ignore[misc]
             "target": torch.as_tensor(
                 self.arrays["targets"][index], dtype=torch.float32
             ),
+            "quality_weight": torch.as_tensor(
+                self.arrays["quality_weights"][index], dtype=torch.float32
+            ),
         }
+
+    @property
+    def sampling_weights(self) -> np.ndarray:
+        return np.asarray(self.arrays["quality_weights"], dtype=np.float64)

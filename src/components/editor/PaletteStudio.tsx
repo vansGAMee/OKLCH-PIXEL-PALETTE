@@ -190,7 +190,7 @@ export function PaletteStudio({ locale = 'en' }: PaletteStudioProps) {
   }, [recordAiFeedback]);
 
   const handleNewVariation = useCallback(() => {
-    const nextSeed = seed + 1;
+    const nextSeed = (seed + 1) >>> 0;
     if (mode === 'manual') {
       setSeed(nextSeed);
       return;

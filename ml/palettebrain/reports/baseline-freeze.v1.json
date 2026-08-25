@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-25",
+  "repositoryCommit": "1f09670c491f2863d14735f2f4721bd2a68f8999",
+  "workingTreeWasClean": true,
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4060",
+    "vramMiB": 8188,
+    "driverVersion": "591.86",
+    "repositoryBytesBeforeMlSetup": 3079184429,
+    "freeDiskBytesBeforeMlSetup": 20771983360
+  },
+  "encoder": {
+    "modelId": "multilingual-e5-small",
+    "browserArtifactBytes": 118308185,
+    "browserArtifactSha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+    "embeddingSize": 384,
+    "contextTokens": 512,
+    "promptPrefix": "query: ",
+    "pooling": "attention-mask mean pooling followed by L2 normalization"
+  },
+  "baselineA": {
+    "id": "legacy-inferPaletteIntent",
+    "kind": "E5 semantic-anchor intent plus explicit-color constraint and procedural palette",
+    "entryPoint": "src/lib/ai-palette/inference.ts#inferPaletteIntent",
+    "completePaletteNeuralDecoder": false
+  },
+  "baselineB": {
+    "id": "palettebrain-v2-decoder-synthetic-v1",
+    "kind": "deterministic_synthetic_baseline",
+    "manifest": "public/models/palettebrain-v2.manifest.json",
+    "decoderBytes": 406476,
+    "decoderParameters": 94725,
+    "decoderSha256": "ec18a0caacc5ce315f8821de3f162a0649291a1d66a3e897fd60799020cbc56a",
+    "productionReady": false,
+    "existingEvaluation": "ml/palettebrain/reports/palettebrain-v2-synthetic-evaluation.json",
+    "existingBenchmark": "ml/palettebrain/reports/palettebrain-v2-synthetic-benchmark.json"
+  },
+  "verifiedRuntime": {
+    "uiCallsCompletePaletteGenerator": true,
+    "counts": [2, 3, 4, 5, 6, 7, 8, 9],
+    "promptEmbeddingLruEntries": 16,
+    "embeddingCacheExcludesSeedCountAndLocks": true,
+    "localInferenceOnly": true,
+    "runtimeRestoresLockedColorsExactly": true
+  },
+  "knownBaselineLimitations": [
+    "Baseline B uses fixed free-slot reconstruction and synthetic supervision.",
+    "Baseline B supervises an importance channel ignored by the browser.",
+    "The browser prompt input is limited to 160 characters despite a 512-token encoder context.",
+    "The manifest does not yet pin or validate the encoder revision and artifact hashes."
+  ]
+}

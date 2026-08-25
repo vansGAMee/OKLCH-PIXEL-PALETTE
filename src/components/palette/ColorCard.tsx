@@ -13,6 +13,7 @@ interface ColorCardProps {
   totalColors?: number;
   isLocked?: boolean;
   onToggleLock?: () => void;
+  onColorChange?: (newHex: string) => void;
   locale?: Locale;
 }
 
@@ -22,6 +23,7 @@ export const ColorCard = React.memo(function ColorCardComponent({
   totalColors = 4,
   isLocked = false,
   onToggleLock,
+  onColorChange,
   locale = 'en',
 }: ColorCardProps) {
   const [copied, setCopied] = useState(false);
@@ -81,6 +83,22 @@ export const ColorCard = React.memo(function ColorCardComponent({
             {label}
           </span>
           <div className="flex items-center gap-1.5">
+            {onColorChange && (
+              <label
+                onClick={(e) => e.stopPropagation()}
+                title={locale === 'ru' ? 'Изменить цвет' : 'Edit color'}
+                className={`p-2 rounded-lg border backdrop-blur-md cursor-pointer transition-all hover:scale-105 ${badgeBg} ${textColor}`}
+              >
+                <input
+                  type="color"
+                  value={color.hex}
+                  onChange={(e) => onColorChange(e.target.value)}
+                  className="sr-only"
+                  aria-label={locale === 'ru' ? `Изменить цвет ${label}` : `Edit ${label} color`}
+                />
+                <span className="text-[10px] font-mono font-bold">HEX</span>
+              </label>
+            )}
             {color.role === 'base' && (
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-600 text-white font-bold shadow-md">
                 {locale === 'ru' ? 'Базовый' : 'Primary Base'}
@@ -113,44 +131,42 @@ export const ColorCard = React.memo(function ColorCardComponent({
           </div>
         </div>
 
-        {/* Center/Bottom Copy Display */}
-        <div className="mt-auto">
-          <div className="flex items-end justify-between gap-2">
-            <div>
-              <p className={`text-xs font-mono font-semibold ${subTextColor} uppercase tracking-wider`}>
-                HEX CODE
-              </p>
-              <h3 className={`text-2xl sm:text-3xl font-mono font-black ${textColor} tracking-tight`}>
-                {color.hex.toUpperCase()}
-              </h3>
-            </div>
+        {/* Footer / Hex Display */}
+        <div className="flex items-end justify-between mt-auto">
+          <div>
+            <p className={`text-xs font-mono font-semibold ${subTextColor} uppercase tracking-wider`}>
+              HEX CODE
+            </p>
+            <h3 className={`text-2xl sm:text-3xl font-mono font-black ${textColor} tracking-tight`}>
+              {color.hex.toUpperCase()}
+            </h3>
+          </div>
 
-            {/* Copy Icon Visual Indicator */}
-            <div
-              className={`p-3 rounded-xl border backdrop-blur-md transition-all shadow-lg flex items-center justify-center ${
-                isLightColor
-                  ? 'bg-black/15 group-hover:bg-black/25 text-black border-black/20'
-                  : 'bg-white/15 group-hover:bg-white/25 text-white border-white/20'
-              }`}
-            >
-              <AnimatePresence mode="wait">
-                {copied ? (
-                  <motion.div
-                    key="check"
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0 }}
-                    className="flex items-center gap-1 font-mono font-bold text-xs"
-                  >
-                    <Check className="w-4 h-4 text-emerald-400" />
-                  </motion.div>
-                ) : (
-                  <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
-                    <Copy className="w-4 h-4" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+          {/* Copy Icon Visual Indicator */}
+          <div
+            className={`p-3 rounded-xl border backdrop-blur-md transition-all shadow-lg flex items-center justify-center ${
+              isLightColor
+                ? 'bg-black/15 group-hover:bg-black/25 text-black border-black/20'
+                : 'bg-white/15 group-hover:bg-white/25 text-white border-white/20'
+            }`}
+          >
+            <AnimatePresence mode="wait">
+              {copied ? (
+                <motion.div
+                  key="check"
+                  initial={{ scale: 0, rotate: -45 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  exit={{ scale: 0 }}
+                  className="flex items-center gap-1 font-mono font-bold text-xs"
+                >
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </motion.div>
+              ) : (
+                <motion.div key="copy" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                  <Copy className="w-4 h-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

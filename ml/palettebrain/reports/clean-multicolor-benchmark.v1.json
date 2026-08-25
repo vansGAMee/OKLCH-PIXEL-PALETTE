@@ -1,0 +1,2390 @@
+{
+  "cleanBenchmark": {
+    "benchmarkHash": "c11bc9fdbc934c008164d025d30c24f37a6ceed7f45fe31b58210a89ad0127d5",
+    "frozenBeforeModelOutputs": true,
+    "promptCount": 22,
+    "prompts": [
+      {
+        "id": "cb-en-01",
+        "language": "en",
+        "prompt": "crimson meets cobalt",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "id": "cb-en-02",
+        "language": "en",
+        "prompt": "scarlet with navy",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "id": "cb-en-03",
+        "language": "en",
+        "prompt": "emerald and rust",
+        "required": [
+          "green",
+          "orange"
+        ]
+      },
+      {
+        "id": "cb-en-04",
+        "language": "en",
+        "prompt": "sky blue and flame",
+        "required": [
+          "blue",
+          "orange"
+        ]
+      },
+      {
+        "id": "cb-en-05",
+        "language": "en",
+        "prompt": "violet paired with amber",
+        "required": [
+          "purple",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-en-06",
+        "language": "en",
+        "prompt": "jade alongside magenta",
+        "required": [
+          "green",
+          "pink"
+        ]
+      },
+      {
+        "id": "cb-en-07",
+        "language": "en",
+        "prompt": "rose and fuchsia together",
+        "required": [
+          "red",
+          "pink"
+        ]
+      },
+      {
+        "id": "cb-en-08",
+        "language": "en",
+        "prompt": "azure and cyan combined",
+        "required": [
+          "blue",
+          "cyan"
+        ]
+      },
+      {
+        "id": "cb-en-09",
+        "language": "en",
+        "prompt": "warm red cool blue pale yellow",
+        "required": [
+          "red",
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-en-10",
+        "language": "en",
+        "prompt": "forest tones with coral and gold",
+        "required": [
+          "green",
+          "orange",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-en-11",
+        "language": "en",
+        "prompt": "neon green purple orange",
+        "required": [
+          "green",
+          "purple",
+          "orange"
+        ]
+      },
+      {
+        "id": "cb-ru-01",
+        "language": "ru",
+        "prompt": "алый с лазурным",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "id": "cb-ru-02",
+        "language": "ru",
+        "prompt": "тёмно-красный плюс синий",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "id": "cb-ru-03",
+        "language": "ru",
+        "prompt": "изумрудный и рыжий",
+        "required": [
+          "green",
+          "orange"
+        ]
+      },
+      {
+        "id": "cb-ru-04",
+        "language": "ru",
+        "prompt": "небесный совместно с янтарным",
+        "required": [
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-ru-05",
+        "language": "ru",
+        "prompt": "сиреневый вместе с коралловым",
+        "required": [
+          "purple",
+          "pink"
+        ]
+      },
+      {
+        "id": "cb-ru-06",
+        "language": "ru",
+        "prompt": "морской волны и алый",
+        "required": [
+          "cyan",
+          "red"
+        ]
+      },
+      {
+        "id": "cb-ru-07",
+        "language": "ru",
+        "prompt": "малиновый и розовый",
+        "required": [
+          "red",
+          "pink"
+        ]
+      },
+      {
+        "id": "cb-ru-08",
+        "language": "ru",
+        "prompt": "голубой да циановый",
+        "required": [
+          "blue",
+          "cyan"
+        ]
+      },
+      {
+        "id": "cb-ru-09",
+        "language": "ru",
+        "prompt": "ярко-красный синий и жёлтый оттенки",
+        "required": [
+          "red",
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-ru-10",
+        "language": "ru",
+        "prompt": "изумруд коралл золото",
+        "required": [
+          "green",
+          "orange",
+          "yellow"
+        ]
+      },
+      {
+        "id": "cb-ru-11",
+        "language": "ru",
+        "prompt": "неоновый зелёный фиолетовый оранжевый",
+        "required": [
+          "green",
+          "purple",
+          "orange"
+        ]
+      }
+    ],
+    "zeroOverlapWithC4Training": true
+  },
+  "contamination": {
+    "c4_training_prompt_count": 60,
+    "clean_frozen_count": 2,
+    "clean_frozen_prompts": [
+      "black and gold",
+      "чёрный и золотой"
+    ],
+    "contaminated_frozen_count": 2,
+    "contaminated_frozen_prompts": [
+      "red and blue",
+      "красный и синий"
+    ],
+    "frozen_eval_total_mc_prompts": 4,
+    "note": "Contaminated frozen prompts are demoted to sanity checks. They must NOT be credited toward multi-color generalization."
+  },
+  "purpose": "clean_multicolor_held_out_benchmark_c3_vs_c4",
+  "results": {
+    "c3_accuracy": 0.13636363636363635,
+    "c3_passed": 3,
+    "c4_accuracy": 0.13636363636363635,
+    "c4_delta": 0.0,
+    "c4_passed": 3,
+    "count_setting": 5,
+    "n_prompts": 22,
+    "per_prompt": [
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-01",
+        "language": "en",
+        "prompt": "crimson meets cobalt",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "c3_passed": true,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.08500233292579651,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.0379008986055851,
+                "required_family": "blue",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.056411147117614746,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.09333766251802444,
+                "required_family": "blue",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0985298901796341,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-02",
+        "language": "en",
+        "prompt": "scarlet with navy",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0871582105755806,
+                "required_family": "green",
+                "slot": 4
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06520529836416245,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-03",
+        "language": "en",
+        "prompt": "emerald and rust",
+        "required": [
+          "green",
+          "orange"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.04825495183467865,
+                "required_family": "blue",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06414055079221725,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09167762100696564,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06967418640851974,
+                "required_family": "blue",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.05833478644490242,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08979421108961105,
+                "required_family": "orange",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-04",
+        "language": "en",
+        "prompt": "sky blue and flame",
+        "required": [
+          "blue",
+          "orange"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.06662172824144363,
+                "required_family": "purple",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-05",
+        "language": "en",
+        "prompt": "violet paired with amber",
+        "required": [
+          "purple",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-06",
+        "language": "en",
+        "prompt": "jade alongside magenta",
+        "required": [
+          "green",
+          "pink"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-07",
+        "language": "en",
+        "prompt": "rose and fuchsia together",
+        "required": [
+          "red",
+          "pink"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09848390519618988,
+                "required_family": "cyan",
+                "slot": 4
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08391314744949341,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09587263315916061,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-08",
+        "language": "en",
+        "prompt": "azure and cyan combined",
+        "required": [
+          "blue",
+          "cyan"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08300525695085526,
+                "required_family": "red",
+                "slot": 1
+              },
+              {
+                "distance": 0.09795571863651276,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 2,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08645449578762054,
+                "required_family": "red",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.07947342842817307,
+                "required_family": "red",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-09",
+        "language": "en",
+        "prompt": "warm red cool blue pale yellow",
+        "required": [
+          "red",
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09348904341459274,
+                "required_family": "orange",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-10",
+        "language": "en",
+        "prompt": "forest tones with coral and gold",
+        "required": [
+          "green",
+          "orange",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.07145988941192627,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.03735209256410599,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07473764568567276,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.060514066368341446,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.034349288791418076,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.043271634727716446,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.05345587804913521,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0709499940276146,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-en-11",
+        "language": "en",
+        "prompt": "neon green purple orange",
+        "required": [
+          "green",
+          "purple",
+          "orange"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": true,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.0811358168721199,
+                "required_family": "red",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.05642447620630264,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.04030093923211098,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08114129304885864,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.047284480184316635,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-01",
+        "language": "ru",
+        "prompt": "алый с лазурным",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.015081613324582577,
+                "required_family": "blue",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.054699793457984924,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.060607388615608215,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0552336685359478,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-02",
+        "language": "ru",
+        "prompt": "тёмно-красный плюс синий",
+        "required": [
+          "red",
+          "blue"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-03",
+        "language": "ru",
+        "prompt": "изумрудный и рыжий",
+        "required": [
+          "green",
+          "orange"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09597957134246826,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.058105409145355225,
+                "required_family": "yellow",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0693061351776123,
+                "required_family": "yellow",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06984162330627441,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-04",
+        "language": "ru",
+        "prompt": "небесный совместно с янтарным",
+        "required": [
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-05",
+        "language": "ru",
+        "prompt": "сиреневый вместе с коралловым",
+        "required": [
+          "purple",
+          "pink"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-06",
+        "language": "ru",
+        "prompt": "морской волны и алый",
+        "required": [
+          "cyan",
+          "red"
+        ]
+      },
+      {
+        "c3_passed": true,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.04539691284298897,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.05399518832564354,
+                "required_family": "pink",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09911847859621048,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.09867717325687408,
+                "required_family": "pink",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.0736796036362648,
+                "required_family": "red",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09399378299713135,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [],
+            "matched_count": 0,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.09862116724252701,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-07",
+        "language": "ru",
+        "prompt": "малиновый и розовый",
+        "required": [
+          "red",
+          "pink"
+        ]
+      },
+      {
+        "c3_passed": true,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.07532983273267746,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.0778881087899208,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06168408691883087,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.08537557721138,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06741839647293091,
+                "required_family": "blue",
+                "slot": 0
+              },
+              {
+                "distance": 0.09393345564603806,
+                "required_family": "cyan",
+                "slot": 2
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.061578962951898575,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.08149637281894684,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": true,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.09759946912527084,
+                "required_family": "blue",
+                "slot": 0
+              },
+              {
+                "distance": 0.05460561811923981,
+                "required_family": "cyan",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06996095925569534,
+                "required_family": "blue",
+                "slot": 0
+              },
+              {
+                "distance": 0.03986538574099541,
+                "required_family": "cyan",
+                "slot": 2
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08240071684122086,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.06893577426671982,
+                "required_family": "cyan",
+                "slot": 2
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08093421161174774,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.061859212815761566,
+                "required_family": "cyan",
+                "slot": 2
+              }
+            ],
+            "matched_count": 2,
+            "passed": true,
+            "required_count": 2,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-08",
+        "language": "ru",
+        "prompt": "голубой да циановый",
+        "required": [
+          "blue",
+          "cyan"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.09874275326728821,
+                "required_family": "red",
+                "slot": 0
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.082677461206913,
+                "required_family": "yellow",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.05499177798628807,
+                "required_family": "red",
+                "slot": 1
+              },
+              {
+                "distance": 0.02756161242723465,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 2,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08466913551092148,
+                "required_family": "red",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": true,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.09397028386592865,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.03272731974720955,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 2,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.023655083030462265,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.05955640971660614,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.040469635277986526,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 3,
+            "passed": true,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0835500955581665,
+                "required_family": "blue",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.05498170480132103,
+                "required_family": "red",
+                "slot": 0
+              },
+              {
+                "distance": 0.05480116978287697,
+                "required_family": "blue",
+                "slot": 1
+              },
+              {
+                "distance": 0.015711624175310135,
+                "required_family": "yellow",
+                "slot": 4
+              }
+            ],
+            "matched_count": 3,
+            "passed": true,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-09",
+        "language": "ru",
+        "prompt": "ярко-красный синий и жёлтый оттенки",
+        "required": [
+          "red",
+          "blue",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.07234007865190506,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07727600634098053,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07174480706453323,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07104963809251785,
+                "required_family": "green",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.054571378976106644,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07941300421953201,
+                "required_family": "green",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.06436169892549515,
+                "required_family": "green",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08766692876815796,
+                "required_family": "green",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-10",
+        "language": "ru",
+        "prompt": "изумруд коралл золото",
+        "required": [
+          "green",
+          "orange",
+          "yellow"
+        ]
+      },
+      {
+        "c3_passed": false,
+        "c3_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.0790182426571846,
+                "required_family": "orange",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.07287634164094925,
+                "required_family": "orange",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.0751752108335495,
+                "required_family": "orange",
+                "slot": 1
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08797422796487808,
+                "required_family": "orange",
+                "slot": 3
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "c4_passed": false,
+        "c4_per_seed": [
+          {
+            "assignments": [
+              {
+                "distance": 0.08121296018362045,
+                "required_family": "purple",
+                "slot": 1
+              },
+              {
+                "distance": 0.05177544057369232,
+                "required_family": "orange",
+                "slot": 2
+              }
+            ],
+            "matched_count": 2,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.01755298301577568,
+                "required_family": "orange",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.08475936204195023,
+                "required_family": "orange",
+                "slot": 2
+              }
+            ],
+            "matched_count": 1,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          },
+          {
+            "assignments": [
+              {
+                "distance": 0.053641464561223984,
+                "required_family": "purple",
+                "slot": 1
+              },
+              {
+                "distance": 0.035073019564151764,
+                "required_family": "orange",
+                "slot": 3
+              }
+            ],
+            "matched_count": 2,
+            "passed": false,
+            "required_count": 3,
+            "threshold": 0.1
+          }
+        ],
+        "id": "cb-ru-11",
+        "language": "ru",
+        "prompt": "неоновый зелёный фиолетовый оранжевый",
+        "required": [
+          "green",
+          "purple",
+          "orange"
+        ]
+      }
+    ],
+    "seeds": [
+      1,
+      7,
+      42,
+      1337
+    ]
+  },
+  "schemaVersion": 1,
+  "summary": {
+    "c3_clean_accuracy": 0.13636363636363635,
+    "c4_clean_accuracy": 0.13636363636363635,
+    "c4_delta_vs_c3": 0.0,
+    "c4_improved_over_c3_on_clean_benchmark": false,
+    "note": "Multi-color generalization credit is ONLY granted on the clean zero-overlap benchmark. The contaminated frozen prompts ('red and blue', 'красный и синий') are excluded from this score."
+  }
+}

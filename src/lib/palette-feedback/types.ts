@@ -15,15 +15,26 @@ export type PaletteFeedbackEvent = {
   schemaVersion: typeof PALETTE_FEEDBACK_SCHEMA_VERSION;
   event: PaletteFeedbackEventName;
   modelVersion: string;
+  modelHash?: string;
   encoderVersion: string;
+  encoderHash?: string;
   palette: OklchColor[];
+  editedPalette?: OklchColor[];
   requestedCount: number;
   seed?: number;
+  locks?: number[];
   candidateId?: string;
-  promptRepresentation?: {
-    kind: 'embedding_hash';
-    value: string;
-  };
+  groupId?: string;
+  rating?: number;
+  promptRepresentation?:
+    | {
+        kind: 'embedding';
+        value: number[];
+      }
+    | {
+        kind: 'embedding_hash';
+        value: string;
+      };
   createdAt: string;
 };
 

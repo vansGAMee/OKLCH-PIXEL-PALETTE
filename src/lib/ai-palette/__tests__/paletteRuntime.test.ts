@@ -252,4 +252,35 @@ describe('PaletteBrain v2 browser runtime', () => {
     expect(attempts).toBe(2);
     expect(encoder.model).toHaveBeenCalledOnce();
   });
+
+  describe('Production Manifest Contract Validation', () => {
+    it('validates the actual production manifest file on disk', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const manifestPath = path.resolve(process.cwd(), 'public/models/palettebrain-v2.manifest.json');
+      expect(fs.existsSync(manifestPath)).toBe(true);
+
+      const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      const { validateDecoderManifest } = await import('../inference');
+      const validated = validateDecoderManifest(raw);
+
+      expect(validated.modelVersion).toBeTruthy();
+      expect(typeof validated.modelVersion).toBe('string');
+      expect(validated.decoderPath).toMatch(/^\/models\/palettebrain-.*\.onnx$/);
+
+      // Verify decoder ONNX artifact actually exists on disk
+      const decoderFilePath = path.resolve(process.cwd(), `public${validated.decoderPath}`);
+      expect(fs.existsSync(decoderFilePath)).toBe(true);
+      const stat = fs.statSync(decoderFilePath);
+      expect(stat.size).toBeGreaterThan(100_000);
+    });
+
+    it('rejects invalid manifests with missing or empty version', async () => {
+      const { validateDecoderManifest } = await import('../inference');
+      expect(() => validateDecoderManifest(null)).toThrow('manifest must be a JSON object');
+      expect(() => validateDecoderManifest({})).toThrow('manifest modelVersion must be a non-empty string');
+      expect(() => validateDecoderManifest({ modelVersion: '   ' })).toThrow('manifest modelVersion must be a non-empty string');
+      expect(() => validateDecoderManifest({ modelVersion: 'valid-v1', decoder: { path: 'invalid/path' } })).toThrow('manifest decoder path must be a valid path under /models/');
+    });
+  });
 });

@@ -1,0 +1,43 @@
+{
+  "baseCheckpoint": "ml/palettebrain/checkpoints/candidate-3-best.pt",
+  "codename": "Mikhail Tal (Candidate Evaluation)",
+  "evaluatedCheckpoint": "ml/palettebrain/checkpoints/candidate-5-best.pt",
+  "gates": {
+    "cleanMultiColorGTE70": false,
+    "countCorrectness100": true,
+    "determinism100": true,
+    "enDirectGTE94": true,
+    "exclusion100": true,
+    "gamut100": true,
+    "inactiveZero100": true,
+    "modifierSensitivityGTE010": true,
+    "nearDuplicatesLTE5": false,
+    "rawDirectGTE95": true,
+    "realHoldoutLTE0152": true,
+    "ruDirectGTE95": true,
+    "ruEnParityLTE0055": true
+  },
+  "metrics": {
+    "cleanMultiColorHeldOutAccuracy": 0.6699029126213593,
+    "count2to9Correctness": 1.0,
+    "enDirectColorAccuracy": 0.9807692307692307,
+    "enMultiColorHeldOutAccuracy": 0.6626794258373205,
+    "exclusionAccuracy": 1.0,
+    "inactiveSlotsZeroError": 1.0,
+    "modifierSensitivityMeanDistance": 0.11714469934539554,
+    "nearDuplicateRate": 0.09533898305084745,
+    "rawDirectColorAccuracy": 0.9807692307692307,
+    "realHoldoutMeanMatchedOklabDistance": 0.140580035922419,
+    "ruDirectColorAccuracy": 0.9807692307692307,
+    "ruEnParityMeanDistance": 0.048281204803091775,
+    "ruMultiColorHeldOutAccuracy": 0.6773399014778325,
+    "sameSeedDeterminism": 1.0,
+    "srgbGamutValidRate": 1.0
+  },
+  "modelLabel": "candidate-5",
+  "onnxPath": "ml/palettebrain/artifacts/palettebrain-candidate5-decoder.onnx",
+  "onnxSha256": "e0b1816ce62894cc3622d2c45ab211ed8758c00dfc86cb4b4570685f482bcd91",
+  "onnxSizeBytes": 406476,
+  "pytorchOnnxMaxError": 5.2452e-06,
+  "schemaVersion": 1
+}

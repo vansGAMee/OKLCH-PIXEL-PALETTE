@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
 import random
+import re
 import time
 
 import numpy as np
@@ -15,27 +17,56 @@ try:
     import torch
     from torch import Tensor
     import torch.nn.functional as F
-    from torch.utils.data import DataLoader
+    from torch.utils.data import DataLoader, WeightedRandomSampler
 except ImportError as exc:  # pragma: no cover - depends on local ML environment
     raise SystemExit(
         "PyTorch is required for training. Install ml/palettebrain/requirements.txt."
     ) from exc
 
 try:
+    from .color_math import hue_relevance_from_oklab, representation_to_oklab
     from .dataset import PaletteBrainDataset
+    from .matching import match_free_targets
     from .model import PaletteDecoder, PaletteDecoderConfig
 except ImportError:
+    from color_math import (  # type: ignore[no-redef]
+        hue_relevance_from_oklab,
+        representation_to_oklab,
+    )
     from dataset import PaletteBrainDataset
+    from matching import match_free_targets
     from model import PaletteDecoder, PaletteDecoderConfig
 
 
 METRICS_VERSION = 1
+DUPLICATE_OKLAB_THRESHOLD = 0.025
+DUPLICATE_LOSS_WEIGHT = 0.10
+IMPORTANCE_LOSS_WEIGHT = 0.0
 
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def atomic_torch_save(payload: dict[str, object], path: Path) -> None:
+    temporary = path.with_name(path.name + ".tmp")
+    try:
+        torch.save(payload, temporary)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def masked_mean(values: Tensor, mask: Tensor) -> Tensor:
@@ -52,54 +83,74 @@ def decoder_loss(
     locked = active * locked_mask.clamp(0.0, 1.0)
     free = active * (1.0 - locked_mask.clamp(0.0, 1.0))
 
+    predicted_oklab = representation_to_oklab(output)
+    with torch.no_grad():
+        target_oklab = representation_to_oklab(target)
+        matched_target, matched_target_oklab = match_free_targets(
+            target,
+            predicted_oklab,
+            target_oklab,
+            count_mask,
+            locked_mask,
+        )
+
     lightness = masked_mean(
-        F.smooth_l1_loss(output[..., 0], target[..., 0], reduction="none"), free
+        F.smooth_l1_loss(
+            output[..., 0], matched_target[..., 0], reduction="none"
+        ),
+        free,
     )
     chroma = masked_mean(
-        F.smooth_l1_loss(output[..., 1], target[..., 1], reduction="none"), free
+        F.smooth_l1_loss(
+            output[..., 1], matched_target[..., 1], reduction="none"
+        ),
+        free,
     )
     predicted_hue = F.normalize(output[..., 2:4], dim=-1, eps=1e-6)
-    target_hue = F.normalize(target[..., 2:4], dim=-1, eps=1e-6)
-    hue = masked_mean(1.0 - (predicted_hue * target_hue).sum(dim=-1), free)
-    importance = masked_mean(
-        F.smooth_l1_loss(output[..., 4], target[..., 4], reduction="none"),
-        active,
-    )
+    target_hue = F.normalize(matched_target[..., 2:4], dim=-1, eps=1e-6)
+    hue_error = 1.0 - (predicted_hue * target_hue).sum(dim=-1)
+    hue_relevance = hue_relevance_from_oklab(matched_target_oklab)
+    hue = masked_mean(hue_error * hue_relevance, free)
+
+    # Channel five remains in the browser/ONNX contract, but palette order is
+    # not trustworthy importance supervision. Candidate training gives it no
+    # objective or metric credit unless real labels are introduced explicitly.
+    importance = output.new_zeros(())
+    importance_weight = output.new_tensor(IMPORTANCE_LOSS_WEIGHT)
+
     locked_lightness = masked_mean(
-        F.smooth_l1_loss(output[..., 0], target[..., 0], reduction="none"),
+        F.smooth_l1_loss(
+            output[..., 0], matched_target[..., 0], reduction="none"
+        ),
         locked,
     )
     locked_chroma = masked_mean(
-        F.smooth_l1_loss(output[..., 1], target[..., 1], reduction="none"),
+        F.smooth_l1_loss(
+            output[..., 1], matched_target[..., 1], reduction="none"
+        ),
         locked,
     )
     locked_hue = masked_mean(
-        1.0 - (predicted_hue * target_hue).sum(dim=-1), locked
+        hue_error * hue_relevance,
+        locked,
     )
 
-    decoded = torch.stack(
-        (
-            torch.sigmoid(output[..., 0]),
-            torch.sigmoid(output[..., 1]),
-            predicted_hue[..., 0],
-            predicted_hue[..., 1],
-        ),
-        dim=-1,
-    )
-    distances = torch.cdist(decoded, decoded)
-    pair_mask = active.unsqueeze(1) * active.unsqueeze(2)
+    distances = torch.cdist(predicted_oklab, predicted_oklab)
+    pair_mask = free.unsqueeze(1) * free.unsqueeze(2)
     upper_triangle = torch.triu(
         torch.ones_like(pair_mask), diagonal=1
     )
     pair_mask = pair_mask * upper_triangle
-    duplicate_penalty = masked_mean(F.relu(0.12 - distances), pair_mask)
+    duplicate_penalty = masked_mean(
+        F.relu(DUPLICATE_OKLAB_THRESHOLD - distances), pair_mask
+    )
 
     total = (
         lightness
         + chroma
         + 1.5 * hue
-        + 0.25 * importance
-        + 0.20 * duplicate_penalty
+        + IMPORTANCE_LOSS_WEIGHT * importance
+        + DUPLICATE_LOSS_WEIGHT * duplicate_penalty
         + 0.25 * (locked_lightness + locked_chroma + locked_hue)
     )
     return total, {
@@ -107,6 +158,7 @@ def decoder_loss(
         "chroma": chroma,
         "hue": hue,
         "importance": importance,
+        "importanceWeight": importance_weight,
         "duplicatePenalty": duplicate_penalty,
         "lockedLightness": locked_lightness,
         "lockedChroma": locked_chroma,
@@ -159,9 +211,14 @@ def run_epoch(
 
 
 def choose_device(requested: str) -> torch.device:
-    if requested != "auto":
-        return torch.device(requested)
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = (
+        torch.device(requested)
+        if requested != "auto"
+        else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    )
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested but torch.cuda.is_available() is false")
+    return device
 
 
 def train(args: argparse.Namespace) -> dict[str, object]:
@@ -178,10 +235,17 @@ def train(args: argparse.Namespace) -> dict[str, object]:
     val_dataset = PaletteBrainDataset(args.data, "val", max_samples=max_val)
     if len(train_dataset) == 0 or len(val_dataset) == 0:
         raise RuntimeError("prepared dataset must contain non-empty train and val splits")
+    sampler_generator = torch.Generator().manual_seed(args.seed)
+    sampler = WeightedRandomSampler(
+        torch.as_tensor(train_dataset.sampling_weights, dtype=torch.double),
+        num_samples=len(train_dataset),
+        replacement=True,
+        generator=sampler_generator,
+    )
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True,
+        sampler=sampler,
         num_workers=0,
     )
     val_loader = DataLoader(
@@ -205,7 +269,52 @@ def train(args: argparse.Namespace) -> dict[str, object]:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", args.candidate_id):
+        raise ValueError("candidate-id may contain only letters, digits, '_' and '-'")
+    artifact_stem = args.candidate_id
+    last_path = output_dir / f"{artifact_stem}-last.pt"
+    best_path = output_dir / f"{artifact_stem}-best.pt"
+    config_path = output_dir / f"{artifact_stem}-config.json"
+    metrics_path = output_dir / f"{artifact_stem}-metrics.json"
+    data_path = Path(args.data)
+    dataset_sha256 = sha256_file(data_path)
+    loss_config = {
+        "matching": "detached_physical_oklab_hungarian",
+        "lightnessWeight": 1.0,
+        "relativeChromaWeight": 1.0,
+        "circularHueWeight": 1.5,
+        "neutralHueDisabledBelowChroma": 0.02,
+        "neutralHueFullAboveChroma": 0.05,
+        "duplicateOklabThreshold": DUPLICATE_OKLAB_THRESHOLD,
+        "duplicateWeight": DUPLICATE_LOSS_WEIGHT,
+        "lockedAuxiliaryWeight": 0.25,
+        "importanceWeight": IMPORTANCE_LOSS_WEIGHT,
+    }
+    training_config = {
+        "schemaVersion": 1,
+        "candidateId": artifact_stem,
+        "dataset": str(data_path.as_posix()),
+        "datasetSha256": dataset_sha256,
+        "datasetVersion": train_dataset.metadata.get("datasetVersion"),
+        "encoderRevision": train_dataset.metadata.get("encoderRevision"),
+        "modelConfig": config.to_dict(),
+        "lossConfig": loss_config,
+        "trainingSeed": args.seed,
+        "batchSize": batch_size,
+        "learningRate": args.learning_rate,
+        "weightDecay": args.weight_decay,
+        "maximumEpochs": epochs,
+        "earlyStoppingPatience": args.patience,
+        "earlyStoppingMinimumDelta": args.min_delta,
+        "weightedSampling": True,
+        "torchVersion": torch.__version__,
+    }
+    rendered_config = json.dumps(training_config, indent=2, sort_keys=True)
+    config_path.write_text(rendered_config + "\n", encoding="utf-8")
+    config_hash = hashlib.sha256(rendered_config.encode("utf-8")).hexdigest()
     best_val_loss = math.inf
+    best_epoch = 0
+    stale_epochs = 0
     history: list[dict[str, object]] = []
     start = time.perf_counter()
 
@@ -232,34 +341,69 @@ def train(args: argparse.Namespace) -> dict[str, object]:
             "training_data_synthesis_version": train_dataset.metadata.get(
                 "synthesisVersion"
             ),
+            "dataset_version": train_dataset.metadata.get("datasetVersion"),
+            "dataset_sha256": dataset_sha256,
+            "dataset_content_hash": train_dataset.metadata.get("contentHash"),
+            "encoder_revision": train_dataset.metadata.get("encoderRevision"),
+            "encoder_artifact_sha256": train_dataset.metadata.get(
+                "encoderArtifactSha256"
+            ),
+            "training_seed": args.seed,
+            "training_config_hash": config_hash,
+            "loss_config": loss_config,
+            "candidate_id": artifact_stem,
             "production_ready": False,
             "smoke": bool(args.smoke),
         }
-        torch.save(checkpoint, output_dir / "last.pt")
-        if val_metrics["loss"] < best_val_loss:
+        atomic_torch_save(checkpoint, last_path)
+        if val_metrics["loss"] < best_val_loss - args.min_delta:
             best_val_loss = val_metrics["loss"]
-            torch.save(checkpoint, output_dir / "best.pt")
+            best_epoch = epoch
+            stale_epochs = 0
+            atomic_torch_save(checkpoint, best_path)
+        else:
+            stale_epochs += 1
+        if not args.smoke and stale_epochs >= args.patience:
+            break
 
+    elapsed_seconds = time.perf_counter() - start
     metrics = {
         "schemaVersion": METRICS_VERSION,
-        "status": "smoke_only" if args.smoke else "synthetic_baseline_training",
+        "status": "smoke_only" if args.smoke else "candidate_training_complete",
         "productionReady": False,
+        "candidateId": artifact_stem,
         "dataset": str(args.data),
         "datasetKind": train_dataset.metadata.get("kind"),
+        "datasetVersion": train_dataset.metadata.get("datasetVersion"),
+        "datasetSha256": dataset_sha256,
+        "datasetContentHash": train_dataset.metadata.get("contentHash"),
+        "trainingConfigHash": config_hash,
         "device": str(device),
+        "gpu": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
+        "torchVersion": torch.__version__,
         "parameterCount": model.count_parameters(),
-        "epochs": epochs,
+        "maximumEpochs": epochs,
+        "epochsCompleted": len(history),
+        "bestEpoch": best_epoch,
+        "earlyStopped": len(history) < epochs,
         "trainExamples": len(train_dataset),
         "valExamples": len(val_dataset),
         "bestValLoss": best_val_loss,
-        "elapsedSeconds": time.perf_counter() - start,
+        "elapsedSeconds": elapsed_seconds,
+        "bestCheckpoint": str(best_path.as_posix()),
+        "bestCheckpointSha256": sha256_file(best_path),
+        "lastCheckpoint": str(last_path.as_posix()),
+        "effectiveSamplingContribution": train_dataset.metadata.get(
+            "effectiveSamplingContribution"
+        ),
+        "lossConfig": loss_config,
         "history": history,
         "warning": (
-            "Checkpoint was trained on deterministic synthetic targets and is "
-            "not evidence of production palette quality."
+            "Training completion is not a release decision. Frozen semantic, "
+            "holdout, ONNX, and browser gates must still pass."
         ),
     }
-    (output_dir / "metrics.json").write_text(
+    metrics_path.write_text(
         json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8"
     )
     return metrics
@@ -271,6 +415,7 @@ def main() -> None:
         "--data", default="ml/palettebrain/data/palettebrain_synthetic_v1.npz"
     )
     parser.add_argument("--output-dir", default="ml/palettebrain/checkpoints")
+    parser.add_argument("--candidate-id", default="candidate-1")
     parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
@@ -284,6 +429,8 @@ def main() -> None:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--max-train-samples", type=int)
     parser.add_argument("--max-val-samples", type=int)
+    parser.add_argument("--patience", type=int, default=12)
+    parser.add_argument("--min-delta", type=float, default=1e-4)
     parser.add_argument("--smoke", action="store_true")
     args = parser.parse_args()
     print(json.dumps(train(args), indent=2, sort_keys=True))

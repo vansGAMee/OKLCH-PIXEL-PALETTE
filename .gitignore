@@ -48,8 +48,5 @@ ml/checkpoints/
 __pycache__/
 *.pyc
 
-# ORT WASM assets - deterministically regenerated from npm
-/public/ort/
-
 # Large assembled models (reconstructed via prepare:models from .part_* chunks)
 /public/models/multilingual-e5-small/onnx/model_quantized.onnx

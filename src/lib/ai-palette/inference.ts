@@ -73,7 +73,7 @@ const ENCODER_EMBEDDING_SIZE = 384;
 const MAX_PALETTE_SIZE = 9;
 const PROMPT_EMBEDDING_CACHE_LIMIT = 16;
 const DECODER_MANIFEST_PATH = '/models/palettebrain-v2.manifest.json';
-const DECODER_MODEL_PATH = '/models/palettebrain-v2-decoder.onnx';
+const DECODER_MODEL_PATH = '/models/palettebrain-v3-candidate7-bb52e9d9.onnx';
 
 let encoderPromise: Promise<EncoderSession> | null = null;
 let customEncoderLoader: (() => Promise<EncoderSession>) | null = null;
@@ -156,7 +156,7 @@ export async function getEncoder(): Promise<EncoderSession> {
     env.localModelPath = typeof window !== 'undefined' ? '/models/' : './public/models/';
 
     if (typeof window !== 'undefined' && env.backends?.onnx?.wasm) {
-      env.backends.onnx.wasm.wasmPaths = '/ort/';
+      delete env.backends.onnx.wasm.wasmPaths;
       env.backends.onnx.wasm.numThreads = 1;
       env.backends.onnx.wasm.proxy = false;
     }
@@ -192,35 +192,69 @@ export async function getEncoder(): Promise<EncoderSession> {
   return encoderPromise;
 }
 
+export interface DecoderManifestContract {
+  schemaVersion?: number;
+  model?: string;
+  version?: string;
+  modelVersion?: string;
+  codename?: string | null;
+  status?: string;
+  trainedFromCandidate?: string;
+  productionReady?: boolean;
+  encoder?: {
+    modelId?: string;
+    embeddingSize?: number;
+  };
+  decoder?: {
+    path?: string;
+    url?: string;
+    sha256?: string;
+    sizeBytes?: number;
+    parameters?: number;
+  };
+}
+
+export function validateDecoderManifest(raw: unknown): { modelVersion: string; decoderPath: string } {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('manifest must be a JSON object');
+  }
+
+  const manifest = raw as DecoderManifestContract;
+  const version = typeof manifest.modelVersion === 'string' && manifest.modelVersion.trim()
+    ? manifest.modelVersion.trim()
+    : (typeof manifest.version === 'string' && manifest.version.trim() ? manifest.version.trim() : null);
+
+  if (!version) {
+    throw new Error('manifest modelVersion must be a non-empty string');
+  }
+
+  const rawPath = manifest.decoder?.url ?? manifest.decoder?.path;
+  const decoderPath = typeof rawPath === 'string' && rawPath.trim()
+    ? rawPath.trim()
+    : DECODER_MODEL_PATH;
+
+  if (!decoderPath.startsWith('/models/')) {
+    throw new Error('manifest decoder path must be a valid path under /models/');
+  }
+
+  return { modelVersion: version, decoderPath };
+}
+
 async function loadDecoderManifest(): Promise<{ modelVersion: string; decoderPath: string }> {
   if (typeof fetch !== 'function') {
     throw new Error('fetch is unavailable');
   }
 
-  const response = await fetch(DECODER_MANIFEST_PATH, { cache: 'force-cache' });
+  const response = await fetch(DECODER_MANIFEST_PATH, {
+    cache: 'no-cache',
+    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },
+  });
   if (!response.ok) {
     throw new Error(`GET ${DECODER_MANIFEST_PATH} returned ${response.status}`);
   }
 
   const raw = await response.json() as unknown;
-  if (!raw || typeof raw !== 'object') {
-    throw new Error('manifest must be a JSON object');
-  }
-
-  const manifest = raw as {
-    modelVersion?: unknown;
-    decoder?: { path?: unknown };
-  };
-  if (typeof manifest.modelVersion !== 'string' || !manifest.modelVersion.trim()) {
-    throw new Error('manifest modelVersion must be a non-empty string');
-  }
-
-  const decoderPath = manifest.decoder?.path;
-  if (decoderPath !== DECODER_MODEL_PATH) {
-    throw new Error(`manifest decoder.path must be ${DECODER_MODEL_PATH}`);
-  }
-
-  return { modelVersion: manifest.modelVersion, decoderPath };
+  return validateDecoderManifest(raw);
 }
 
 async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
@@ -231,18 +265,18 @@ async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
     throw errorWithCause(`AI palette decoder manifest load failed: ${errorDetail(err)}`, err);
   }
 
-  let ort: typeof import('onnxruntime-web');
+  let ort: typeof import('onnxruntime-web/webgpu');
   try {
-    ort = await import('onnxruntime-web');
+    ort = await import('onnxruntime-web/webgpu');
   } catch (err) {
     throw errorWithCause(`AI palette decoder runtime load failed: ${errorDetail(err)}`, err);
   }
 
-  ort.env.wasm.wasmPaths = '/ort/';
+  delete ort.env.wasm.wasmPaths;
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.proxy = false;
 
-  let session: import('onnxruntime-web').InferenceSession;
+  let session: import('onnxruntime-web/webgpu').InferenceSession;
   try {
     session = await ort.InferenceSession.create(manifest.decoderPath, {
       executionProviders: ['wasm'],
@@ -258,7 +292,7 @@ async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
   return {
     modelVersion: manifest.modelVersion,
     async run(feeds) {
-      const ortFeeds: Record<string, import('onnxruntime-web').Tensor> = {};
+      const ortFeeds: Record<string, import('onnxruntime-web/webgpu').Tensor> = {};
       for (const [name, tensor] of Object.entries(feeds)) {
         ortFeeds[name] = new ort.Tensor('float32', tensor.data, [...tensor.dims]);
       }

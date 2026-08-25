@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 2,
+  "phase": "candidate_11_trained_and_exported",
+  "lastCompleted": "candidate_11_visual_palette_bridge_training_and_export",
+  "candidateId": "candidate-11",
+  "candidateCheckpoint": "ml/palettebrain/checkpoints/candidate-11-best.pt",
+  "candidateOnnx": "public/models/palettebrain-v4-candidate11-b1bc9346.onnx",
+  "candidateSha256": "b1bc93467e99196c55f19a61005f1fe9b7df66b7b4fe7258205cf958870c51f8",
+  "trainedFromCandidate": 8,
+  "productionReady": false,
+  "winnerCodename": null,
+  "metrics": {
+    "raw_direct": 1.0,
+    "ru_direct": 1.0,
+    "en_direct": 1.0,
+    "clean_multicolor_v2": 0.0825,
+    "near_duplicate_rate": 0.767,
+    "stage_a_prior_loss": 1.1436,
+    "stage_a_contrast_win": 0.80,
+    "stage_b_loss": 0.0984
+  },
+  "sanityHexes": {
+    "apple": ["#9B636F", "#B45977", "#B04C73", "#BA4F74", "#B95A6B"],
+    "hospital": ["#387DED", "#2A7ABE", "#51A3C7", "#6AB3BE", "#59B1B9"],
+    "больница": ["#6279BC", "#497DB6", "#5C92B3", "#78A9A9", "#68A4A3"],
+    "rain": ["#85818C", "#909A97", "#8C9492", "#A3ACA9", "#A0ADA6"],
+    "дождь": ["#968482", "#AA968E", "#A2928A", "#AFACA0", "#AEAC9B"],
+    "snow": ["#5A5F62", "#6B7478", "#858F93", "#A3AEB1", "#98A7A9"],
+    "снег": ["#575E62", "#647379", "#7E9196", "#9EB1B3", "#91A9AA"],
+    "glass": ["#8BA9DF", "#5AA8E0", "#61B7E5", "#71BED1", "#6FBDBC"],
+    "moonlight": ["#4B64DD", "#3E6E97", "#5D8187", "#688689", "#64928E"],
+    "film_noir": ["#020202", "#8F5E56", "#986259", "#8D6960", "#934E4A"],
+    "winter_forest_at_night": ["#494247", "#6E5E65", "#6A5E65", "#62686E", "#586065"],
+    "red": ["#D9243E", "#DB2443", "#DA2441", "#D92444", "#DE2545"]
+  },
+  "nextAction": "Resume Stage B multi-task fine-tuning with fixed target encoding and balanced multi-anchor loss to restore multi-color >= 70% and duplicates <= 5%"
+}

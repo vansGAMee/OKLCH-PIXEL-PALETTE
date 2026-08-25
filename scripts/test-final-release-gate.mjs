@@ -151,7 +151,7 @@ async function main() {
         const btn = input?.closest('form')?.querySelector('button[type="submit"]');
         return {
           hasAriaLabel: !!input?.getAttribute('aria-label'),
-          hasMaxLength: input?.getAttribute('maxLength') === '160',
+          hasMaxLength: input?.getAttribute('maxLength') === '4096',
           btnText: btn?.textContent?.trim(),
           isButtonAccessible: !!btn && btn.offsetHeight > 0
         };

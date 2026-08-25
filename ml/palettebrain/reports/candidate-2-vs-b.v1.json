@@ -1,0 +1,482 @@
+{
+  "baselineModelLabel": "B-synthetic-palettebrain-checkpoint",
+  "candidateModelLabel": "candidate-2",
+  "createdAt": "2026-08-25T08:41:01.396257+00:00",
+  "directColor": {
+    "en": {
+      "baseline": 0.3076923076923077,
+      "candidate": 0.8269230769230769,
+      "delta": 0.5192307692307692
+    },
+    "exclusion": {
+      "baseline": 0.90625,
+      "candidate": 0.90625,
+      "delta": 0.0
+    },
+    "multiColor": {
+      "baseline": 0.25,
+      "candidate": 0.0,
+      "delta": -0.25
+    },
+    "raw": {
+      "baseline": 0.3076923076923077,
+      "candidate": 0.7980769230769231,
+      "delta": 0.4903846153846154
+    },
+    "ru": {
+      "baseline": 0.3076923076923077,
+      "candidate": 0.7692307692307693,
+      "delta": 0.46153846153846156
+    }
+  },
+  "evidence": {
+    "allHoldoutPredictionsFinite": true,
+    "baselineReportSha256": "dca800785c95805cc5add512e8c5cc165def42b7bb191e1806c6520a279f49ed",
+    "candidateReportSha256": "e6c30170624438dc58ccf564a03a4b27d02fe16828a8014e8d6441c864302396",
+    "datasetSha256": "f48d46d921d9f721f4eacb6f25930c7da28368f60db6ceedbe8a9687c082368e",
+    "identicalHoldoutRows": true
+  },
+  "note": "This paired offline comparison is necessary but cannot promote a model; candidate ONNX and exact q8 browser gates remain separate.",
+  "productionReady": false,
+  "promotionPerformed": false,
+  "realPaletteHoldout": {
+    "decisionRule": "candidate-minus-baseline equal-source-group mean and upper 95% group-bootstrap bound must both be below zero",
+    "lightnessDistribution": {
+      "aggregation": "equal_weight_mean_of_source_group_means",
+      "baselineMeanError": 0.15931366022489865,
+      "bootstrapIterations": 10000,
+      "bootstrapSeed": 20260825,
+      "candidateMeanError": 0.09807823575494275,
+      "candidateMinusBaselineMean": -0.06454389354781367,
+      "confidenceInterval95": {
+        "lower": -0.08145278258912361,
+        "upper": -0.04612243820711257
+      },
+      "improvedSourceGroupFraction": 0.85,
+      "perSourceGroup": [
+        {
+          "candidateMinusBaselineMean": -0.13240635916590687,
+          "rowCount": 35,
+          "sourceGroupId": "colorcombinations:editorial:hanada-gin"
+        },
+        {
+          "candidateMinusBaselineMean": 0.030647312459491545,
+          "rowCount": 35,
+          "sourceGroupId": "colorcombinations:editorial:tobi-kogane"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09915075291480337,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-013"
+        },
+        {
+          "candidateMinusBaselineMean": -0.06274313399834293,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-019"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11736721039882728,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-021"
+        },
+        {
+          "candidateMinusBaselineMean": -0.02273972438914435,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-022"
+        },
+        {
+          "candidateMinusBaselineMean": -0.08993081322738103,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-023"
+        },
+        {
+          "candidateMinusBaselineMean": -0.12382479118449348,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-041"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11251386388071946,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-043"
+        },
+        {
+          "candidateMinusBaselineMean": -0.07132729542042528,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-055"
+        },
+        {
+          "candidateMinusBaselineMean": -0.06318548215287072,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-058"
+        },
+        {
+          "candidateMinusBaselineMean": 0.02998811223854621,
+          "rowCount": 12,
+          "sourceGroupId": "wada:plate-062"
+        },
+        {
+          "candidateMinusBaselineMean": -0.12153069249221257,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-064"
+        },
+        {
+          "candidateMinusBaselineMean": -0.1090734526515007,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-066"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11116214735167367,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-092"
+        },
+        {
+          "candidateMinusBaselineMean": -0.017529019775489967,
+          "rowCount": 12,
+          "sourceGroupId": "wada:plate-109"
+        },
+        {
+          "candidateMinusBaselineMean": -0.13963476195931435,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-111"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09671663832333353,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-131"
+        },
+        {
+          "candidateMinusBaselineMean": 0.010793815635972554,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-141"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09897304943038358,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-152"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09145911257300111,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-180"
+        },
+        {
+          "candidateMinusBaselineMean": 0.06158607461386257,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-207"
+        },
+        {
+          "candidateMinusBaselineMean": -0.10059463265869353,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-208"
+        },
+        {
+          "candidateMinusBaselineMean": -0.03213715309070216,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-210"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09510639939043257,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-212"
+        },
+        {
+          "candidateMinusBaselineMean": -0.0545097136663066,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-214"
+        },
+        {
+          "candidateMinusBaselineMean": 0.05719585294524829,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-221"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11806532045205434,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-222"
+        },
+        {
+          "candidateMinusBaselineMean": -0.037729326511422794,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-236"
+        },
+        {
+          "candidateMinusBaselineMean": -0.0065620166973935235,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-238"
+        },
+        {
+          "candidateMinusBaselineMean": -0.0021666293143339107,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-253"
+        },
+        {
+          "candidateMinusBaselineMean": -0.02027519786774758,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-265"
+        },
+        {
+          "candidateMinusBaselineMean": -0.1318360681069039,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-285"
+        },
+        {
+          "candidateMinusBaselineMean": 0.007818064851952453,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-298"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09469336391027484,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-299"
+        },
+        {
+          "candidateMinusBaselineMean": -0.12004648744394737,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-308"
+        },
+        {
+          "candidateMinusBaselineMean": -0.12647948405217557,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-319"
+        },
+        {
+          "candidateMinusBaselineMean": -0.010190288702558193,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-321"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09267202868968959,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-324"
+        },
+        {
+          "candidateMinusBaselineMean": -0.05545256281315926,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-336"
+        }
+      ],
+      "rowCount": 1226,
+      "sourceGroupCount": 40
+    },
+    "matchedOklab": {
+      "aggregation": "equal_weight_mean_of_source_group_means",
+      "baselineMeanSetDistance": 0.1986304207619581,
+      "bootstrapIterations": 10000,
+      "bootstrapSeed": 20260825,
+      "candidateMeanSetDistance": 0.1511831058424759,
+      "candidateMinusBaselineMean": -0.05138000901279954,
+      "confidenceInterval95": {
+        "lower": -0.06660036915880564,
+        "upper": -0.034889108616171394
+      },
+      "improvedSourceGroupFraction": 0.85,
+      "perSourceGroup": [
+        {
+          "candidateMinusBaselineMean": -0.1172956873302082,
+          "rowCount": 35,
+          "sourceGroupId": "colorcombinations:editorial:hanada-gin"
+        },
+        {
+          "candidateMinusBaselineMean": 0.031163413727567014,
+          "rowCount": 35,
+          "sourceGroupId": "colorcombinations:editorial:tobi-kogane"
+        },
+        {
+          "candidateMinusBaselineMean": -0.10254909621943112,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-013"
+        },
+        {
+          "candidateMinusBaselineMean": -0.056054740643142524,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-019"
+        },
+        {
+          "candidateMinusBaselineMean": -0.08889576044053292,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-021"
+        },
+        {
+          "candidateMinusBaselineMean": -0.02712693701370581,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-022"
+        },
+        {
+          "candidateMinusBaselineMean": -0.07794617933097071,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-023"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09917715018568553,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-041"
+        },
+        {
+          "candidateMinusBaselineMean": -0.08965530757085079,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-043"
+        },
+        {
+          "candidateMinusBaselineMean": -0.06952931013886791,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-055"
+        },
+        {
+          "candidateMinusBaselineMean": -0.04767516124906818,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-058"
+        },
+        {
+          "candidateMinusBaselineMean": -0.0005348564976253833,
+          "rowCount": 12,
+          "sourceGroupId": "wada:plate-062"
+        },
+        {
+          "candidateMinusBaselineMean": -0.0936932870694418,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-064"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09168596210331267,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-066"
+        },
+        {
+          "candidateMinusBaselineMean": -0.05334178001875933,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-092"
+        },
+        {
+          "candidateMinusBaselineMean": -0.006609647243134287,
+          "rowCount": 12,
+          "sourceGroupId": "wada:plate-109"
+        },
+        {
+          "candidateMinusBaselineMean": -0.1400830063474859,
+          "rowCount": 14,
+          "sourceGroupId": "wada:plate-111"
+        },
+        {
+          "candidateMinusBaselineMean": -0.08350047184857888,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-131"
+        },
+        {
+          "candidateMinusBaselineMean": 0.022679038065313187,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-141"
+        },
+        {
+          "candidateMinusBaselineMean": -0.06481743377792883,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-152"
+        },
+        {
+          "candidateMinusBaselineMean": -0.08691675584241472,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-180"
+        },
+        {
+          "candidateMinusBaselineMean": 0.08407478707480563,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-207"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09716645598304088,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-208"
+        },
+        {
+          "candidateMinusBaselineMean": -0.04416552211906313,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-210"
+        },
+        {
+          "candidateMinusBaselineMean": -0.05137184552282058,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-212"
+        },
+        {
+          "candidateMinusBaselineMean": -0.04185629564905124,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-214"
+        },
+        {
+          "candidateMinusBaselineMean": 0.07748165721251847,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-221"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11077790564463282,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-222"
+        },
+        {
+          "candidateMinusBaselineMean": -0.017370915149285644,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-236"
+        },
+        {
+          "candidateMinusBaselineMean": -0.018072715324442674,
+          "rowCount": 30,
+          "sourceGroupId": "wada:plate-238"
+        },
+        {
+          "candidateMinusBaselineMean": -0.011363110640521085,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-253"
+        },
+        {
+          "candidateMinusBaselineMean": -0.027338169320277123,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-265"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09613086919184984,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-285"
+        },
+        {
+          "candidateMinusBaselineMean": 0.0021241856816222177,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-298"
+        },
+        {
+          "candidateMinusBaselineMean": -0.07110594036738875,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-299"
+        },
+        {
+          "candidateMinusBaselineMean": -0.09392321306930518,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-308"
+        },
+        {
+          "candidateMinusBaselineMean": -0.11361348258324996,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-319"
+        },
+        {
+          "candidateMinusBaselineMean": 0.0036287930919263567,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-321"
+        },
+        {
+          "candidateMinusBaselineMean": -0.03817794499337092,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-324"
+        },
+        {
+          "candidateMinusBaselineMean": -0.04682931893628902,
+          "rowCount": 56,
+          "sourceGroupId": "wada:plate-336"
+        }
+      ],
+      "rowCount": 1226,
+      "sourceGroupCount": 40
+    },
+    "materiallyImprovesRealHoldout": true
+  },
+  "schemaVersion": 1,
+  "status": "paired_candidate_comparison_complete"
+}

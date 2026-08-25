@@ -1,0 +1,116 @@
+{
+  "archiveBytes": 11090928,
+  "archiveSha256": "f48d46d921d9f721f4eacb6f25930c7da28368f60db6ceedbe8a9687c082368e",
+  "configHash": "7245d3364bf660eb9d3646c0c477f94fd3c893475bf18b92a033e6925b1b3805",
+  "contentHash": "ff75bf54c074c325064ab2c77faf6d7b06df22159b39d70a3ec7d45ec051eba8",
+  "datasetVersion": "palettebrain-candidate2-direct4-v1",
+  "derivedRecords": 7755,
+  "encoderArtifactSha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+  "nativeCounts": {
+    "2": 2366,
+    "3": 5475,
+    "4": 7537,
+    "5": 1152,
+    "6": 1137,
+    "7": 1195,
+    "8": 1083,
+    "9": 3277
+  },
+  "realHoldoutRecords": 2641,
+  "records": 23222,
+  "requestedCounts": {
+    "2": 5942,
+    "3": 6414,
+    "4": 3870,
+    "5": 1404,
+    "6": 1437,
+    "7": 1359,
+    "8": 1359,
+    "9": 1437
+  },
+  "schemaVersion": 1,
+  "sourceHash": "6b62a14f4848f4e693c57ce9e0155f4cdc689b64da1e6b049ce8ef4f289a9b4e",
+  "sources": {
+    "colorcombinations": {
+      "effectiveSampledContribution": 0.4498671688709053,
+      "expandedRecords": 10743,
+      "originalRecords": 378,
+      "uniqueGroups": 378
+    },
+    "direct_anchors": {
+      "effectiveSampledContribution": 0.3098220226597541,
+      "expandedRecords": 1748,
+      "originalRecords": 76,
+      "uniqueGroups": 17
+    },
+    "legacy_synthetic": {
+      "effectiveSampledContribution": 0.04080853438509175,
+      "expandedRecords": 6985,
+      "originalRecords": 2427,
+      "uniqueGroups": 39
+    },
+    "rang": {
+      "effectiveSampledContribution": 0.13142857260008584,
+      "expandedRecords": 2042,
+      "originalRecords": 10,
+      "uniqueGroups": 10
+    },
+    "wada": {
+      "effectiveSampledContribution": 0.06807370148416299,
+      "expandedRecords": 1704,
+      "originalRecords": 348,
+      "uniqueGroups": 348
+    }
+  },
+  "splits": {
+    "test": {
+      "derivedRecords": 534,
+      "nativeRecords": 692,
+      "records": 1226,
+      "requestedCounts": {
+        "2": 530,
+        "3": 486,
+        "4": 210,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "uniqueGroups": 40
+    },
+    "train": {
+      "derivedRecords": 6541,
+      "nativeRecords": 14040,
+      "records": 20581,
+      "requestedCounts": {
+        "2": 4864,
+        "3": 5367,
+        "4": 3426,
+        "5": 1380,
+        "6": 1413,
+        "7": 1335,
+        "8": 1359,
+        "9": 1437
+      },
+      "uniqueGroups": 362
+    },
+    "validation": {
+      "derivedRecords": 680,
+      "nativeRecords": 735,
+      "records": 1415,
+      "requestedCounts": {
+        "2": 548,
+        "3": 561,
+        "4": 234,
+        "5": 24,
+        "6": 24,
+        "7": 24,
+        "8": 0,
+        "9": 0
+      },
+      "uniqueGroups": 42
+    }
+  },
+  "uniqueGroups": 444
+}

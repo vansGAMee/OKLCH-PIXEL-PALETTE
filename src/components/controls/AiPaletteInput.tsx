@@ -253,7 +253,7 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
               onChange={e => setPrompt(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isRu ? PLACEHOLDER_RU : PLACEHOLDER_EN}
-              maxLength={160}
+              maxLength={4096}
               disabled={isGenerating}
               aria-busy={isGenerating}
               aria-label={isRu ? 'Текстовое описание палитры' : 'Palette description'}

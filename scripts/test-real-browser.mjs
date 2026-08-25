@@ -236,7 +236,9 @@ async function main() {
 
     // 5. Inspect network requests
     console.log('\n=== Network Request Verification ===');
-    const modelReqs = client.networkRequests.filter(r => r.url.includes('/models/') || r.url.includes('/ort/'));
+    const modelReqs = client.networkRequests.filter(r =>
+      r.url.includes('/models/') || r.url.includes('/_next/static/media/ort-')
+    );
     console.log(`Total local AI model/WASM requests: ${modelReqs.length}`);
     for (const r of modelReqs) {
       console.log(`  ${r.method} ${r.url} -> Status: ${r.status || '200'}`);

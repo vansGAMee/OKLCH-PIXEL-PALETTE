@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "evaluationConfigVersion": "palettebrain-eval-config-v1",
+  "frozenAt": "2026-08-25",
+  "frozenBeforeCandidate1": true,
+  "configHash": "c64ba24440af44a6c7b01bdc5ab020b50b46f58e3e7bf19fde9e3de77f0b659d",
+  "fixtures": {
+    "colorFamilies": {
+      "path": "ml/palettebrain/benchmark_color_families.v1.json",
+      "sha256": "fa2ce27d2f8c38c27541d6c1f75453fc26a73920d3b14e596344e64da26c14fa"
+    },
+    "semanticRelease": {
+      "path": "ml/palettebrain/benchmark_semantic_release.v1.json",
+      "sha256": "dd2c09e4dd8d308720614fc244070c5bef67fc4947ada8b003613030706187f4"
+    },
+    "coverage": {
+      "path": "ml/palettebrain/benchmark_prompts.v1.json",
+      "sha256": "8acb1ff02a499b1157205ce067751ccc9726edb5c25a18727e291e7039b93242"
+    }
+  },
+  "split": {
+    "algorithm": "sha256(source-group-sha256-bucket-v1, splitSeed, source_group_id) modulo 100",
+    "splitSeed": 20260825,
+    "trainBuckets": [0, 79],
+    "validationBuckets": [80, 89],
+    "testBuckets": [90, 99],
+    "beforeAugmentation": true,
+    "trainingOnlyDirectAnchorsExcludedFromRealPaletteHoldout": true
+  },
+  "releaseTargets": {
+    "rawDirectColorRate": 0.95,
+    "exactCountRate": 1.0,
+    "inactiveSlotRate": 1.0,
+    "runtimeLockPreservationRate": 1.0,
+    "srgbGamutRate": 1.0,
+    "determinismRate": 1.0,
+    "maximumNearDuplicatePaletteRate": 0.05
+  },
+  "metricRules": {
+    "paletteMatching": "Hungarian assignment using physical OKLab Euclidean cost",
+    "modifierSensitivity": "Hungarian matched mean OKLab set distance at equal count and seed",
+    "translationParity": "Hungarian matched mean OKLab set distance; identical HEX is not required",
+    "directColor": "distinct assignment for required families, exclusion check, and standalone whole-palette consistency",
+    "seedPolicy": "fixed seeds only; no post-hoc seed selection"
+  }
+}

@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 1,
+  "benchmarkId": "diagnostic_concepts_strict_v1",
+  "description": "Strict multi-reference visual grounding benchmark for fundamental concepts",
+  "concepts": {
+    "grass": {
+      "prompts": [
+        "grass",
+        "трава",
+        "green grass lawn",
+        "fresh spring grass"
+      ],
+      "expected_hues_oklch": [
+        110.0,
+        160.0
+      ],
+      "forbidden_hues_oklch": [
+        0.0,
+        60.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#2D5A27",
+          "#4E873C",
+          "#7BB651",
+          "#A6D875",
+          "#1B3B18"
+        ],
+        [
+          "#3E6B2C",
+          "#5C8F3A",
+          "#88B84D",
+          "#BCD979",
+          "#24441B"
+        ],
+        [
+          "#254D20",
+          "#3F752C",
+          "#68A342",
+          "#9BD066",
+          "#142F11"
+        ]
+      ]
+    },
+    "green_foliage": {
+      "prompts": [
+        "green foliage",
+        "зелёная листва",
+        "lush green leaves",
+        "dense foliage"
+      ],
+      "expected_hues_oklch": [
+        115.0,
+        165.0
+      ],
+      "forbidden_hues_oklch": [
+        0.0,
+        50.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#1E4620",
+          "#31682B",
+          "#549643",
+          "#82C268",
+          "#123014"
+        ],
+        [
+          "#295228",
+          "#477D3A",
+          "#6FA953",
+          "#9DD27C",
+          "#183818"
+        ]
+      ]
+    },
+    "leaf": {
+      "prompts": [
+        "leaf",
+        "лист",
+        "green leaf",
+        "листок"
+      ],
+      "expected_hues_oklch": [
+        110.0,
+        160.0
+      ],
+      "forbidden_hues_oklch": [
+        0.0,
+        45.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#2A5624",
+          "#4A8237",
+          "#76B34F",
+          "#A9E074",
+          "#183615"
+        ],
+        [
+          "#34642C",
+          "#579540",
+          "#84C45C",
+          "#BAEE84",
+          "#1E4119"
+        ]
+      ]
+    },
+    "apple": {
+      "prompts": [
+        "apple",
+        "яблоко",
+        "red apple",
+        "crisp apple"
+      ],
+      "expected_hues_oklch": [
+        20.0,
+        45.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#8B111A",
+          "#C21B27",
+          "#EE3B3B",
+          "#F58763",
+          "#3B0508"
+        ],
+        [
+          "#5C821A",
+          "#84B026",
+          "#B0DB44",
+          "#E1F28C",
+          "#2D420A"
+        ]
+      ]
+    },
+    "hospital_interior": {
+      "prompts": [
+        "hospital",
+        "больница",
+        "hospital interior",
+        "sanitarium corridor",
+        "clinical room"
+      ],
+      "expected_hues_oklch": [
+        170.0,
+        240.0
+      ],
+      "forbidden_hues_oklch": [
+        320.0,
+        360.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#2A4B4B",
+          "#4A7272",
+          "#7A9E9E",
+          "#B8D1D1",
+          "#E6F0F0"
+        ],
+        [
+          "#344955",
+          "#4A6572",
+          "#84A9AC",
+          "#C2DFE3",
+          "#EDF7F6"
+        ],
+        [
+          "#2C3E50",
+          "#4B6584",
+          "#778CA3",
+          "#D1D8E0",
+          "#F1F2F6"
+        ]
+      ]
+    },
+    "rainy_street": {
+      "prompts": [
+        "rain",
+        "дождь",
+        "rainy street",
+        "wet asphalt under rain",
+        "cold rain"
+      ],
+      "expected_hues_oklch": [
+        200.0,
+        270.0
+      ],
+      "forbidden_hues_oklch": [
+        20.0,
+        60.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#1F2937",
+          "#374151",
+          "#4B5563",
+          "#6B7280",
+          "#9CA3AF"
+        ],
+        [
+          "#182635",
+          "#2C3E50",
+          "#486581",
+          "#78909C",
+          "#B0BEC5"
+        ],
+        [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#64748B",
+          "#94A3B8"
+        ]
+      ]
+    },
+    "forest": {
+      "prompts": [
+        "forest",
+        "лес",
+        "pine forest",
+        "woodland canopy"
+      ],
+      "expected_hues_oklch": [
+        115.0,
+        160.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#1B381E",
+          "#2D5A30",
+          "#497E4A",
+          "#72A46C",
+          "#2E2419"
+        ],
+        [
+          "#142B17",
+          "#234C28",
+          "#3A733E",
+          "#629D60",
+          "#3D2B1F"
+        ]
+      ]
+    },
+    "glass": {
+      "prompts": [
+        "glass",
+        "стекло",
+        "clear glass",
+        "transparent glass reflection"
+      ],
+      "expected_hues_oklch": [
+        180.0,
+        240.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#4A6B6C",
+          "#7A9E9F",
+          "#A8C7C7",
+          "#D4E6E6",
+          "#F0F7F7"
+        ],
+        [
+          "#3E5A68",
+          "#628294",
+          "#92ADC0",
+          "#C6DBE6",
+          "#EBF3F7"
+        ]
+      ]
+    },
+    "snow": {
+      "prompts": [
+        "snow",
+        "снег",
+        "fresh snow",
+        "winter snowfield"
+      ],
+      "expected_hues_oklch": [
+        210.0,
+        270.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#3B4B61",
+          "#647A97",
+          "#96A9C2",
+          "#C8D6E5",
+          "#F1F5F9"
+        ],
+        [
+          "#2D3E50",
+          "#516882",
+          "#7E97B2",
+          "#B8C9DC",
+          "#EBF1F6"
+        ]
+      ]
+    },
+    "moonlight": {
+      "prompts": [
+        "moonlight",
+        "лунный свет",
+        "silver moonlight on water",
+        "lunar glow"
+      ],
+      "expected_hues_oklch": [
+        230.0,
+        280.0
+      ],
+      "reference_palettes_srgb": [
+        [
+          "#0B132B",
+          "#1C2541",
+          "#3A506B",
+          "#5BC0BE",
+          "#E0FBFC"
+        ],
+        [
+          "#0D1B2A",
+          "#1B263B",
+          "#415A77",
+          "#778DA9",
+          "#E0E1DD"
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,8391 @@
+{
+  "benchmarkSha256": "4c8b572384c85ba2f5f54cfda1c6868a9a9d89ad22aedcb6e37f0d70bae89c01",
+  "benchmarkVersion": "palettebrain-clean-multicolor-v2",
+  "disjointSplitAlgorithm": "sha256(c5-family-split-v1:sorted_families) % 100",
+  "familySetsCount": 50,
+  "frozenBeforeCandidate5": true,
+  "promptCount": 824,
+  "prompts": [
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-001",
+      "language": "en",
+      "prompt": "red and yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-002",
+      "language": "en",
+      "prompt": "red with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-003",
+      "language": "en",
+      "prompt": "red paired with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-004",
+      "language": "en",
+      "prompt": "red and amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-005",
+      "language": "en",
+      "prompt": "red with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-006",
+      "language": "en",
+      "prompt": "red paired with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-007",
+      "language": "en",
+      "prompt": "crimson and yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-008",
+      "language": "en",
+      "prompt": "crimson with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-009",
+      "language": "en",
+      "prompt": "crimson paired with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-010",
+      "language": "en",
+      "prompt": "crimson and amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-011",
+      "language": "en",
+      "prompt": "crimson with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-012",
+      "language": "en",
+      "prompt": "crimson paired with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-013",
+      "language": "en",
+      "prompt": "scarlet and yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-014",
+      "language": "en",
+      "prompt": "scarlet with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-015",
+      "language": "en",
+      "prompt": "scarlet paired with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-016",
+      "language": "en",
+      "prompt": "scarlet and amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-017",
+      "language": "en",
+      "prompt": "scarlet with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-018",
+      "language": "en",
+      "prompt": "scarlet paired with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-019",
+      "language": "en",
+      "prompt": "ruby red and yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-020",
+      "language": "en",
+      "prompt": "ruby red with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-021",
+      "language": "en",
+      "prompt": "ruby red paired with yellow",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-022",
+      "language": "en",
+      "prompt": "ruby red and amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-023",
+      "language": "en",
+      "prompt": "ruby red with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-024",
+      "language": "en",
+      "prompt": "ruby red paired with amber",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-025",
+      "language": "ru",
+      "prompt": "красный и жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-026",
+      "language": "ru",
+      "prompt": "красный с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-027",
+      "language": "ru",
+      "prompt": "красный вместе с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-028",
+      "language": "ru",
+      "prompt": "красный и янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-029",
+      "language": "ru",
+      "prompt": "красный с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-030",
+      "language": "ru",
+      "prompt": "красный вместе с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-031",
+      "language": "ru",
+      "prompt": "алый и жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-032",
+      "language": "ru",
+      "prompt": "алый с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-033",
+      "language": "ru",
+      "prompt": "алый вместе с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-034",
+      "language": "ru",
+      "prompt": "алый и янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-035",
+      "language": "ru",
+      "prompt": "алый с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-036",
+      "language": "ru",
+      "prompt": "алый вместе с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-037",
+      "language": "ru",
+      "prompt": "бордовый и жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-038",
+      "language": "ru",
+      "prompt": "бордовый с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-039",
+      "language": "ru",
+      "prompt": "бордовый вместе с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-040",
+      "language": "ru",
+      "prompt": "бордовый и янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-041",
+      "language": "ru",
+      "prompt": "бордовый с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-042",
+      "language": "ru",
+      "prompt": "бордовый вместе с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-043",
+      "language": "ru",
+      "prompt": "вишнёвый и жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-044",
+      "language": "ru",
+      "prompt": "вишнёвый с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-045",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с жёлтый",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-046",
+      "language": "ru",
+      "prompt": "вишнёвый и янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-047",
+      "language": "ru",
+      "prompt": "вишнёвый с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "red,yellow",
+      "id": "mc-clean-048",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с янтарный",
+      "required": [
+        "red",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-049",
+      "language": "en",
+      "prompt": "red and orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-050",
+      "language": "en",
+      "prompt": "red with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-051",
+      "language": "en",
+      "prompt": "red paired with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-052",
+      "language": "en",
+      "prompt": "red and coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-053",
+      "language": "en",
+      "prompt": "red with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-054",
+      "language": "en",
+      "prompt": "red paired with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-055",
+      "language": "en",
+      "prompt": "crimson and orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-056",
+      "language": "en",
+      "prompt": "crimson with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-057",
+      "language": "en",
+      "prompt": "crimson paired with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-058",
+      "language": "en",
+      "prompt": "crimson and coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-059",
+      "language": "en",
+      "prompt": "crimson with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-060",
+      "language": "en",
+      "prompt": "crimson paired with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-061",
+      "language": "en",
+      "prompt": "scarlet and orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-062",
+      "language": "en",
+      "prompt": "scarlet with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-063",
+      "language": "en",
+      "prompt": "scarlet paired with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-064",
+      "language": "en",
+      "prompt": "scarlet and coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-065",
+      "language": "en",
+      "prompt": "scarlet with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-066",
+      "language": "en",
+      "prompt": "scarlet paired with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-067",
+      "language": "en",
+      "prompt": "ruby red and orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-068",
+      "language": "en",
+      "prompt": "ruby red with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-069",
+      "language": "en",
+      "prompt": "ruby red paired with orange",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-070",
+      "language": "en",
+      "prompt": "ruby red and coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-071",
+      "language": "en",
+      "prompt": "ruby red with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-072",
+      "language": "en",
+      "prompt": "ruby red paired with coral",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-073",
+      "language": "ru",
+      "prompt": "красный и оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-074",
+      "language": "ru",
+      "prompt": "красный с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-075",
+      "language": "ru",
+      "prompt": "красный вместе с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-076",
+      "language": "ru",
+      "prompt": "красный и коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-077",
+      "language": "ru",
+      "prompt": "красный с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-078",
+      "language": "ru",
+      "prompt": "красный вместе с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-079",
+      "language": "ru",
+      "prompt": "алый и оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-080",
+      "language": "ru",
+      "prompt": "алый с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-081",
+      "language": "ru",
+      "prompt": "алый вместе с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-082",
+      "language": "ru",
+      "prompt": "алый и коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-083",
+      "language": "ru",
+      "prompt": "алый с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-084",
+      "language": "ru",
+      "prompt": "алый вместе с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-085",
+      "language": "ru",
+      "prompt": "бордовый и оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-086",
+      "language": "ru",
+      "prompt": "бордовый с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-087",
+      "language": "ru",
+      "prompt": "бордовый вместе с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-088",
+      "language": "ru",
+      "prompt": "бордовый и коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-089",
+      "language": "ru",
+      "prompt": "бордовый с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-090",
+      "language": "ru",
+      "prompt": "бордовый вместе с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-091",
+      "language": "ru",
+      "prompt": "вишнёвый и оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-092",
+      "language": "ru",
+      "prompt": "вишнёвый с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-093",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с оранжевый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-094",
+      "language": "ru",
+      "prompt": "вишнёвый и коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-095",
+      "language": "ru",
+      "prompt": "вишнёвый с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "orange,red",
+      "id": "mc-clean-096",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с коралловый",
+      "required": [
+        "red",
+        "orange"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-097",
+      "language": "en",
+      "prompt": "red and black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-098",
+      "language": "en",
+      "prompt": "red with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-099",
+      "language": "en",
+      "prompt": "red paired with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-100",
+      "language": "en",
+      "prompt": "red and charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-101",
+      "language": "en",
+      "prompt": "red with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-102",
+      "language": "en",
+      "prompt": "red paired with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-103",
+      "language": "en",
+      "prompt": "crimson and black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-104",
+      "language": "en",
+      "prompt": "crimson with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-105",
+      "language": "en",
+      "prompt": "crimson paired with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-106",
+      "language": "en",
+      "prompt": "crimson and charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-107",
+      "language": "en",
+      "prompt": "crimson with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-108",
+      "language": "en",
+      "prompt": "crimson paired with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-109",
+      "language": "en",
+      "prompt": "scarlet and black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-110",
+      "language": "en",
+      "prompt": "scarlet with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-111",
+      "language": "en",
+      "prompt": "scarlet paired with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-112",
+      "language": "en",
+      "prompt": "scarlet and charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-113",
+      "language": "en",
+      "prompt": "scarlet with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-114",
+      "language": "en",
+      "prompt": "scarlet paired with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-115",
+      "language": "en",
+      "prompt": "ruby red and black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-116",
+      "language": "en",
+      "prompt": "ruby red with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-117",
+      "language": "en",
+      "prompt": "ruby red paired with black",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-118",
+      "language": "en",
+      "prompt": "ruby red and charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-119",
+      "language": "en",
+      "prompt": "ruby red with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-120",
+      "language": "en",
+      "prompt": "ruby red paired with charcoal",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-121",
+      "language": "ru",
+      "prompt": "красный и чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-122",
+      "language": "ru",
+      "prompt": "красный с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-123",
+      "language": "ru",
+      "prompt": "красный вместе с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-124",
+      "language": "ru",
+      "prompt": "красный и угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-125",
+      "language": "ru",
+      "prompt": "красный с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-126",
+      "language": "ru",
+      "prompt": "красный вместе с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-127",
+      "language": "ru",
+      "prompt": "алый и чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-128",
+      "language": "ru",
+      "prompt": "алый с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-129",
+      "language": "ru",
+      "prompt": "алый вместе с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-130",
+      "language": "ru",
+      "prompt": "алый и угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-131",
+      "language": "ru",
+      "prompt": "алый с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-132",
+      "language": "ru",
+      "prompt": "алый вместе с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-133",
+      "language": "ru",
+      "prompt": "бордовый и чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-134",
+      "language": "ru",
+      "prompt": "бордовый с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-135",
+      "language": "ru",
+      "prompt": "бордовый вместе с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-136",
+      "language": "ru",
+      "prompt": "бордовый и угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-137",
+      "language": "ru",
+      "prompt": "бордовый с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-138",
+      "language": "ru",
+      "prompt": "бордовый вместе с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-139",
+      "language": "ru",
+      "prompt": "вишнёвый и чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-140",
+      "language": "ru",
+      "prompt": "вишнёвый с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-141",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с чёрный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-142",
+      "language": "ru",
+      "prompt": "вишнёвый и угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-143",
+      "language": "ru",
+      "prompt": "вишнёвый с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,red",
+      "id": "mc-clean-144",
+      "language": "ru",
+      "prompt": "вишнёвый вместе с угольный",
+      "required": [
+        "red",
+        "black"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-145",
+      "language": "en",
+      "prompt": "blue and green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-146",
+      "language": "en",
+      "prompt": "blue with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-147",
+      "language": "en",
+      "prompt": "blue paired with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-148",
+      "language": "en",
+      "prompt": "blue and emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-149",
+      "language": "en",
+      "prompt": "blue with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-150",
+      "language": "en",
+      "prompt": "blue paired with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-151",
+      "language": "en",
+      "prompt": "navy and green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-152",
+      "language": "en",
+      "prompt": "navy with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-153",
+      "language": "en",
+      "prompt": "navy paired with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-154",
+      "language": "en",
+      "prompt": "navy and emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-155",
+      "language": "en",
+      "prompt": "navy with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-156",
+      "language": "en",
+      "prompt": "navy paired with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-157",
+      "language": "en",
+      "prompt": "azure and green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-158",
+      "language": "en",
+      "prompt": "azure with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-159",
+      "language": "en",
+      "prompt": "azure paired with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-160",
+      "language": "en",
+      "prompt": "azure and emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-161",
+      "language": "en",
+      "prompt": "azure with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-162",
+      "language": "en",
+      "prompt": "azure paired with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-163",
+      "language": "en",
+      "prompt": "cobalt blue and green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-164",
+      "language": "en",
+      "prompt": "cobalt blue with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-165",
+      "language": "en",
+      "prompt": "cobalt blue paired with green",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-166",
+      "language": "en",
+      "prompt": "cobalt blue and emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-167",
+      "language": "en",
+      "prompt": "cobalt blue with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-168",
+      "language": "en",
+      "prompt": "cobalt blue paired with emerald",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-169",
+      "language": "ru",
+      "prompt": "синий и зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-170",
+      "language": "ru",
+      "prompt": "синий с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-171",
+      "language": "ru",
+      "prompt": "синий вместе с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-172",
+      "language": "ru",
+      "prompt": "синий и изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-173",
+      "language": "ru",
+      "prompt": "синий с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-174",
+      "language": "ru",
+      "prompt": "синий вместе с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-175",
+      "language": "ru",
+      "prompt": "лазурный и зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-176",
+      "language": "ru",
+      "prompt": "лазурный с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-177",
+      "language": "ru",
+      "prompt": "лазурный вместе с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-178",
+      "language": "ru",
+      "prompt": "лазурный и изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-179",
+      "language": "ru",
+      "prompt": "лазурный с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-180",
+      "language": "ru",
+      "prompt": "лазурный вместе с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-181",
+      "language": "ru",
+      "prompt": "сапфировый и зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-182",
+      "language": "ru",
+      "prompt": "сапфировый с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-183",
+      "language": "ru",
+      "prompt": "сапфировый вместе с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-184",
+      "language": "ru",
+      "prompt": "сапфировый и изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-185",
+      "language": "ru",
+      "prompt": "сапфировый с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-186",
+      "language": "ru",
+      "prompt": "сапфировый вместе с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-187",
+      "language": "ru",
+      "prompt": "васильковый и зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-188",
+      "language": "ru",
+      "prompt": "васильковый с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-189",
+      "language": "ru",
+      "prompt": "васильковый вместе с зелёный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-190",
+      "language": "ru",
+      "prompt": "васильковый и изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-191",
+      "language": "ru",
+      "prompt": "васильковый с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,green",
+      "id": "mc-clean-192",
+      "language": "ru",
+      "prompt": "васильковый вместе с изумрудный",
+      "required": [
+        "blue",
+        "green"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-193",
+      "language": "en",
+      "prompt": "blue and pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-194",
+      "language": "en",
+      "prompt": "blue with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-195",
+      "language": "en",
+      "prompt": "blue paired with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-196",
+      "language": "en",
+      "prompt": "blue and rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-197",
+      "language": "en",
+      "prompt": "blue with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-198",
+      "language": "en",
+      "prompt": "blue paired with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-199",
+      "language": "en",
+      "prompt": "navy and pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-200",
+      "language": "en",
+      "prompt": "navy with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-201",
+      "language": "en",
+      "prompt": "navy paired with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-202",
+      "language": "en",
+      "prompt": "navy and rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-203",
+      "language": "en",
+      "prompt": "navy with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-204",
+      "language": "en",
+      "prompt": "navy paired with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-205",
+      "language": "en",
+      "prompt": "azure and pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-206",
+      "language": "en",
+      "prompt": "azure with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-207",
+      "language": "en",
+      "prompt": "azure paired with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-208",
+      "language": "en",
+      "prompt": "azure and rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-209",
+      "language": "en",
+      "prompt": "azure with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-210",
+      "language": "en",
+      "prompt": "azure paired with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-211",
+      "language": "en",
+      "prompt": "cobalt blue and pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-212",
+      "language": "en",
+      "prompt": "cobalt blue with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-213",
+      "language": "en",
+      "prompt": "cobalt blue paired with pink",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-214",
+      "language": "en",
+      "prompt": "cobalt blue and rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-215",
+      "language": "en",
+      "prompt": "cobalt blue with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-216",
+      "language": "en",
+      "prompt": "cobalt blue paired with rose",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-217",
+      "language": "ru",
+      "prompt": "синий и розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-218",
+      "language": "ru",
+      "prompt": "синий с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-219",
+      "language": "ru",
+      "prompt": "синий вместе с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-220",
+      "language": "ru",
+      "prompt": "синий и малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-221",
+      "language": "ru",
+      "prompt": "синий с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-222",
+      "language": "ru",
+      "prompt": "синий вместе с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-223",
+      "language": "ru",
+      "prompt": "лазурный и розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-224",
+      "language": "ru",
+      "prompt": "лазурный с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-225",
+      "language": "ru",
+      "prompt": "лазурный вместе с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-226",
+      "language": "ru",
+      "prompt": "лазурный и малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-227",
+      "language": "ru",
+      "prompt": "лазурный с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-228",
+      "language": "ru",
+      "prompt": "лазурный вместе с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-229",
+      "language": "ru",
+      "prompt": "сапфировый и розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-230",
+      "language": "ru",
+      "prompt": "сапфировый с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-231",
+      "language": "ru",
+      "prompt": "сапфировый вместе с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-232",
+      "language": "ru",
+      "prompt": "сапфировый и малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-233",
+      "language": "ru",
+      "prompt": "сапфировый с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-234",
+      "language": "ru",
+      "prompt": "сапфировый вместе с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-235",
+      "language": "ru",
+      "prompt": "васильковый и розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-236",
+      "language": "ru",
+      "prompt": "васильковый с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-237",
+      "language": "ru",
+      "prompt": "васильковый вместе с розовый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-238",
+      "language": "ru",
+      "prompt": "васильковый и малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-239",
+      "language": "ru",
+      "prompt": "васильковый с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink",
+      "id": "mc-clean-240",
+      "language": "ru",
+      "prompt": "васильковый вместе с малиновый",
+      "required": [
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-241",
+      "language": "en",
+      "prompt": "green and cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-242",
+      "language": "en",
+      "prompt": "green with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-243",
+      "language": "en",
+      "prompt": "green paired with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-244",
+      "language": "en",
+      "prompt": "green and turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-245",
+      "language": "en",
+      "prompt": "green with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-246",
+      "language": "en",
+      "prompt": "green paired with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-247",
+      "language": "en",
+      "prompt": "emerald and cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-248",
+      "language": "en",
+      "prompt": "emerald with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-249",
+      "language": "en",
+      "prompt": "emerald paired with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-250",
+      "language": "en",
+      "prompt": "emerald and turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-251",
+      "language": "en",
+      "prompt": "emerald with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-252",
+      "language": "en",
+      "prompt": "emerald paired with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-253",
+      "language": "en",
+      "prompt": "jade and cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-254",
+      "language": "en",
+      "prompt": "jade with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-255",
+      "language": "en",
+      "prompt": "jade paired with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-256",
+      "language": "en",
+      "prompt": "jade and turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-257",
+      "language": "en",
+      "prompt": "jade with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-258",
+      "language": "en",
+      "prompt": "jade paired with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-259",
+      "language": "en",
+      "prompt": "forest green and cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-260",
+      "language": "en",
+      "prompt": "forest green with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-261",
+      "language": "en",
+      "prompt": "forest green paired with cyan",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-262",
+      "language": "en",
+      "prompt": "forest green and turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-263",
+      "language": "en",
+      "prompt": "forest green with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-264",
+      "language": "en",
+      "prompt": "forest green paired with turquoise",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-265",
+      "language": "ru",
+      "prompt": "зелёный и бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-266",
+      "language": "ru",
+      "prompt": "зелёный с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-267",
+      "language": "ru",
+      "prompt": "зелёный вместе с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-268",
+      "language": "ru",
+      "prompt": "зелёный и аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-269",
+      "language": "ru",
+      "prompt": "зелёный с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-270",
+      "language": "ru",
+      "prompt": "зелёный вместе с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-271",
+      "language": "ru",
+      "prompt": "изумрудный и бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-272",
+      "language": "ru",
+      "prompt": "изумрудный с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-273",
+      "language": "ru",
+      "prompt": "изумрудный вместе с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-274",
+      "language": "ru",
+      "prompt": "изумрудный и аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-275",
+      "language": "ru",
+      "prompt": "изумрудный с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-276",
+      "language": "ru",
+      "prompt": "изумрудный вместе с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-277",
+      "language": "ru",
+      "prompt": "нефритовый и бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-278",
+      "language": "ru",
+      "prompt": "нефритовый с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-279",
+      "language": "ru",
+      "prompt": "нефритовый вместе с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-280",
+      "language": "ru",
+      "prompt": "нефритовый и аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-281",
+      "language": "ru",
+      "prompt": "нефритовый с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-282",
+      "language": "ru",
+      "prompt": "нефритовый вместе с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-283",
+      "language": "ru",
+      "prompt": "травяной и бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-284",
+      "language": "ru",
+      "prompt": "травяной с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-285",
+      "language": "ru",
+      "prompt": "травяной вместе с бирюзовый",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-286",
+      "language": "ru",
+      "prompt": "травяной и аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-287",
+      "language": "ru",
+      "prompt": "травяной с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green",
+      "id": "mc-clean-288",
+      "language": "ru",
+      "prompt": "травяной вместе с аквамарин",
+      "required": [
+        "green",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-289",
+      "language": "en",
+      "prompt": "green and white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-290",
+      "language": "en",
+      "prompt": "green with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-291",
+      "language": "en",
+      "prompt": "green paired with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-292",
+      "language": "en",
+      "prompt": "green and pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-293",
+      "language": "en",
+      "prompt": "green with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-294",
+      "language": "en",
+      "prompt": "green paired with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-295",
+      "language": "en",
+      "prompt": "emerald and white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-296",
+      "language": "en",
+      "prompt": "emerald with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-297",
+      "language": "en",
+      "prompt": "emerald paired with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-298",
+      "language": "en",
+      "prompt": "emerald and pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-299",
+      "language": "en",
+      "prompt": "emerald with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-300",
+      "language": "en",
+      "prompt": "emerald paired with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-301",
+      "language": "en",
+      "prompt": "jade and white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-302",
+      "language": "en",
+      "prompt": "jade with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-303",
+      "language": "en",
+      "prompt": "jade paired with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-304",
+      "language": "en",
+      "prompt": "jade and pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-305",
+      "language": "en",
+      "prompt": "jade with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-306",
+      "language": "en",
+      "prompt": "jade paired with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-307",
+      "language": "en",
+      "prompt": "forest green and white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-308",
+      "language": "en",
+      "prompt": "forest green with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-309",
+      "language": "en",
+      "prompt": "forest green paired with white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-310",
+      "language": "en",
+      "prompt": "forest green and pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-311",
+      "language": "en",
+      "prompt": "forest green with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-312",
+      "language": "en",
+      "prompt": "forest green paired with pure white",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-313",
+      "language": "ru",
+      "prompt": "зелёный и белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-314",
+      "language": "ru",
+      "prompt": "зелёный с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-315",
+      "language": "ru",
+      "prompt": "зелёный вместе с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-316",
+      "language": "ru",
+      "prompt": "зелёный и белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-317",
+      "language": "ru",
+      "prompt": "зелёный с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-318",
+      "language": "ru",
+      "prompt": "зелёный вместе с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-319",
+      "language": "ru",
+      "prompt": "изумрудный и белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-320",
+      "language": "ru",
+      "prompt": "изумрудный с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-321",
+      "language": "ru",
+      "prompt": "изумрудный вместе с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-322",
+      "language": "ru",
+      "prompt": "изумрудный и белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-323",
+      "language": "ru",
+      "prompt": "изумрудный с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-324",
+      "language": "ru",
+      "prompt": "изумрудный вместе с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-325",
+      "language": "ru",
+      "prompt": "нефритовый и белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-326",
+      "language": "ru",
+      "prompt": "нефритовый с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-327",
+      "language": "ru",
+      "prompt": "нефритовый вместе с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-328",
+      "language": "ru",
+      "prompt": "нефритовый и белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-329",
+      "language": "ru",
+      "prompt": "нефритовый с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-330",
+      "language": "ru",
+      "prompt": "нефритовый вместе с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-331",
+      "language": "ru",
+      "prompt": "травяной и белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-332",
+      "language": "ru",
+      "prompt": "травяной с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-333",
+      "language": "ru",
+      "prompt": "травяной вместе с белый",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-334",
+      "language": "ru",
+      "prompt": "травяной и белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-335",
+      "language": "ru",
+      "prompt": "травяной с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,white",
+      "id": "mc-clean-336",
+      "language": "ru",
+      "prompt": "травяной вместе с белоснежный",
+      "required": [
+        "green",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-337",
+      "language": "en",
+      "prompt": "yellow and purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-338",
+      "language": "en",
+      "prompt": "yellow with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-339",
+      "language": "en",
+      "prompt": "yellow paired with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-340",
+      "language": "en",
+      "prompt": "yellow and violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-341",
+      "language": "en",
+      "prompt": "yellow with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-342",
+      "language": "en",
+      "prompt": "yellow paired with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-343",
+      "language": "en",
+      "prompt": "amber and purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-344",
+      "language": "en",
+      "prompt": "amber with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-345",
+      "language": "en",
+      "prompt": "amber paired with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-346",
+      "language": "en",
+      "prompt": "amber and violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-347",
+      "language": "en",
+      "prompt": "amber with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-348",
+      "language": "en",
+      "prompt": "amber paired with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-349",
+      "language": "en",
+      "prompt": "lemon and purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-350",
+      "language": "en",
+      "prompt": "lemon with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-351",
+      "language": "en",
+      "prompt": "lemon paired with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-352",
+      "language": "en",
+      "prompt": "lemon and violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-353",
+      "language": "en",
+      "prompt": "lemon with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-354",
+      "language": "en",
+      "prompt": "lemon paired with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-355",
+      "language": "en",
+      "prompt": "golden yellow and purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-356",
+      "language": "en",
+      "prompt": "golden yellow with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-357",
+      "language": "en",
+      "prompt": "golden yellow paired with purple",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-358",
+      "language": "en",
+      "prompt": "golden yellow and violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-359",
+      "language": "en",
+      "prompt": "golden yellow with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-360",
+      "language": "en",
+      "prompt": "golden yellow paired with violet",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-361",
+      "language": "ru",
+      "prompt": "жёлтый и фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-362",
+      "language": "ru",
+      "prompt": "жёлтый с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-363",
+      "language": "ru",
+      "prompt": "жёлтый вместе с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-364",
+      "language": "ru",
+      "prompt": "жёлтый и лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-365",
+      "language": "ru",
+      "prompt": "жёлтый с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-366",
+      "language": "ru",
+      "prompt": "жёлтый вместе с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-367",
+      "language": "ru",
+      "prompt": "янтарный и фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-368",
+      "language": "ru",
+      "prompt": "янтарный с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-369",
+      "language": "ru",
+      "prompt": "янтарный вместе с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-370",
+      "language": "ru",
+      "prompt": "янтарный и лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-371",
+      "language": "ru",
+      "prompt": "янтарный с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-372",
+      "language": "ru",
+      "prompt": "янтарный вместе с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-373",
+      "language": "ru",
+      "prompt": "лимонный и фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-374",
+      "language": "ru",
+      "prompt": "лимонный с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-375",
+      "language": "ru",
+      "prompt": "лимонный вместе с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-376",
+      "language": "ru",
+      "prompt": "лимонный и лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-377",
+      "language": "ru",
+      "prompt": "лимонный с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-378",
+      "language": "ru",
+      "prompt": "лимонный вместе с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-379",
+      "language": "ru",
+      "prompt": "канареечный и фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-380",
+      "language": "ru",
+      "prompt": "канареечный с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-381",
+      "language": "ru",
+      "prompt": "канареечный вместе с фиолетовый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-382",
+      "language": "ru",
+      "prompt": "канареечный и лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-383",
+      "language": "ru",
+      "prompt": "канареечный с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "purple,yellow",
+      "id": "mc-clean-384",
+      "language": "ru",
+      "prompt": "канареечный вместе с лиловый",
+      "required": [
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-385",
+      "language": "en",
+      "prompt": "yellow and pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-386",
+      "language": "en",
+      "prompt": "yellow with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-387",
+      "language": "en",
+      "prompt": "yellow paired with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-388",
+      "language": "en",
+      "prompt": "yellow and rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-389",
+      "language": "en",
+      "prompt": "yellow with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-390",
+      "language": "en",
+      "prompt": "yellow paired with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-391",
+      "language": "en",
+      "prompt": "amber and pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-392",
+      "language": "en",
+      "prompt": "amber with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-393",
+      "language": "en",
+      "prompt": "amber paired with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-394",
+      "language": "en",
+      "prompt": "amber and rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-395",
+      "language": "en",
+      "prompt": "amber with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-396",
+      "language": "en",
+      "prompt": "amber paired with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-397",
+      "language": "en",
+      "prompt": "lemon and pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-398",
+      "language": "en",
+      "prompt": "lemon with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-399",
+      "language": "en",
+      "prompt": "lemon paired with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-400",
+      "language": "en",
+      "prompt": "lemon and rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-401",
+      "language": "en",
+      "prompt": "lemon with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-402",
+      "language": "en",
+      "prompt": "lemon paired with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-403",
+      "language": "en",
+      "prompt": "golden yellow and pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-404",
+      "language": "en",
+      "prompt": "golden yellow with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-405",
+      "language": "en",
+      "prompt": "golden yellow paired with pink",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-406",
+      "language": "en",
+      "prompt": "golden yellow and rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-407",
+      "language": "en",
+      "prompt": "golden yellow with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-408",
+      "language": "en",
+      "prompt": "golden yellow paired with rose",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-409",
+      "language": "ru",
+      "prompt": "жёлтый и розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-410",
+      "language": "ru",
+      "prompt": "жёлтый с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-411",
+      "language": "ru",
+      "prompt": "жёлтый вместе с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-412",
+      "language": "ru",
+      "prompt": "жёлтый и малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-413",
+      "language": "ru",
+      "prompt": "жёлтый с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-414",
+      "language": "ru",
+      "prompt": "жёлтый вместе с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-415",
+      "language": "ru",
+      "prompt": "янтарный и розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-416",
+      "language": "ru",
+      "prompt": "янтарный с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-417",
+      "language": "ru",
+      "prompt": "янтарный вместе с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-418",
+      "language": "ru",
+      "prompt": "янтарный и малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-419",
+      "language": "ru",
+      "prompt": "янтарный с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-420",
+      "language": "ru",
+      "prompt": "янтарный вместе с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-421",
+      "language": "ru",
+      "prompt": "лимонный и розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-422",
+      "language": "ru",
+      "prompt": "лимонный с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-423",
+      "language": "ru",
+      "prompt": "лимонный вместе с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-424",
+      "language": "ru",
+      "prompt": "лимонный и малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-425",
+      "language": "ru",
+      "prompt": "лимонный с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-426",
+      "language": "ru",
+      "prompt": "лимонный вместе с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-427",
+      "language": "ru",
+      "prompt": "канареечный и розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-428",
+      "language": "ru",
+      "prompt": "канареечный с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-429",
+      "language": "ru",
+      "prompt": "канареечный вместе с розовый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-430",
+      "language": "ru",
+      "prompt": "канареечный и малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-431",
+      "language": "ru",
+      "prompt": "канареечный с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "pink,yellow",
+      "id": "mc-clean-432",
+      "language": "ru",
+      "prompt": "канареечный вместе с малиновый",
+      "required": [
+        "yellow",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-433",
+      "language": "en",
+      "prompt": "yellow and cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-434",
+      "language": "en",
+      "prompt": "yellow with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-435",
+      "language": "en",
+      "prompt": "yellow paired with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-436",
+      "language": "en",
+      "prompt": "yellow and turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-437",
+      "language": "en",
+      "prompt": "yellow with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-438",
+      "language": "en",
+      "prompt": "yellow paired with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-439",
+      "language": "en",
+      "prompt": "amber and cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-440",
+      "language": "en",
+      "prompt": "amber with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-441",
+      "language": "en",
+      "prompt": "amber paired with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-442",
+      "language": "en",
+      "prompt": "amber and turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-443",
+      "language": "en",
+      "prompt": "amber with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-444",
+      "language": "en",
+      "prompt": "amber paired with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-445",
+      "language": "en",
+      "prompt": "lemon and cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-446",
+      "language": "en",
+      "prompt": "lemon with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-447",
+      "language": "en",
+      "prompt": "lemon paired with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-448",
+      "language": "en",
+      "prompt": "lemon and turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-449",
+      "language": "en",
+      "prompt": "lemon with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-450",
+      "language": "en",
+      "prompt": "lemon paired with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-451",
+      "language": "en",
+      "prompt": "golden yellow and cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-452",
+      "language": "en",
+      "prompt": "golden yellow with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-453",
+      "language": "en",
+      "prompt": "golden yellow paired with cyan",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-454",
+      "language": "en",
+      "prompt": "golden yellow and turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-455",
+      "language": "en",
+      "prompt": "golden yellow with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-456",
+      "language": "en",
+      "prompt": "golden yellow paired with turquoise",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-457",
+      "language": "ru",
+      "prompt": "жёлтый и бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-458",
+      "language": "ru",
+      "prompt": "жёлтый с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-459",
+      "language": "ru",
+      "prompt": "жёлтый вместе с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-460",
+      "language": "ru",
+      "prompt": "жёлтый и аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-461",
+      "language": "ru",
+      "prompt": "жёлтый с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-462",
+      "language": "ru",
+      "prompt": "жёлтый вместе с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-463",
+      "language": "ru",
+      "prompt": "янтарный и бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-464",
+      "language": "ru",
+      "prompt": "янтарный с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-465",
+      "language": "ru",
+      "prompt": "янтарный вместе с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-466",
+      "language": "ru",
+      "prompt": "янтарный и аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-467",
+      "language": "ru",
+      "prompt": "янтарный с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-468",
+      "language": "ru",
+      "prompt": "янтарный вместе с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-469",
+      "language": "ru",
+      "prompt": "лимонный и бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-470",
+      "language": "ru",
+      "prompt": "лимонный с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-471",
+      "language": "ru",
+      "prompt": "лимонный вместе с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-472",
+      "language": "ru",
+      "prompt": "лимонный и аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-473",
+      "language": "ru",
+      "prompt": "лимонный с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-474",
+      "language": "ru",
+      "prompt": "лимонный вместе с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-475",
+      "language": "ru",
+      "prompt": "канареечный и бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-476",
+      "language": "ru",
+      "prompt": "канареечный с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-477",
+      "language": "ru",
+      "prompt": "канареечный вместе с бирюзовый",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-478",
+      "language": "ru",
+      "prompt": "канареечный и аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-479",
+      "language": "ru",
+      "prompt": "канареечный с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,yellow",
+      "id": "mc-clean-480",
+      "language": "ru",
+      "prompt": "канареечный вместе с аквамарин",
+      "required": [
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-481",
+      "language": "en",
+      "prompt": "yellow and white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-482",
+      "language": "en",
+      "prompt": "yellow with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-483",
+      "language": "en",
+      "prompt": "yellow paired with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-484",
+      "language": "en",
+      "prompt": "yellow and pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-485",
+      "language": "en",
+      "prompt": "yellow with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-486",
+      "language": "en",
+      "prompt": "yellow paired with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-487",
+      "language": "en",
+      "prompt": "amber and white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-488",
+      "language": "en",
+      "prompt": "amber with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-489",
+      "language": "en",
+      "prompt": "amber paired with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-490",
+      "language": "en",
+      "prompt": "amber and pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-491",
+      "language": "en",
+      "prompt": "amber with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-492",
+      "language": "en",
+      "prompt": "amber paired with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-493",
+      "language": "en",
+      "prompt": "lemon and white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-494",
+      "language": "en",
+      "prompt": "lemon with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-495",
+      "language": "en",
+      "prompt": "lemon paired with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-496",
+      "language": "en",
+      "prompt": "lemon and pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-497",
+      "language": "en",
+      "prompt": "lemon with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-498",
+      "language": "en",
+      "prompt": "lemon paired with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-499",
+      "language": "en",
+      "prompt": "golden yellow and white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-500",
+      "language": "en",
+      "prompt": "golden yellow with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-501",
+      "language": "en",
+      "prompt": "golden yellow paired with white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-502",
+      "language": "en",
+      "prompt": "golden yellow and pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-503",
+      "language": "en",
+      "prompt": "golden yellow with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-504",
+      "language": "en",
+      "prompt": "golden yellow paired with pure white",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-505",
+      "language": "ru",
+      "prompt": "жёлтый и белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-506",
+      "language": "ru",
+      "prompt": "жёлтый с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-507",
+      "language": "ru",
+      "prompt": "жёлтый вместе с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-508",
+      "language": "ru",
+      "prompt": "жёлтый и белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-509",
+      "language": "ru",
+      "prompt": "жёлтый с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-510",
+      "language": "ru",
+      "prompt": "жёлтый вместе с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-511",
+      "language": "ru",
+      "prompt": "янтарный и белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-512",
+      "language": "ru",
+      "prompt": "янтарный с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-513",
+      "language": "ru",
+      "prompt": "янтарный вместе с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-514",
+      "language": "ru",
+      "prompt": "янтарный и белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-515",
+      "language": "ru",
+      "prompt": "янтарный с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-516",
+      "language": "ru",
+      "prompt": "янтарный вместе с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-517",
+      "language": "ru",
+      "prompt": "лимонный и белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-518",
+      "language": "ru",
+      "prompt": "лимонный с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-519",
+      "language": "ru",
+      "prompt": "лимонный вместе с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-520",
+      "language": "ru",
+      "prompt": "лимонный и белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-521",
+      "language": "ru",
+      "prompt": "лимонный с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-522",
+      "language": "ru",
+      "prompt": "лимонный вместе с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-523",
+      "language": "ru",
+      "prompt": "канареечный и белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-524",
+      "language": "ru",
+      "prompt": "канареечный с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-525",
+      "language": "ru",
+      "prompt": "канареечный вместе с белый",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-526",
+      "language": "ru",
+      "prompt": "канареечный и белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-527",
+      "language": "ru",
+      "prompt": "канареечный с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "white,yellow",
+      "id": "mc-clean-528",
+      "language": "ru",
+      "prompt": "канареечный вместе с белоснежный",
+      "required": [
+        "yellow",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-529",
+      "language": "en",
+      "prompt": "purple and white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-530",
+      "language": "en",
+      "prompt": "purple with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-531",
+      "language": "en",
+      "prompt": "purple paired with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-532",
+      "language": "en",
+      "prompt": "purple and pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-533",
+      "language": "en",
+      "prompt": "purple with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-534",
+      "language": "en",
+      "prompt": "purple paired with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-535",
+      "language": "en",
+      "prompt": "violet and white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-536",
+      "language": "en",
+      "prompt": "violet with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-537",
+      "language": "en",
+      "prompt": "violet paired with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-538",
+      "language": "en",
+      "prompt": "violet and pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-539",
+      "language": "en",
+      "prompt": "violet with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-540",
+      "language": "en",
+      "prompt": "violet paired with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-541",
+      "language": "en",
+      "prompt": "magenta and white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-542",
+      "language": "en",
+      "prompt": "magenta with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-543",
+      "language": "en",
+      "prompt": "magenta paired with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-544",
+      "language": "en",
+      "prompt": "magenta and pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-545",
+      "language": "en",
+      "prompt": "magenta with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-546",
+      "language": "en",
+      "prompt": "magenta paired with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-547",
+      "language": "en",
+      "prompt": "plum and white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-548",
+      "language": "en",
+      "prompt": "plum with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-549",
+      "language": "en",
+      "prompt": "plum paired with white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-550",
+      "language": "en",
+      "prompt": "plum and pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-551",
+      "language": "en",
+      "prompt": "plum with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-552",
+      "language": "en",
+      "prompt": "plum paired with pure white",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-553",
+      "language": "ru",
+      "prompt": "фиолетовый и белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-554",
+      "language": "ru",
+      "prompt": "фиолетовый с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-555",
+      "language": "ru",
+      "prompt": "фиолетовый вместе с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-556",
+      "language": "ru",
+      "prompt": "фиолетовый и белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-557",
+      "language": "ru",
+      "prompt": "фиолетовый с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-558",
+      "language": "ru",
+      "prompt": "фиолетовый вместе с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-559",
+      "language": "ru",
+      "prompt": "лиловый и белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-560",
+      "language": "ru",
+      "prompt": "лиловый с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-561",
+      "language": "ru",
+      "prompt": "лиловый вместе с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-562",
+      "language": "ru",
+      "prompt": "лиловый и белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-563",
+      "language": "ru",
+      "prompt": "лиловый с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-564",
+      "language": "ru",
+      "prompt": "лиловый вместе с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-565",
+      "language": "ru",
+      "prompt": "сиреневый и белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-566",
+      "language": "ru",
+      "prompt": "сиреневый с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-567",
+      "language": "ru",
+      "prompt": "сиреневый вместе с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-568",
+      "language": "ru",
+      "prompt": "сиреневый и белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-569",
+      "language": "ru",
+      "prompt": "сиреневый с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-570",
+      "language": "ru",
+      "prompt": "сиреневый вместе с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-571",
+      "language": "ru",
+      "prompt": "сливовый и белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-572",
+      "language": "ru",
+      "prompt": "сливовый с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-573",
+      "language": "ru",
+      "prompt": "сливовый вместе с белый",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-574",
+      "language": "ru",
+      "prompt": "сливовый и белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-575",
+      "language": "ru",
+      "prompt": "сливовый с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,white",
+      "id": "mc-clean-576",
+      "language": "ru",
+      "prompt": "сливовый вместе с белоснежный",
+      "required": [
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-577",
+      "language": "en",
+      "prompt": "pink and white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-578",
+      "language": "en",
+      "prompt": "pink with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-579",
+      "language": "en",
+      "prompt": "pink paired with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-580",
+      "language": "en",
+      "prompt": "pink and pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-581",
+      "language": "en",
+      "prompt": "pink with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-582",
+      "language": "en",
+      "prompt": "pink paired with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-583",
+      "language": "en",
+      "prompt": "rose and white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-584",
+      "language": "en",
+      "prompt": "rose with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-585",
+      "language": "en",
+      "prompt": "rose paired with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-586",
+      "language": "en",
+      "prompt": "rose and pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-587",
+      "language": "en",
+      "prompt": "rose with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-588",
+      "language": "en",
+      "prompt": "rose paired with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-589",
+      "language": "en",
+      "prompt": "fuchsia and white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-590",
+      "language": "en",
+      "prompt": "fuchsia with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-591",
+      "language": "en",
+      "prompt": "fuchsia paired with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-592",
+      "language": "en",
+      "prompt": "fuchsia and pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-593",
+      "language": "en",
+      "prompt": "fuchsia with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-594",
+      "language": "en",
+      "prompt": "fuchsia paired with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-595",
+      "language": "en",
+      "prompt": "salmon pink and white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-596",
+      "language": "en",
+      "prompt": "salmon pink with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-597",
+      "language": "en",
+      "prompt": "salmon pink paired with white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-598",
+      "language": "en",
+      "prompt": "salmon pink and pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-599",
+      "language": "en",
+      "prompt": "salmon pink with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-600",
+      "language": "en",
+      "prompt": "salmon pink paired with pure white",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-601",
+      "language": "ru",
+      "prompt": "розовый и белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-602",
+      "language": "ru",
+      "prompt": "розовый с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-603",
+      "language": "ru",
+      "prompt": "розовый вместе с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-604",
+      "language": "ru",
+      "prompt": "розовый и белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-605",
+      "language": "ru",
+      "prompt": "розовый с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-606",
+      "language": "ru",
+      "prompt": "розовый вместе с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-607",
+      "language": "ru",
+      "prompt": "малиновый и белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-608",
+      "language": "ru",
+      "prompt": "малиновый с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-609",
+      "language": "ru",
+      "prompt": "малиновый вместе с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-610",
+      "language": "ru",
+      "prompt": "малиновый и белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-611",
+      "language": "ru",
+      "prompt": "малиновый с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-612",
+      "language": "ru",
+      "prompt": "малиновый вместе с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-613",
+      "language": "ru",
+      "prompt": "фуксия и белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-614",
+      "language": "ru",
+      "prompt": "фуксия с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-615",
+      "language": "ru",
+      "prompt": "фуксия вместе с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-616",
+      "language": "ru",
+      "prompt": "фуксия и белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-617",
+      "language": "ru",
+      "prompt": "фуксия с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-618",
+      "language": "ru",
+      "prompt": "фуксия вместе с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-619",
+      "language": "ru",
+      "prompt": "лососевый и белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-620",
+      "language": "ru",
+      "prompt": "лососевый с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-621",
+      "language": "ru",
+      "prompt": "лососевый вместе с белый",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-622",
+      "language": "ru",
+      "prompt": "лососевый и белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-623",
+      "language": "ru",
+      "prompt": "лососевый с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "pink,white",
+      "id": "mc-clean-624",
+      "language": "ru",
+      "prompt": "лососевый вместе с белоснежный",
+      "required": [
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-625",
+      "language": "en",
+      "prompt": "gold and cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-626",
+      "language": "en",
+      "prompt": "gold with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-627",
+      "language": "en",
+      "prompt": "gold paired with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-628",
+      "language": "en",
+      "prompt": "gold and turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-629",
+      "language": "en",
+      "prompt": "gold with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-630",
+      "language": "en",
+      "prompt": "gold paired with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-631",
+      "language": "en",
+      "prompt": "gilded and cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-632",
+      "language": "en",
+      "prompt": "gilded with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-633",
+      "language": "en",
+      "prompt": "gilded paired with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-634",
+      "language": "en",
+      "prompt": "gilded and turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-635",
+      "language": "en",
+      "prompt": "gilded with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-636",
+      "language": "en",
+      "prompt": "gilded paired with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-637",
+      "language": "en",
+      "prompt": "metallic gold and cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-638",
+      "language": "en",
+      "prompt": "metallic gold with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-639",
+      "language": "en",
+      "prompt": "metallic gold paired with cyan",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-640",
+      "language": "en",
+      "prompt": "metallic gold and turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-641",
+      "language": "en",
+      "prompt": "metallic gold with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-642",
+      "language": "en",
+      "prompt": "metallic gold paired with turquoise",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-643",
+      "language": "ru",
+      "prompt": "золотой и бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-644",
+      "language": "ru",
+      "prompt": "золотой с бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-645",
+      "language": "ru",
+      "prompt": "золотой вместе с бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-646",
+      "language": "ru",
+      "prompt": "золотой и аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-647",
+      "language": "ru",
+      "prompt": "золотой с аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-648",
+      "language": "ru",
+      "prompt": "золотой вместе с аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-649",
+      "language": "ru",
+      "prompt": "золотистый и бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-650",
+      "language": "ru",
+      "prompt": "золотистый с бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-651",
+      "language": "ru",
+      "prompt": "золотистый вместе с бирюзовый",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-652",
+      "language": "ru",
+      "prompt": "золотистый и аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-653",
+      "language": "ru",
+      "prompt": "золотистый с аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold",
+      "id": "mc-clean-654",
+      "language": "ru",
+      "prompt": "золотистый вместе с аквамарин",
+      "required": [
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-655",
+      "language": "en",
+      "prompt": "gold and gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-656",
+      "language": "en",
+      "prompt": "gold with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-657",
+      "language": "en",
+      "prompt": "gold paired with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-658",
+      "language": "en",
+      "prompt": "gold and slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-659",
+      "language": "en",
+      "prompt": "gold with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-660",
+      "language": "en",
+      "prompt": "gold paired with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-661",
+      "language": "en",
+      "prompt": "gilded and gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-662",
+      "language": "en",
+      "prompt": "gilded with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-663",
+      "language": "en",
+      "prompt": "gilded paired with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-664",
+      "language": "en",
+      "prompt": "gilded and slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-665",
+      "language": "en",
+      "prompt": "gilded with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-666",
+      "language": "en",
+      "prompt": "gilded paired with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-667",
+      "language": "en",
+      "prompt": "metallic gold and gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-668",
+      "language": "en",
+      "prompt": "metallic gold with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-669",
+      "language": "en",
+      "prompt": "metallic gold paired with gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-670",
+      "language": "en",
+      "prompt": "metallic gold and slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-671",
+      "language": "en",
+      "prompt": "metallic gold with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-672",
+      "language": "en",
+      "prompt": "metallic gold paired with slate gray",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-673",
+      "language": "ru",
+      "prompt": "золотой и серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-674",
+      "language": "ru",
+      "prompt": "золотой с серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-675",
+      "language": "ru",
+      "prompt": "золотой вместе с серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-676",
+      "language": "ru",
+      "prompt": "золотой и серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-677",
+      "language": "ru",
+      "prompt": "золотой с серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-678",
+      "language": "ru",
+      "prompt": "золотой вместе с серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-679",
+      "language": "ru",
+      "prompt": "золотистый и серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-680",
+      "language": "ru",
+      "prompt": "золотистый с серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-681",
+      "language": "ru",
+      "prompt": "золотистый вместе с серый",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-682",
+      "language": "ru",
+      "prompt": "золотистый и серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-683",
+      "language": "ru",
+      "prompt": "золотистый с серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray",
+      "id": "mc-clean-684",
+      "language": "ru",
+      "prompt": "золотистый вместе с серебряный",
+      "required": [
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "blue,purple,red",
+      "id": "mc-clean-685",
+      "language": "en",
+      "prompt": "red, blue and purple",
+      "required": [
+        "red",
+        "blue",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,red",
+      "id": "mc-clean-686",
+      "language": "en",
+      "prompt": "red with blue and purple",
+      "required": [
+        "red",
+        "blue",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,red",
+      "id": "mc-clean-687",
+      "language": "ru",
+      "prompt": "красный, синий и фиолетовый",
+      "required": [
+        "red",
+        "blue",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,red",
+      "id": "mc-clean-688",
+      "language": "ru",
+      "prompt": "красный с синий и фиолетовый",
+      "required": [
+        "red",
+        "blue",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,pink,red",
+      "id": "mc-clean-689",
+      "language": "en",
+      "prompt": "red, blue and pink",
+      "required": [
+        "red",
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink,red",
+      "id": "mc-clean-690",
+      "language": "en",
+      "prompt": "red with blue and pink",
+      "required": [
+        "red",
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink,red",
+      "id": "mc-clean-691",
+      "language": "ru",
+      "prompt": "красный, синий и розовый",
+      "required": [
+        "red",
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "blue,pink,red",
+      "id": "mc-clean-692",
+      "language": "ru",
+      "prompt": "красный с синий и розовый",
+      "required": [
+        "red",
+        "blue",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "green,red,yellow",
+      "id": "mc-clean-693",
+      "language": "en",
+      "prompt": "red, green and yellow",
+      "required": [
+        "red",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "green,red,yellow",
+      "id": "mc-clean-694",
+      "language": "en",
+      "prompt": "red with green and yellow",
+      "required": [
+        "red",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "green,red,yellow",
+      "id": "mc-clean-695",
+      "language": "ru",
+      "prompt": "красный, зелёный и жёлтый",
+      "required": [
+        "red",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "green,red,yellow",
+      "id": "mc-clean-696",
+      "language": "ru",
+      "prompt": "красный с зелёный и жёлтый",
+      "required": [
+        "red",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "gold,green,red",
+      "id": "mc-clean-697",
+      "language": "en",
+      "prompt": "red, green and gold",
+      "required": [
+        "red",
+        "green",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,red",
+      "id": "mc-clean-698",
+      "language": "en",
+      "prompt": "red with green and gold",
+      "required": [
+        "red",
+        "green",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,red",
+      "id": "mc-clean-699",
+      "language": "ru",
+      "prompt": "красный, зелёный и золотой",
+      "required": [
+        "red",
+        "green",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,red",
+      "id": "mc-clean-700",
+      "language": "ru",
+      "prompt": "красный с зелёный и золотой",
+      "required": [
+        "red",
+        "green",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "orange,pink,red",
+      "id": "mc-clean-701",
+      "language": "en",
+      "prompt": "red, orange and pink",
+      "required": [
+        "red",
+        "orange",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "orange,pink,red",
+      "id": "mc-clean-702",
+      "language": "en",
+      "prompt": "red with orange and pink",
+      "required": [
+        "red",
+        "orange",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "orange,pink,red",
+      "id": "mc-clean-703",
+      "language": "ru",
+      "prompt": "красный, оранжевый и розовый",
+      "required": [
+        "red",
+        "orange",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "orange,pink,red",
+      "id": "mc-clean-704",
+      "language": "ru",
+      "prompt": "красный с оранжевый и розовый",
+      "required": [
+        "red",
+        "orange",
+        "pink"
+      ]
+    },
+    {
+      "family_set": "gold,orange,red",
+      "id": "mc-clean-705",
+      "language": "en",
+      "prompt": "red, orange and gold",
+      "required": [
+        "red",
+        "orange",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,orange,red",
+      "id": "mc-clean-706",
+      "language": "en",
+      "prompt": "red with orange and gold",
+      "required": [
+        "red",
+        "orange",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,orange,red",
+      "id": "mc-clean-707",
+      "language": "ru",
+      "prompt": "красный, оранжевый и золотой",
+      "required": [
+        "red",
+        "orange",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,orange,red",
+      "id": "mc-clean-708",
+      "language": "ru",
+      "prompt": "красный с оранжевый и золотой",
+      "required": [
+        "red",
+        "orange",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "purple,red,white",
+      "id": "mc-clean-709",
+      "language": "en",
+      "prompt": "red, purple and white",
+      "required": [
+        "red",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,red,white",
+      "id": "mc-clean-710",
+      "language": "en",
+      "prompt": "red with purple and white",
+      "required": [
+        "red",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,red,white",
+      "id": "mc-clean-711",
+      "language": "ru",
+      "prompt": "красный, фиолетовый и белый",
+      "required": [
+        "red",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "purple,red,white",
+      "id": "mc-clean-712",
+      "language": "ru",
+      "prompt": "красный с фиолетовый и белый",
+      "required": [
+        "red",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "gray,purple,red",
+      "id": "mc-clean-713",
+      "language": "en",
+      "prompt": "red, purple and gray",
+      "required": [
+        "red",
+        "purple",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,red",
+      "id": "mc-clean-714",
+      "language": "en",
+      "prompt": "red with purple and gray",
+      "required": [
+        "red",
+        "purple",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,red",
+      "id": "mc-clean-715",
+      "language": "ru",
+      "prompt": "красный, фиолетовый и серый",
+      "required": [
+        "red",
+        "purple",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,red",
+      "id": "mc-clean-716",
+      "language": "ru",
+      "prompt": "красный с фиолетовый и серый",
+      "required": [
+        "red",
+        "purple",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,gold,red",
+      "id": "mc-clean-717",
+      "language": "en",
+      "prompt": "red, gold and black",
+      "required": [
+        "red",
+        "gold",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,gold,red",
+      "id": "mc-clean-718",
+      "language": "en",
+      "prompt": "red with gold and black",
+      "required": [
+        "red",
+        "gold",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,gold,red",
+      "id": "mc-clean-719",
+      "language": "ru",
+      "prompt": "красный, золотой и чёрный",
+      "required": [
+        "red",
+        "gold",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,gold,red",
+      "id": "mc-clean-720",
+      "language": "ru",
+      "prompt": "красный с золотой и чёрный",
+      "required": [
+        "red",
+        "gold",
+        "black"
+      ]
+    },
+    {
+      "family_set": "blue,green,yellow",
+      "id": "mc-clean-721",
+      "language": "en",
+      "prompt": "blue, green and yellow",
+      "required": [
+        "blue",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "blue,green,yellow",
+      "id": "mc-clean-722",
+      "language": "en",
+      "prompt": "blue with green and yellow",
+      "required": [
+        "blue",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "blue,green,yellow",
+      "id": "mc-clean-723",
+      "language": "ru",
+      "prompt": "синий, зелёный и жёлтый",
+      "required": [
+        "blue",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "blue,green,yellow",
+      "id": "mc-clean-724",
+      "language": "ru",
+      "prompt": "синий с зелёный и жёлтый",
+      "required": [
+        "blue",
+        "green",
+        "yellow"
+      ]
+    },
+    {
+      "family_set": "blue,purple,yellow",
+      "id": "mc-clean-725",
+      "language": "en",
+      "prompt": "blue, yellow and purple",
+      "required": [
+        "blue",
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,yellow",
+      "id": "mc-clean-726",
+      "language": "en",
+      "prompt": "blue with yellow and purple",
+      "required": [
+        "blue",
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,yellow",
+      "id": "mc-clean-727",
+      "language": "ru",
+      "prompt": "синий, жёлтый и фиолетовый",
+      "required": [
+        "blue",
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,purple,yellow",
+      "id": "mc-clean-728",
+      "language": "ru",
+      "prompt": "синий с жёлтый и фиолетовый",
+      "required": [
+        "blue",
+        "yellow",
+        "purple"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,yellow",
+      "id": "mc-clean-729",
+      "language": "en",
+      "prompt": "blue, yellow and cyan",
+      "required": [
+        "blue",
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,yellow",
+      "id": "mc-clean-730",
+      "language": "en",
+      "prompt": "blue with yellow and cyan",
+      "required": [
+        "blue",
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,yellow",
+      "id": "mc-clean-731",
+      "language": "ru",
+      "prompt": "синий, жёлтый и бирюзовый",
+      "required": [
+        "blue",
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,yellow",
+      "id": "mc-clean-732",
+      "language": "ru",
+      "prompt": "синий с жёлтый и бирюзовый",
+      "required": [
+        "blue",
+        "yellow",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,pink,white",
+      "id": "mc-clean-733",
+      "language": "en",
+      "prompt": "blue, pink and white",
+      "required": [
+        "blue",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "blue,pink,white",
+      "id": "mc-clean-734",
+      "language": "en",
+      "prompt": "blue with pink and white",
+      "required": [
+        "blue",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "blue,pink,white",
+      "id": "mc-clean-735",
+      "language": "ru",
+      "prompt": "синий, розовый и белый",
+      "required": [
+        "blue",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "blue,pink,white",
+      "id": "mc-clean-736",
+      "language": "ru",
+      "prompt": "синий с розовый и белый",
+      "required": [
+        "blue",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "blue,gray,pink",
+      "id": "mc-clean-737",
+      "language": "en",
+      "prompt": "blue, pink and gray",
+      "required": [
+        "blue",
+        "pink",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "blue,gray,pink",
+      "id": "mc-clean-738",
+      "language": "en",
+      "prompt": "blue with pink and gray",
+      "required": [
+        "blue",
+        "pink",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "blue,gray,pink",
+      "id": "mc-clean-739",
+      "language": "ru",
+      "prompt": "синий, розовый и серый",
+      "required": [
+        "blue",
+        "pink",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "blue,gray,pink",
+      "id": "mc-clean-740",
+      "language": "ru",
+      "prompt": "синий с розовый и серый",
+      "required": [
+        "blue",
+        "pink",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,gold",
+      "id": "mc-clean-741",
+      "language": "en",
+      "prompt": "blue, gold and cyan",
+      "required": [
+        "blue",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,gold",
+      "id": "mc-clean-742",
+      "language": "en",
+      "prompt": "blue with gold and cyan",
+      "required": [
+        "blue",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,gold",
+      "id": "mc-clean-743",
+      "language": "ru",
+      "prompt": "синий, золотой и бирюзовый",
+      "required": [
+        "blue",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "blue,cyan,gold",
+      "id": "mc-clean-744",
+      "language": "ru",
+      "prompt": "синий с золотой и бирюзовый",
+      "required": [
+        "blue",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "gold,green,yellow",
+      "id": "mc-clean-745",
+      "language": "en",
+      "prompt": "green, yellow and gold",
+      "required": [
+        "green",
+        "yellow",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,yellow",
+      "id": "mc-clean-746",
+      "language": "en",
+      "prompt": "green with yellow and gold",
+      "required": [
+        "green",
+        "yellow",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,yellow",
+      "id": "mc-clean-747",
+      "language": "ru",
+      "prompt": "зелёный, жёлтый и золотой",
+      "required": [
+        "green",
+        "yellow",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,yellow",
+      "id": "mc-clean-748",
+      "language": "ru",
+      "prompt": "зелёный с жёлтый и золотой",
+      "required": [
+        "green",
+        "yellow",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gray,green,yellow",
+      "id": "mc-clean-749",
+      "language": "en",
+      "prompt": "green, yellow and gray",
+      "required": [
+        "green",
+        "yellow",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,green,yellow",
+      "id": "mc-clean-750",
+      "language": "en",
+      "prompt": "green with yellow and gray",
+      "required": [
+        "green",
+        "yellow",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,green,yellow",
+      "id": "mc-clean-751",
+      "language": "ru",
+      "prompt": "зелёный, жёлтый и серый",
+      "required": [
+        "green",
+        "yellow",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,green,yellow",
+      "id": "mc-clean-752",
+      "language": "ru",
+      "prompt": "зелёный с жёлтый и серый",
+      "required": [
+        "green",
+        "yellow",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,green,orange",
+      "id": "mc-clean-753",
+      "language": "en",
+      "prompt": "green, orange and cyan",
+      "required": [
+        "green",
+        "orange",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green,orange",
+      "id": "mc-clean-754",
+      "language": "en",
+      "prompt": "green with orange and cyan",
+      "required": [
+        "green",
+        "orange",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green,orange",
+      "id": "mc-clean-755",
+      "language": "ru",
+      "prompt": "зелёный, оранжевый и бирюзовый",
+      "required": [
+        "green",
+        "orange",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,green,orange",
+      "id": "mc-clean-756",
+      "language": "ru",
+      "prompt": "зелёный с оранжевый и бирюзовый",
+      "required": [
+        "green",
+        "orange",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "black,green,orange",
+      "id": "mc-clean-757",
+      "language": "en",
+      "prompt": "green, orange and black",
+      "required": [
+        "green",
+        "orange",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,green,orange",
+      "id": "mc-clean-758",
+      "language": "en",
+      "prompt": "green with orange and black",
+      "required": [
+        "green",
+        "orange",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,green,orange",
+      "id": "mc-clean-759",
+      "language": "ru",
+      "prompt": "зелёный, оранжевый и чёрный",
+      "required": [
+        "green",
+        "orange",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,green,orange",
+      "id": "mc-clean-760",
+      "language": "ru",
+      "prompt": "зелёный с оранжевый и чёрный",
+      "required": [
+        "green",
+        "orange",
+        "black"
+      ]
+    },
+    {
+      "family_set": "green,purple,white",
+      "id": "mc-clean-761",
+      "language": "en",
+      "prompt": "green, purple and white",
+      "required": [
+        "green",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,purple,white",
+      "id": "mc-clean-762",
+      "language": "en",
+      "prompt": "green with purple and white",
+      "required": [
+        "green",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,purple,white",
+      "id": "mc-clean-763",
+      "language": "ru",
+      "prompt": "зелёный, фиолетовый и белый",
+      "required": [
+        "green",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,purple,white",
+      "id": "mc-clean-764",
+      "language": "ru",
+      "prompt": "зелёный с фиолетовый и белый",
+      "required": [
+        "green",
+        "purple",
+        "white"
+      ]
+    },
+    {
+      "family_set": "gold,green,pink",
+      "id": "mc-clean-765",
+      "language": "en",
+      "prompt": "green, pink and gold",
+      "required": [
+        "green",
+        "pink",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,pink",
+      "id": "mc-clean-766",
+      "language": "en",
+      "prompt": "green with pink and gold",
+      "required": [
+        "green",
+        "pink",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,pink",
+      "id": "mc-clean-767",
+      "language": "ru",
+      "prompt": "зелёный, розовый и золотой",
+      "required": [
+        "green",
+        "pink",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "gold,green,pink",
+      "id": "mc-clean-768",
+      "language": "ru",
+      "prompt": "зелёный с розовый и золотой",
+      "required": [
+        "green",
+        "pink",
+        "gold"
+      ]
+    },
+    {
+      "family_set": "green,pink,white",
+      "id": "mc-clean-769",
+      "language": "en",
+      "prompt": "green, pink and white",
+      "required": [
+        "green",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,pink,white",
+      "id": "mc-clean-770",
+      "language": "en",
+      "prompt": "green with pink and white",
+      "required": [
+        "green",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,pink,white",
+      "id": "mc-clean-771",
+      "language": "ru",
+      "prompt": "зелёный, розовый и белый",
+      "required": [
+        "green",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "green,pink,white",
+      "id": "mc-clean-772",
+      "language": "ru",
+      "prompt": "зелёный с розовый и белый",
+      "required": [
+        "green",
+        "pink",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,green,white",
+      "id": "mc-clean-773",
+      "language": "en",
+      "prompt": "green, cyan and white",
+      "required": [
+        "green",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,green,white",
+      "id": "mc-clean-774",
+      "language": "en",
+      "prompt": "green with cyan and white",
+      "required": [
+        "green",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,green,white",
+      "id": "mc-clean-775",
+      "language": "ru",
+      "prompt": "зелёный, бирюзовый и белый",
+      "required": [
+        "green",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,green,white",
+      "id": "mc-clean-776",
+      "language": "ru",
+      "prompt": "зелёный с бирюзовый и белый",
+      "required": [
+        "green",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,green",
+      "id": "mc-clean-777",
+      "language": "en",
+      "prompt": "green, cyan and gray",
+      "required": [
+        "green",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,green",
+      "id": "mc-clean-778",
+      "language": "en",
+      "prompt": "green with cyan and gray",
+      "required": [
+        "green",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,green",
+      "id": "mc-clean-779",
+      "language": "ru",
+      "prompt": "зелёный, бирюзовый и серый",
+      "required": [
+        "green",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,green",
+      "id": "mc-clean-780",
+      "language": "ru",
+      "prompt": "зелёный с бирюзовый и серый",
+      "required": [
+        "green",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,gray,green",
+      "id": "mc-clean-781",
+      "language": "en",
+      "prompt": "green, black and gray",
+      "required": [
+        "green",
+        "black",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,gray,green",
+      "id": "mc-clean-782",
+      "language": "en",
+      "prompt": "green with black and gray",
+      "required": [
+        "green",
+        "black",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,gray,green",
+      "id": "mc-clean-783",
+      "language": "ru",
+      "prompt": "зелёный, чёрный и серый",
+      "required": [
+        "green",
+        "black",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,gray,green",
+      "id": "mc-clean-784",
+      "language": "ru",
+      "prompt": "зелёный с чёрный и серый",
+      "required": [
+        "green",
+        "black",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,orange,yellow",
+      "id": "mc-clean-785",
+      "language": "en",
+      "prompt": "yellow, orange and gray",
+      "required": [
+        "yellow",
+        "orange",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,orange,yellow",
+      "id": "mc-clean-786",
+      "language": "en",
+      "prompt": "yellow with orange and gray",
+      "required": [
+        "yellow",
+        "orange",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,orange,yellow",
+      "id": "mc-clean-787",
+      "language": "ru",
+      "prompt": "жёлтый, оранжевый и серый",
+      "required": [
+        "yellow",
+        "orange",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,orange,yellow",
+      "id": "mc-clean-788",
+      "language": "ru",
+      "prompt": "жёлтый с оранжевый и серый",
+      "required": [
+        "yellow",
+        "orange",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray,yellow",
+      "id": "mc-clean-789",
+      "language": "en",
+      "prompt": "yellow, gold and gray",
+      "required": [
+        "yellow",
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray,yellow",
+      "id": "mc-clean-790",
+      "language": "en",
+      "prompt": "yellow with gold and gray",
+      "required": [
+        "yellow",
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray,yellow",
+      "id": "mc-clean-791",
+      "language": "ru",
+      "prompt": "жёлтый, золотой и серый",
+      "required": [
+        "yellow",
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gold,gray,yellow",
+      "id": "mc-clean-792",
+      "language": "ru",
+      "prompt": "жёлтый с золотой и серый",
+      "required": [
+        "yellow",
+        "gold",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,white,yellow",
+      "id": "mc-clean-793",
+      "language": "en",
+      "prompt": "yellow, cyan and white",
+      "required": [
+        "yellow",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,white,yellow",
+      "id": "mc-clean-794",
+      "language": "en",
+      "prompt": "yellow with cyan and white",
+      "required": [
+        "yellow",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,white,yellow",
+      "id": "mc-clean-795",
+      "language": "ru",
+      "prompt": "жёлтый, бирюзовый и белый",
+      "required": [
+        "yellow",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,white,yellow",
+      "id": "mc-clean-796",
+      "language": "ru",
+      "prompt": "жёлтый с бирюзовый и белый",
+      "required": [
+        "yellow",
+        "cyan",
+        "white"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,yellow",
+      "id": "mc-clean-797",
+      "language": "en",
+      "prompt": "yellow, cyan and gray",
+      "required": [
+        "yellow",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,yellow",
+      "id": "mc-clean-798",
+      "language": "en",
+      "prompt": "yellow with cyan and gray",
+      "required": [
+        "yellow",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,yellow",
+      "id": "mc-clean-799",
+      "language": "ru",
+      "prompt": "жёлтый, бирюзовый и серый",
+      "required": [
+        "yellow",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "cyan,gray,yellow",
+      "id": "mc-clean-800",
+      "language": "ru",
+      "prompt": "жёлтый с бирюзовый и серый",
+      "required": [
+        "yellow",
+        "cyan",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,white,yellow",
+      "id": "mc-clean-801",
+      "language": "en",
+      "prompt": "yellow, black and white",
+      "required": [
+        "yellow",
+        "black",
+        "white"
+      ]
+    },
+    {
+      "family_set": "black,white,yellow",
+      "id": "mc-clean-802",
+      "language": "en",
+      "prompt": "yellow with black and white",
+      "required": [
+        "yellow",
+        "black",
+        "white"
+      ]
+    },
+    {
+      "family_set": "black,white,yellow",
+      "id": "mc-clean-803",
+      "language": "ru",
+      "prompt": "жёлтый, чёрный и белый",
+      "required": [
+        "yellow",
+        "black",
+        "white"
+      ]
+    },
+    {
+      "family_set": "black,white,yellow",
+      "id": "mc-clean-804",
+      "language": "ru",
+      "prompt": "жёлтый с чёрный и белый",
+      "required": [
+        "yellow",
+        "black",
+        "white"
+      ]
+    },
+    {
+      "family_set": "black,orange,pink",
+      "id": "mc-clean-805",
+      "language": "en",
+      "prompt": "orange, pink and black",
+      "required": [
+        "orange",
+        "pink",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,orange,pink",
+      "id": "mc-clean-806",
+      "language": "en",
+      "prompt": "orange with pink and black",
+      "required": [
+        "orange",
+        "pink",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,orange,pink",
+      "id": "mc-clean-807",
+      "language": "ru",
+      "prompt": "оранжевый, розовый и чёрный",
+      "required": [
+        "orange",
+        "pink",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,orange,pink",
+      "id": "mc-clean-808",
+      "language": "ru",
+      "prompt": "оранжевый с розовый и чёрный",
+      "required": [
+        "orange",
+        "pink",
+        "black"
+      ]
+    },
+    {
+      "family_set": "cyan,gold,orange",
+      "id": "mc-clean-809",
+      "language": "en",
+      "prompt": "orange, gold and cyan",
+      "required": [
+        "orange",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold,orange",
+      "id": "mc-clean-810",
+      "language": "en",
+      "prompt": "orange with gold and cyan",
+      "required": [
+        "orange",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold,orange",
+      "id": "mc-clean-811",
+      "language": "ru",
+      "prompt": "оранжевый, золотой и бирюзовый",
+      "required": [
+        "orange",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "cyan,gold,orange",
+      "id": "mc-clean-812",
+      "language": "ru",
+      "prompt": "оранжевый с золотой и бирюзовый",
+      "required": [
+        "orange",
+        "gold",
+        "cyan"
+      ]
+    },
+    {
+      "family_set": "black,cyan,orange",
+      "id": "mc-clean-813",
+      "language": "en",
+      "prompt": "orange, cyan and black",
+      "required": [
+        "orange",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,orange",
+      "id": "mc-clean-814",
+      "language": "en",
+      "prompt": "orange with cyan and black",
+      "required": [
+        "orange",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,orange",
+      "id": "mc-clean-815",
+      "language": "ru",
+      "prompt": "оранжевый, бирюзовый и чёрный",
+      "required": [
+        "orange",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,orange",
+      "id": "mc-clean-816",
+      "language": "ru",
+      "prompt": "оранжевый с бирюзовый и чёрный",
+      "required": [
+        "orange",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "gray,purple,white",
+      "id": "mc-clean-817",
+      "language": "en",
+      "prompt": "purple, white and gray",
+      "required": [
+        "purple",
+        "white",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,white",
+      "id": "mc-clean-818",
+      "language": "en",
+      "prompt": "purple with white and gray",
+      "required": [
+        "purple",
+        "white",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,white",
+      "id": "mc-clean-819",
+      "language": "ru",
+      "prompt": "фиолетовый, белый и серый",
+      "required": [
+        "purple",
+        "white",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "gray,purple,white",
+      "id": "mc-clean-820",
+      "language": "ru",
+      "prompt": "фиолетовый с белый и серый",
+      "required": [
+        "purple",
+        "white",
+        "gray"
+      ]
+    },
+    {
+      "family_set": "black,cyan,gold",
+      "id": "mc-clean-821",
+      "language": "en",
+      "prompt": "gold, cyan and black",
+      "required": [
+        "gold",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,gold",
+      "id": "mc-clean-822",
+      "language": "en",
+      "prompt": "gold with cyan and black",
+      "required": [
+        "gold",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,gold",
+      "id": "mc-clean-823",
+      "language": "ru",
+      "prompt": "золотой, бирюзовый и чёрный",
+      "required": [
+        "gold",
+        "cyan",
+        "black"
+      ]
+    },
+    {
+      "family_set": "black,cyan,gold",
+      "id": "mc-clean-824",
+      "language": "ru",
+      "prompt": "золотой с бирюзовый и чёрный",
+      "required": [
+        "gold",
+        "cyan",
+        "black"
+      ]
+    }
+  ],
+  "schemaVersion": 2
+}

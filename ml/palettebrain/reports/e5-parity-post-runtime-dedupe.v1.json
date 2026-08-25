@@ -1,0 +1,158 @@
+{
+  "purpose": "post_runtime_dedupe_verification",
+  "browserEncoder": {
+    "artifactSha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+    "artifacts": {
+      "decoder": {
+        "manifest": {
+          "path": "public/models/palettebrain-v2.manifest.json",
+          "sha256": "c385f14f4a25ff86e49da7c472aaf3f0e8005350274576b7f63b7b5036e8082e",
+          "sizeBytes": 891
+        },
+        "manifestSha256Matches": true,
+        "manifestSizeMatches": true,
+        "model": {
+          "path": "public/models/palettebrain-v2-decoder.onnx",
+          "sha256": "ec18a0caacc5ce315f8821de3f162a0649291a1d66a3e897fd60799020cbc56a",
+          "sizeBytes": 406476
+        },
+        "modelVersion": "palettebrain-v2-decoder-synthetic-v1",
+        "productionReady": false,
+        "status": "synthetic_baseline_only"
+      },
+      "encoder": {
+        "config": {
+          "path": "public/models/multilingual-e5-small/config.json",
+          "sha256": "4cad60a79a0b69531647aaf9410d28c5048cc234842ac0f690389c2052bd16f7",
+          "sizeBytes": 683
+        },
+        "embeddingSize": 384,
+        "model": {
+          "path": "public/models/multilingual-e5-small/onnx/model_quantized.onnx",
+          "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+          "sizeBytes": 118308185
+        },
+        "modelId": "multilingual-e5-small",
+        "tokenizer": {
+          "path": "public/models/multilingual-e5-small/tokenizer.json",
+          "sha256": "7194ab0e9da5408818ee9e5dd53edadf750e8fb12dd05b927a3b709fc114f0fc",
+          "sizeBytes": 18082902
+        },
+        "tokenizerConfig": {
+          "path": "public/models/multilingual-e5-small/tokenizer_config.json",
+          "sha256": "01ad9ed6aac198cc541f734fdb7b6203f9519ae9e9fbd671cd675de03016041c",
+          "sizeBytes": 463
+        }
+      },
+      "semanticAnchors": {
+        "path": "public/models/semantic-anchors.json",
+        "sha256": "952d8c1c073f7e58ccac5ef97c384345e3a27d6c46a5fde78631f12ea5c7bc87",
+        "sizeBytes": 1371705
+      },
+      "wasm": {
+        "delivery": "bundled_content_hashed",
+        "runtimePackageVersion": "1.26.0-dev.20260416-b7804b056c"
+      }
+    },
+    "backend": {
+      "bundledContentHashedWasm": true,
+      "executionProviders": [
+        "wasm"
+      ],
+      "graphOptimizationLevel": "all",
+      "host": "node",
+      "localOnly": true,
+      "numThreads": 1,
+      "proxy": false,
+      "runtime": "onnxruntime-web/webgpu",
+      "sharedOrtVersion": true
+    },
+    "modelId": "Xenova/multilingual-e5-small",
+    "packages": {
+      "@huggingface/transformers": "4.2.0",
+      "jiti": "2.7.0",
+      "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c",
+      "transformers-declared-onnxruntime-web": "1.26.0-dev.20260416-b7804b056c",
+      "transformers>onnxruntime-node": "1.24.3",
+      "transformers>onnxruntime-web": null
+    },
+    "revision": "ae61bf0193ce3851dc8a45147e459b04ed783d8a"
+  },
+  "browserOutputSha256": "2341da1f003ebc53eba3d969f281997fba5c1fdeadde05b7afc2b4332cc400fb",
+  "contract": {
+    "dimensions": 384,
+    "maximumContextTokens": 512,
+    "pooling": "attention-mask mean pooling followed by L2 normalization",
+    "prefix": "query: "
+  },
+  "fixtureSha256": "5e8693499526490b01b2459cbb58c7ac5010b80d53ca98209291042e2b2156ed",
+  "fixtureVersion": "palettebrain-e5-parity-v1",
+  "metrics": {
+    "maximumAbsoluteError": 0.017842166125774384,
+    "meanAbsoluteError": 0.0038068601861596107,
+    "meanCosine": 0.9955715537071228,
+    "minimumCosine": 0.9933792352676392
+  },
+  "passed": true,
+  "perPrompt": [
+    {
+      "cosine": 0.9959681630134583,
+      "effectiveTokens": 17,
+      "id": "english",
+      "maximumAbsoluteError": 0.013415127992630005,
+      "meanAbsoluteError": 0.0036604925990104675,
+      "untruncatedTokens": 17
+    },
+    {
+      "cosine": 0.9970914125442505,
+      "effectiveTokens": 18,
+      "id": "russian",
+      "maximumAbsoluteError": 0.012487275525927544,
+      "meanAbsoluteError": 0.003117478685453534,
+      "untruncatedTokens": 18
+    },
+    {
+      "cosine": 0.9958555698394775,
+      "effectiveTokens": 20,
+      "id": "punctuation",
+      "maximumAbsoluteError": 0.013224255293607712,
+      "meanAbsoluteError": 0.0037872858811169863,
+      "untruncatedTokens": 20
+    },
+    {
+      "cosine": 0.9969283938407898,
+      "effectiveTokens": 19,
+      "id": "mixed",
+      "maximumAbsoluteError": 0.011594496667385101,
+      "meanAbsoluteError": 0.0031916089355945587,
+      "untruncatedTokens": 19
+    },
+    {
+      "cosine": 0.9942064881324768,
+      "effectiveTokens": 377,
+      "id": "long",
+      "maximumAbsoluteError": 0.017250094562768936,
+      "meanAbsoluteError": 0.00429758382961154,
+      "untruncatedTokens": 377
+    },
+    {
+      "cosine": 0.9933792352676392,
+      "effectiveTokens": 512,
+      "id": "near-context-limit",
+      "maximumAbsoluteError": 0.017842166125774384,
+      "meanAbsoluteError": 0.0047867088578641415,
+      "untruncatedTokens": 1985
+    }
+  ],
+  "pytorchEncoder": {
+    "device": "cuda",
+    "modelId": "intfloat/multilingual-e5-small",
+    "revision": "fd1525a9fd15316a2d503bf26ab031a61d056e98"
+  },
+  "schemaVersion": 1,
+  "status": "passed",
+  "thresholds": {
+    "meanCosine": 0.995,
+    "minimumCosine": 0.99
+  }
+}

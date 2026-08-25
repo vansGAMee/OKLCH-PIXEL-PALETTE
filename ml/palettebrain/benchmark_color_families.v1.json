@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "benchmarkVersion": "palettebrain-color-families-v1",
+  "frozenAt": "2026-08-25",
+  "frozenBeforeCandidate1": true,
+  "defaultCount": 5,
+  "seeds": [1, 7, 42, 1337],
+  "thresholds": {
+    "anchorOklabDistance": 0.1,
+    "chromaticChroma": 0.05,
+    "stronglyUnrelatedOklabDistance": 0.18,
+    "maximumUnrelatedChromaticRatio": 0.25,
+    "exclusionOklabDistance": 0.08,
+    "nearDuplicateOklabDistance": 0.025,
+    "blackMaximumLightness": 0.2,
+    "whiteMinimumLightness": 0.85,
+    "neutralMaximumChroma": 0.04,
+    "grayMinimumLightness": 0.3,
+    "grayMaximumLightness": 0.75
+  },
+  "families": {
+    "red": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.627955, 0.224863, 0.125846],
+        [0.571189, 0.208438, 0.076225],
+        [0.50542, 0.168942, 0.088013]
+      ]
+    },
+    "blue": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.452014, -0.032457, -0.311528],
+        [0.54615, -0.026671, -0.213549],
+        [0.379059, -0.010755, -0.137341]
+      ]
+    },
+    "green": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.611496, -0.165068, 0.126682],
+        [0.722746, -0.165574, 0.097222],
+        [0.436018, -0.117699, 0.090329]
+      ]
+    },
+    "yellow": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.967983, -0.071369, 0.19857],
+        [0.860559, -0.005847, 0.173016],
+        [0.795243, 0.011146, 0.161283]
+      ]
+    },
+    "orange": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.730393, 0.113314, 0.148036],
+        [0.704871, 0.125896, 0.137895],
+        [0.553428, 0.136253, 0.108001]
+      ]
+    },
+    "purple": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.420914, 0.164704, -0.101472],
+        [0.605631, 0.084541, -0.201932],
+        [0.438279, 0.110113, -0.164957]
+      ]
+    },
+    "pink": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.728297, 0.195155, -0.027446],
+        [0.65592, 0.210729, -0.021002],
+        [0.524595, 0.198477, 0.013733]
+      ]
+    },
+    "gold": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.886771, -0.016925, 0.181398],
+        [0.734969, 0.014606, 0.145484],
+        [0.65207, 0.019377, 0.130772]
+      ]
+    },
+    "cyan": {
+      "kind": "chromatic",
+      "oklabPrototypes": [
+        [0.905399, -0.149444, -0.039398],
+        [0.714837, -0.102719, -0.072516],
+        [0.608911, -0.082801, -0.073833]
+      ]
+    },
+    "black": { "kind": "black" },
+    "white": { "kind": "white" },
+    "gray": { "kind": "gray" }
+  },
+  "prompts": [
+    { "id": "red-en", "prompt": "red", "language": "en", "required": ["red"], "standalone": true },
+    { "id": "red-ru", "prompt": "красный", "language": "ru", "required": ["red"], "standalone": true },
+    { "id": "scarlet-en", "prompt": "scarlet", "language": "en", "required": ["red"], "standalone": true },
+    { "id": "scarlet-ru", "prompt": "алый", "language": "ru", "required": ["red"], "standalone": true },
+    { "id": "bright-red-en", "prompt": "bright red", "language": "en", "required": ["red"] },
+    { "id": "bright-red-ru", "prompt": "ярко-красный", "language": "ru", "required": ["red"] },
+    { "id": "dark-red-en", "prompt": "dark red", "language": "en", "required": ["red"] },
+    { "id": "dark-red-ru", "prompt": "тёмно-красный", "language": "ru", "required": ["red"] },
+    { "id": "blue-en", "prompt": "blue", "language": "en", "required": ["blue"], "standalone": true },
+    { "id": "blue-ru", "prompt": "синий", "language": "ru", "required": ["blue"], "standalone": true },
+    { "id": "green-en", "prompt": "green", "language": "en", "required": ["green"], "standalone": true },
+    { "id": "green-ru", "prompt": "зелёный", "language": "ru", "required": ["green"], "standalone": true },
+    { "id": "yellow-en", "prompt": "yellow", "language": "en", "required": ["yellow"], "standalone": true },
+    { "id": "yellow-ru", "prompt": "жёлтый", "language": "ru", "required": ["yellow"], "standalone": true },
+    { "id": "orange-en", "prompt": "orange", "language": "en", "required": ["orange"], "standalone": true },
+    { "id": "orange-ru", "prompt": "оранжевый", "language": "ru", "required": ["orange"], "standalone": true },
+    { "id": "purple-en", "prompt": "purple", "language": "en", "required": ["purple"], "standalone": true },
+    { "id": "purple-ru", "prompt": "фиолетовый", "language": "ru", "required": ["purple"], "standalone": true },
+    { "id": "pink-en", "prompt": "pink", "language": "en", "required": ["pink"], "standalone": true },
+    { "id": "pink-ru", "prompt": "розовый", "language": "ru", "required": ["pink"], "standalone": true },
+    { "id": "white-en", "prompt": "white", "language": "en", "required": ["white"], "standalone": true },
+    { "id": "white-ru", "prompt": "белый", "language": "ru", "required": ["white"], "standalone": true },
+    { "id": "black-en", "prompt": "black", "language": "en", "required": ["black"], "standalone": true },
+    { "id": "black-ru", "prompt": "чёрный", "language": "ru", "required": ["black"], "standalone": true },
+    { "id": "gray-en", "prompt": "gray", "language": "en", "required": ["gray"], "standalone": true },
+    { "id": "gray-ru", "prompt": "серый", "language": "ru", "required": ["gray"], "standalone": true },
+    { "id": "red-blue-en", "prompt": "red and blue", "language": "en", "required": ["red", "blue"] },
+    { "id": "red-blue-ru", "prompt": "красный и синий", "language": "ru", "required": ["red", "blue"] },
+    { "id": "black-gold-en", "prompt": "black and gold", "language": "en", "required": ["black", "gold"] },
+    { "id": "black-gold-ru", "prompt": "чёрный и золотой", "language": "ru", "required": ["black", "gold"] },
+    { "id": "not-red-en", "prompt": "not red", "language": "en", "excluded": ["red"] },
+    { "id": "not-red-ru", "prompt": "без красного", "language": "ru", "excluded": ["red"] },
+    { "id": "anything-but-red-en", "prompt": "anything but red", "language": "en", "excluded": ["red"] },
+    { "id": "anything-but-red-ru", "prompt": "любой цвет кроме красного", "language": "ru", "excluded": ["red"] },
+    { "id": "blue-no-cyan-en", "prompt": "blue but no cyan", "language": "en", "required": ["blue"], "excluded": ["cyan"] },
+    { "id": "blue-no-cyan-ru", "prompt": "синий, но без голубого", "language": "ru", "required": ["blue"], "excluded": ["cyan"] },
+    { "id": "forest-no-green-en", "prompt": "forest without green", "language": "en", "excluded": ["green"] },
+    { "id": "forest-no-green-ru", "prompt": "лес без зелёного", "language": "ru", "excluded": ["green"] }
+  ]
+}

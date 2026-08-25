@@ -1,29 +1,52 @@
 {
-  "schemaVersion": 1,
-  "modelVersion": "palettebrain-v2-decoder-synthetic-v1",
-  "status": "synthetic_baseline_only",
+  "schemaVersion": 2,
+  "modelVersion": "palettebrain-v4-candidate11-b1bc9346",
+  "codename": null,
+  "trainedFromCandidate": 11,
   "productionReady": false,
-  "warning": "Trained on deterministic synthetic targets. Human palette quality has not been established.",
-  "encoder": {
-    "modelId": "multilingual-e5-small",
-    "embeddingSize": 384
-  },
   "decoder": {
-    "path": "/models/palettebrain-v2-decoder.onnx",
-    "sha256": "ec18a0caacc5ce315f8821de3f162a0649291a1d66a3e897fd60799020cbc56a",
-    "sizeBytes": 406476,
-    "parameterCount": 94725,
-    "trainingDataKind": "deterministic_synthetic_baseline",
-    "pytorchOnnxMaxError": 0.000004649162292480469,
+    "url": "/models/palettebrain-v4-candidate11-b1bc9346.onnx",
+    "sha256": "b1bc93467e99196c55f19a61005f1fe9b7df66b7b4fe7258205cf958870c51f8",
+    "bytes": 2829409,
+    "format": "onnx",
+    "opset": 17,
     "inputs": {
-      "text_embedding": [1, 384],
-      "count_mask": [1, 9],
-      "seed_noise": [1, 9, 4],
-      "locked_mask": [1, 9],
-      "locked_colors": [1, 9, 4]
+      "text_embedding": [
+        null,
+        384
+      ],
+      "count_mask": [
+        null,
+        9
+      ],
+      "seed_noise": [
+        null,
+        9,
+        4
+      ],
+      "locked_mask": [
+        null,
+        9
+      ],
+      "locked_colors": [
+        null,
+        9,
+        4
+      ]
     },
     "outputs": {
-      "palette": [1, 9, 5]
+      "palette": [
+        null,
+        9,
+        5
+      ]
     }
+  },
+  "textEncoder": {
+    "id": "intfloat/multilingual-e5-small",
+    "dimension": 384,
+    "prefix": "query: ",
+    "pooling": "mean",
+    "l2Normalized": true
   }
 }

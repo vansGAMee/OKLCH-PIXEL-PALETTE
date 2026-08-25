@@ -1,0 +1,921 @@
+{
+  "schemaVersion": 2,
+  "benchmarkId": "benchmark_visual_semantic_v2",
+  "description": "Multi-reference visual semantic grounding and concept understanding benchmark for PaletteBrain C11",
+  "concepts": {
+    "grass": {
+      "category": "basic_objects",
+      "prompts": [
+        "grass",
+        "трава",
+        "green grass",
+        "зелёная трава"
+      ],
+      "expected_hue_range": [
+        110.0,
+        160.0
+      ],
+      "forbidden_hue_range": [
+        0.0,
+        60.0
+      ],
+      "reference_palettes": [
+        [
+          "#2D5A27",
+          "#4E873C",
+          "#7BB651",
+          "#A6D875",
+          "#1B3B18"
+        ],
+        [
+          "#3E6B2C",
+          "#5C8F3A",
+          "#88B84D",
+          "#BCD979",
+          "#24441B"
+        ],
+        [
+          "#254D20",
+          "#3F752C",
+          "#68A342",
+          "#9BD066",
+          "#142F11"
+        ]
+      ]
+    },
+    "leaf": {
+      "category": "basic_objects",
+      "prompts": [
+        "leaf",
+        "лист",
+        "green leaf",
+        "зелёный лист"
+      ],
+      "expected_hue_range": [
+        110.0,
+        160.0
+      ],
+      "forbidden_hue_range": [
+        0.0,
+        50.0
+      ],
+      "reference_palettes": [
+        [
+          "#2A5624",
+          "#4A8237",
+          "#76B34F",
+          "#A9E074",
+          "#183615"
+        ],
+        [
+          "#34642C",
+          "#579540",
+          "#84C45C",
+          "#BAEE84",
+          "#1E4119"
+        ]
+      ]
+    },
+    "apple": {
+      "category": "basic_objects",
+      "prompts": [
+        "apple",
+        "яблоко",
+        "red apple",
+        "красное яблоко"
+      ],
+      "expected_hue_range": [
+        20.0,
+        45.0
+      ],
+      "reference_palettes": [
+        [
+          "#8B111A",
+          "#C21B27",
+          "#EE3B3B",
+          "#F58763",
+          "#3B0508"
+        ],
+        [
+          "#7A0D15",
+          "#A61622",
+          "#D62839",
+          "#FA7C5E",
+          "#2B0205"
+        ]
+      ]
+    },
+    "blood": {
+      "category": "basic_objects",
+      "prompts": [
+        "blood",
+        "кровь",
+        "crimson blood",
+        "алая кровь"
+      ],
+      "expected_hue_range": [
+        20.0,
+        40.0
+      ],
+      "reference_palettes": [
+        [
+          "#660000",
+          "#990000",
+          "#CC0000",
+          "#FF1A1A",
+          "#330000"
+        ],
+        [
+          "#590209",
+          "#8C030E",
+          "#BF0A1A",
+          "#E62E3D",
+          "#260104"
+        ]
+      ]
+    },
+    "rust": {
+      "category": "basic_objects",
+      "prompts": [
+        "rust",
+        "ржавчина",
+        "rusty iron",
+        "ржавый металл"
+      ],
+      "expected_hue_range": [
+        35.0,
+        65.0
+      ],
+      "reference_palettes": [
+        [
+          "#5C2C16",
+          "#8B4513",
+          "#B3541E",
+          "#D96B27",
+          "#3B180A"
+        ],
+        [
+          "#4A220F",
+          "#733517",
+          "#9E471D",
+          "#C7612E",
+          "#2E1104"
+        ]
+      ]
+    },
+    "gold": {
+      "category": "basic_objects",
+      "prompts": [
+        "gold",
+        "золото",
+        "shimmering gold",
+        "золотой слиток"
+      ],
+      "expected_hue_range": [
+        70.0,
+        95.0
+      ],
+      "reference_palettes": [
+        [
+          "#8A6D1C",
+          "#B8962E",
+          "#E5BD42",
+          "#F6DC76",
+          "#4A3B0F"
+        ],
+        [
+          "#7A5F14",
+          "#A38222",
+          "#D4AC37",
+          "#F0CD60",
+          "#3D2F0A"
+        ]
+      ]
+    },
+    "ice": {
+      "category": "basic_objects",
+      "prompts": [
+        "ice",
+        "лёд",
+        "glacial ice",
+        "прозрачный лёд"
+      ],
+      "expected_hue_range": [
+        190.0,
+        240.0
+      ],
+      "reference_palettes": [
+        [
+          "#4A7A8C",
+          "#7AA6BA",
+          "#A8D0E0",
+          "#D8EFF8",
+          "#2A4B58"
+        ],
+        [
+          "#3E697A",
+          "#6594A8",
+          "#92BFD4",
+          "#C6E6F4",
+          "#1E3B47"
+        ]
+      ]
+    },
+    "hospital": {
+      "category": "places",
+      "prompts": [
+        "hospital",
+        "больница",
+        "hospital interior",
+        "больничный коридор"
+      ],
+      "expected_hue_range": [
+        170.0,
+        240.0
+      ],
+      "forbidden_hue_range": [
+        320.0,
+        360.0
+      ],
+      "reference_palettes": [
+        [
+          "#2A4B4B",
+          "#4A7272",
+          "#7A9E9E",
+          "#B8D1D1",
+          "#E6F0F0"
+        ],
+        [
+          "#344955",
+          "#4A6572",
+          "#84A9AC",
+          "#C2DFE3",
+          "#EDF7F6"
+        ],
+        [
+          "#2C3E50",
+          "#4B6584",
+          "#778CA3",
+          "#D1D8E0",
+          "#F1F2F6"
+        ]
+      ]
+    },
+    "forest": {
+      "category": "places",
+      "prompts": [
+        "forest",
+        "лес",
+        "pine forest",
+        "хвойный лес"
+      ],
+      "expected_hue_range": [
+        115.0,
+        160.0
+      ],
+      "reference_palettes": [
+        [
+          "#1B381E",
+          "#2D5A30",
+          "#497E4A",
+          "#72A46C",
+          "#2E2419"
+        ],
+        [
+          "#142B17",
+          "#234C28",
+          "#3A733E",
+          "#629D60",
+          "#3D2B1F"
+        ]
+      ]
+    },
+    "kitchen": {
+      "category": "places",
+      "prompts": [
+        "kitchen",
+        "кухня",
+        "warm rustic kitchen",
+        "уютная кухня"
+      ],
+      "expected_hue_range": [
+        40.0,
+        85.0
+      ],
+      "reference_palettes": [
+        [
+          "#5A3825",
+          "#8C5835",
+          "#BE7D4E",
+          "#E6AF7E",
+          "#2C1B12"
+        ],
+        [
+          "#4E2E1A",
+          "#7B4928",
+          "#A8693E",
+          "#D49666",
+          "#241308"
+        ]
+      ]
+    },
+    "nightclub": {
+      "category": "places",
+      "prompts": [
+        "nightclub",
+        "ночной клуб",
+        "neon nightclub",
+        "клуб"
+      ],
+      "expected_hue_range": [
+        280.0,
+        340.0
+      ],
+      "reference_palettes": [
+        [
+          "#1A002C",
+          "#550066",
+          "#AA0088",
+          "#FF007F",
+          "#00F0FF"
+        ],
+        [
+          "#12001F",
+          "#3E004F",
+          "#82006E",
+          "#D6007A",
+          "#00E5FF"
+        ]
+      ]
+    },
+    "greenhouse": {
+      "category": "places",
+      "prompts": [
+        "greenhouse",
+        "теплица",
+        "botanical greenhouse",
+        "оранжерея"
+      ],
+      "expected_hue_range": [
+        115.0,
+        165.0
+      ],
+      "reference_palettes": [
+        [
+          "#1C3D24",
+          "#32663B",
+          "#52965D",
+          "#82C88D",
+          "#3B5A6A"
+        ],
+        [
+          "#15331C",
+          "#27542E",
+          "#42824C",
+          "#6EB879",
+          "#2E4B5B"
+        ]
+      ]
+    },
+    "rain": {
+      "category": "weather",
+      "prompts": [
+        "rain",
+        "дождь",
+        "rainy street",
+        "мокрый асфальт во время дождя"
+      ],
+      "expected_hue_range": [
+        200.0,
+        260.0
+      ],
+      "forbidden_hue_range": [
+        20.0,
+        60.0
+      ],
+      "reference_palettes": [
+        [
+          "#1F2937",
+          "#374151",
+          "#4B5563",
+          "#6B7280",
+          "#9CA3AF"
+        ],
+        [
+          "#182635",
+          "#2C3E50",
+          "#486581",
+          "#78909C",
+          "#B0BEC5"
+        ],
+        [
+          "#0F172A",
+          "#1E293B",
+          "#334155",
+          "#64748B",
+          "#94A3B8"
+        ]
+      ]
+    },
+    "fog": {
+      "category": "weather",
+      "prompts": [
+        "fog",
+        "туман",
+        "morning mist",
+        "утренний туман"
+      ],
+      "expected_hue_range": [
+        200.0,
+        250.0
+      ],
+      "reference_palettes": [
+        [
+          "#5C6B73",
+          "#7F919B",
+          "#A3B4BD",
+          "#CAD8DF",
+          "#E5EEF2"
+        ],
+        [
+          "#4D5D66",
+          "#6E818C",
+          "#94A7B3",
+          "#BCCFD9",
+          "#DFECF2"
+        ]
+      ]
+    },
+    "snow": {
+      "category": "weather",
+      "prompts": [
+        "snow",
+        "снег",
+        "fresh winter snow",
+        "морозный снег"
+      ],
+      "expected_hue_range": [
+        210.0,
+        270.0
+      ],
+      "reference_palettes": [
+        [
+          "#3B4B61",
+          "#647A97",
+          "#96A9C2",
+          "#C8D6E5",
+          "#F1F5F9"
+        ],
+        [
+          "#2D3E50",
+          "#516882",
+          "#7E97B2",
+          "#B8C9DC",
+          "#EBF1F6"
+        ]
+      ]
+    },
+    "storm": {
+      "category": "weather",
+      "prompts": [
+        "storm",
+        "гроза",
+        "thunderstorm",
+        "ночная гроза"
+      ],
+      "expected_hue_range": [
+        240.0,
+        290.0
+      ],
+      "reference_palettes": [
+        [
+          "#0F1123",
+          "#1E2242",
+          "#353D6B",
+          "#5867A3",
+          "#94A8E0"
+        ],
+        [
+          "#0A0B17",
+          "#151830",
+          "#282E52",
+          "#455080",
+          "#7B8EC7"
+        ]
+      ]
+    },
+    "moonlight": {
+      "category": "light",
+      "prompts": [
+        "moonlight",
+        "лунный свет",
+        "silver moonlight",
+        "серебряный лунный свет"
+      ],
+      "expected_hue_range": [
+        230.0,
+        280.0
+      ],
+      "reference_palettes": [
+        [
+          "#0B132B",
+          "#1C2541",
+          "#3A506B",
+          "#5BC0BE",
+          "#E0FBFC"
+        ],
+        [
+          "#0D1B2A",
+          "#1B263B",
+          "#415A77",
+          "#778DA9",
+          "#E0E1DD"
+        ]
+      ]
+    },
+    "sunset": {
+      "category": "light",
+      "prompts": [
+        "sunset",
+        "закат",
+        "crimson sunset",
+        "багровый закат"
+      ],
+      "expected_hue_range": [
+        15.0,
+        45.0
+      ],
+      "reference_palettes": [
+        [
+          "#3B0918",
+          "#7D1226",
+          "#C72C35",
+          "#E86A38",
+          "#F5B041"
+        ],
+        [
+          "#2E0512",
+          "#630A1C",
+          "#A31E2A",
+          "#D15128",
+          "#EDA032"
+        ]
+      ]
+    },
+    "candlelight": {
+      "category": "light",
+      "prompts": [
+        "candlelight",
+        "свет свечи",
+        "warm candle glow",
+        "пламя свечи"
+      ],
+      "expected_hue_range": [
+        45.0,
+        75.0
+      ],
+      "reference_palettes": [
+        [
+          "#3A1A05",
+          "#6B350E",
+          "#A65B1C",
+          "#DE8F35",
+          "#F7C968"
+        ],
+        [
+          "#2E1303",
+          "#542809",
+          "#874714",
+          "#BA7326",
+          "#E8B04E"
+        ]
+      ]
+    },
+    "watercolor": {
+      "category": "styles",
+      "prompts": [
+        "watercolor",
+        "акварель",
+        "botanical watercolor wash",
+        "прозрачная акварель"
+      ],
+      "reference_palettes": [
+        [
+          "#7895A2",
+          "#A2B9BC",
+          "#CCE0D0",
+          "#E4DCD3",
+          "#F2EBE5"
+        ],
+        [
+          "#6B8794",
+          "#91A9AC",
+          "#B8CCC0",
+          "#D6CBC1",
+          "#E6DDD6"
+        ]
+      ]
+    },
+    "film_noir": {
+      "category": "styles",
+      "prompts": [
+        "film noir",
+        "фильм нуар",
+        "high contrast monochrome noir",
+        "нуар"
+      ],
+      "reference_palettes": [
+        [
+          "#050505",
+          "#222222",
+          "#4D4D4D",
+          "#8A8A8A",
+          "#D9D9D9"
+        ],
+        [
+          "#000000",
+          "#1A1A1A",
+          "#3D3D3D",
+          "#737373",
+          "#BFBFBF"
+        ]
+      ]
+    },
+    "art_deco": {
+      "category": "styles",
+      "prompts": [
+        "art deco",
+        "арт деко",
+        "gold and emerald art deco",
+        "роскошный арт-деко"
+      ],
+      "reference_palettes": [
+        [
+          "#0A1210",
+          "#0D3025",
+          "#1B5E48",
+          "#C5A059",
+          "#E8D399"
+        ],
+        [
+          "#050A09",
+          "#08211A",
+          "#134535",
+          "#A88746",
+          "#D4BF83"
+        ]
+      ]
+    },
+    "cyberpunk": {
+      "category": "styles",
+      "prompts": [
+        "cyberpunk",
+        "киберпанк",
+        "neon cyberpunk alley",
+        "неоновый киберпанк"
+      ],
+      "reference_palettes": [
+        [
+          "#08081A",
+          "#1A053A",
+          "#8800AA",
+          "#FF0055",
+          "#00FFFF"
+        ],
+        [
+          "#040410",
+          "#100224",
+          "#660082",
+          "#D60044",
+          "#00D9D9"
+        ]
+      ]
+    },
+    "winter_forest_at_night": {
+      "category": "compositions",
+      "prompts": [
+        "winter forest at night",
+        "зимний лес ночью"
+      ],
+      "expected_hue_range": [
+        220.0,
+        280.0
+      ],
+      "reference_palettes": [
+        [
+          "#080B14",
+          "#121A2D",
+          "#243354",
+          "#48628C",
+          "#A2BBD9"
+        ],
+        [
+          "#05070E",
+          "#0C1220",
+          "#1B2742",
+          "#384E72",
+          "#87A3C4"
+        ]
+      ]
+    },
+    "abandoned_hospital_in_winter_at_night": {
+      "category": "compositions",
+      "prompts": [
+        "abandoned hospital in winter at night",
+        "заброшенная больница зимой ночью"
+      ],
+      "expected_hue_range": [
+        180.0,
+        240.0
+      ],
+      "reference_palettes": [
+        [
+          "#0D171A",
+          "#1A2E33",
+          "#2D4B52",
+          "#4D737A",
+          "#96B8BD"
+        ],
+        [
+          "#081012",
+          "#122125",
+          "#21393E",
+          "#3A5C62",
+          "#799DA2"
+        ]
+      ]
+    },
+    "warm_childhood_kitchen": {
+      "category": "compositions",
+      "prompts": [
+        "warm peaceful childhood kitchen",
+        "уютная кухня из детства"
+      ],
+      "expected_hue_range": [
+        40.0,
+        85.0
+      ],
+      "reference_palettes": [
+        [
+          "#4A2818",
+          "#7A4526",
+          "#B06E3D",
+          "#DE9E66",
+          "#F2D0A5"
+        ],
+        [
+          "#3E2012",
+          "#66381D",
+          "#965B30",
+          "#C78750",
+          "#E3BE91"
+        ]
+      ]
+    },
+    "toxic_cyberpunk_greenhouse": {
+      "category": "compositions",
+      "prompts": [
+        "toxic cyberpunk greenhouse",
+        "ядовитая теплица"
+      ],
+      "reference_palettes": [
+        [
+          "#0A1A12",
+          "#133D24",
+          "#247D42",
+          "#39D968",
+          "#D9007E"
+        ],
+        [
+          "#05100B",
+          "#0C2918",
+          "#1A5C30",
+          "#2DB352",
+          "#B30064"
+        ]
+      ]
+    },
+    "drizzle_on_pavement": {
+      "category": "ood_paraphrases",
+      "prompts": [
+        "drizzle on pavement",
+        "морось на асфальте"
+      ],
+      "expected_hue_range": [
+        200.0,
+        260.0
+      ],
+      "reference_palettes": [
+        [
+          "#1A222B",
+          "#2E3B47",
+          "#485866",
+          "#6B7D8C",
+          "#9EB0BD"
+        ],
+        [
+          "#121820",
+          "#222D37",
+          "#394754",
+          "#566775",
+          "#8395A3"
+        ]
+      ]
+    },
+    "clinical_waiting_room": {
+      "category": "ood_paraphrases",
+      "prompts": [
+        "clinical waiting room with teal tiles",
+        "клинический кабинет"
+      ],
+      "expected_hue_range": [
+        170.0,
+        230.0
+      ],
+      "reference_palettes": [
+        [
+          "#1E3B3B",
+          "#325C5C",
+          "#528585",
+          "#85B5B5",
+          "#C8E3E3"
+        ],
+        [
+          "#152E2E",
+          "#254A4A",
+          "#406D6D",
+          "#6C9B9B",
+          "#ADCFCF"
+        ]
+      ]
+    }
+  },
+  "contrast_pairs": [
+    {
+      "prompt_a": "grass",
+      "prompt_b": "desert",
+      "concept_a": "grass",
+      "concept_b": "desert"
+    },
+    {
+      "prompt_a": "трава",
+      "prompt_b": "пустыня",
+      "concept_a": "grass",
+      "concept_b": "desert"
+    },
+    {
+      "prompt_a": "rain",
+      "prompt_b": "desert",
+      "concept_a": "rain",
+      "concept_b": "desert"
+    },
+    {
+      "prompt_a": "дождь",
+      "prompt_b": "пустыня",
+      "concept_a": "rain",
+      "concept_b": "desert"
+    },
+    {
+      "prompt_a": "snow",
+      "prompt_b": "fire",
+      "concept_a": "snow",
+      "concept_b": "sunset"
+    },
+    {
+      "prompt_a": "снег",
+      "prompt_b": "огонь",
+      "concept_a": "snow",
+      "concept_b": "sunset"
+    },
+    {
+      "prompt_a": "hospital",
+      "prompt_b": "kitchen",
+      "concept_a": "hospital",
+      "concept_b": "kitchen"
+    },
+    {
+      "prompt_a": "больница",
+      "prompt_b": "кухня",
+      "concept_a": "hospital",
+      "concept_b": "kitchen"
+    },
+    {
+      "prompt_a": "moonlight",
+      "prompt_b": "sunset",
+      "concept_a": "moonlight",
+      "concept_b": "sunset"
+    },
+    {
+      "prompt_a": "лунный свет",
+      "prompt_b": "закат",
+      "concept_a": "moonlight",
+      "concept_b": "sunset"
+    },
+    {
+      "prompt_a": "winter forest at night",
+      "prompt_b": "autumn leaves",
+      "concept_a": "winter_forest_at_night",
+      "concept_b": "kitchen"
+    }
+  ]
+}
