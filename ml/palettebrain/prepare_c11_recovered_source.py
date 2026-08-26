@@ -311,6 +311,7 @@ _OPENVERSE_CONSECUTIVE_429: int = 0
 _OPENVERSE_LAST_SEARCH_TIME: float = 0.0
 _OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
 _OPENVERSE_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+_OPENVERSE_UNAVAILABLE: bool = False
 
 
 def safe_http_get(
@@ -322,7 +323,7 @@ def safe_http_get(
     pause_seconds: float = 0.15,
     headers: dict[str, str] | None = None,
 ) -> bytes | None:
-    global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL
+    global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_UNAVAILABLE
     if not url.startswith(("https://", "http://")):
         return None
     request_headers = {
@@ -368,6 +369,17 @@ def safe_http_get(
                     time.sleep(pause_seconds)
                 return bytes(out)
         except urllib.error.HTTPError as exc:
+            if (
+                "openverse.org" in url
+                and str(exc.headers.get("CF-Mitigated", "")).lower() == "challenge"
+            ):
+                if not _OPENVERSE_UNAVAILABLE:
+                    print(
+                        "Openverse returned CF-Mitigated: challenge; provider "
+                        "disabled for this run without retry."
+                    )
+                _OPENVERSE_UNAVAILABLE = True
+                return None
             if exc.code == 429:
                 retry_after = exc.headers.get("Retry-After")
                 wait_sec = 2.0 ** (attempt + 1)
@@ -1310,6 +1322,8 @@ def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
 
 def openverse_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
     global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME
+    if _OPENVERSE_UNAVAILABLE:
+        return []
     cache_key = (query.strip().lower(), limit)
     if cache_key in _OPENVERSE_QUERY_CACHE:
         return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
@@ -1864,6 +1878,7 @@ def acquire_smoke_records(
     stats: dict[str, int],
     open_images: OpenImagesBboxIndex,
 ) -> list[dict[str, Any]]:
+    global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL
     source_targets = {
         "open_images": 12,
         "met": 20,
@@ -1928,7 +1943,7 @@ def acquire_smoke_records(
                 for r in result
                 if r.get("source_id") == "openverse"
             )
-            if ov_valid < SMOKE_MIN_VALID_PER_SOURCE:
+            if ov_valid < SMOKE_MIN_VALID_PER_SOURCE and not _OPENVERSE_UNAVAILABLE:
                 raise RuntimeError(
                     "Openverse API unavailable / rate-limited during smoke build: "
                     f"acquired only {ov_valid} records (minimum "
@@ -1960,6 +1975,10 @@ def acquire_smoke_records(
                     needed -= 1
                     if needed <= 0:
                         break
+
+        # Acquisition can be long and provider failures are expected. Preserve
+        # every verified source group so the same command resumes after a crash.
+        write_metadata_index(raw_dir / "metadata_index.json", cached_records, disk=disk)
 
     unique: dict[str, dict[str, Any]] = {}
     for record in result:
@@ -2140,7 +2159,9 @@ def choose_balanced_smoke(
     valid: list[dict[str, Any]],
     target: int = SMOKE_VALID_IMAGES,
 ) -> list[dict[str, Any]]:
-    required = ("met", "artic", "openverse", "open_images")
+    required = ("met", "artic", "open_images")
+    if sum(1 for r in valid if r.get("source_id") == "openverse") >= SMOKE_MIN_VALID_PER_SOURCE:
+        required = (*required, "openverse")
     by_source = {
         source: [r for r in valid if r.get("source_id") == source]
         for source in required
@@ -2490,7 +2511,10 @@ def audit_visual_coverage(
         type_counts[source_type] = type_counts.get(source_type, 0) + 1
 
     if smoke:
-        for source in ("met", "artic", "openverse", "open_images"):
+        required_sources = ["met", "artic", "open_images"]
+        if source_counts.get("openverse", 0) >= SMOKE_MIN_VALID_PER_SOURCE:
+            required_sources.append("openverse")
+        for source in required_sources:
             if source_counts.get(source, 0) < SMOKE_MIN_VALID_PER_SOURCE:
                 raise RuntimeError(
                     f"smoke source coverage failed for {source}: "

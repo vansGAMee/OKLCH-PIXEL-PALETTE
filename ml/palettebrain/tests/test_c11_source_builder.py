@@ -13,6 +13,7 @@ import pytest
 from ml.palettebrain.color_distribution import palette_or_pixels_to_oklch_histogram
 from ml.palettebrain.prepare_c11_recovered_source import (
     SIGLIP_REVISION,
+    choose_balanced_smoke,
     extract_deterministic_palette,
     rgb_to_oklab_array,
     split_by_group,
@@ -132,6 +133,16 @@ def test_split_by_group_no_leakage() -> None:
     assert 75 <= train_count <= 95
 
 
+def test_smoke_can_use_stable_sources_when_openverse_is_unavailable() -> None:
+    records = []
+    for source in ("met", "artic", "open_images"):
+        for index in range(20):
+            records.append({"source_id": source, "content_sha256": f"{source}-{index}"})
+    selected = choose_balanced_smoke(records)
+    assert len(selected) == 48
+    assert {row["source_id"] for row in selected} == {"met", "artic", "open_images"}
+
+
 def test_outlier_noise_cluster_rejection() -> None:
     # 2000 dominant forest green / earthy brown / golden amber pixels
     rng = np.random.RandomState(42)
@@ -198,5 +209,4 @@ def test_crop_required_policy_enforcement(tmp_path: Path) -> None:
     assert np.allclose(crop_coords, [0.1, 0.2, 0.8, 0.9])
     assert 0.40 <= mask_fraction <= 0.60
     assert oklab_px.shape[1] == 3
-
 
