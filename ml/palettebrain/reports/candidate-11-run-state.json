@@ -8,7 +8,7 @@
     "source_data_preflight": {
       "status": "passed",
       "artifact": "ml/palettebrain/reports/candidate-11-preflight.json",
-      "timestamp": "2026-08-26T12:13:04.346622+00:00",
+      "timestamp": "2026-08-26T13:06:35.163537+00:00",
       "sha256": "b44344829ea3028572026a2757f6a9695cf2b080b4cde71456929d0601a7e99b",
       "bytes": 135,
       "metrics": {
@@ -16,17 +16,27 @@
       }
     },
     "smoke_48_images": {
-      "status": "failed",
-      "timestamp": "2026-08-26T12:24:07.095263+00:00",
-      "reason": "SigLIP calibration FAILED: balancedAccuracy=0.625, truePositiveRate=0.3333333333333333, falsePositiveRate=0.08333333333333333, meanSeparation=0.014200570993125439; see ml/palettebrain/reports/candidate-11-siglip-calibration.json and candidate-11-logs/smoke_48_images.log",
+      "status": "passed",
+      "artifact": "ml/palettebrain/data/palettebrain_c11_smoke_recovered_source.npz",
+      "timestamp": "2026-08-26T13:06:35.165135+00:00",
+      "sha256": "c75e1ae8e39b0ba8ed5bc9ecc92a3a0ccf1368cb36bdad36f89334d4a654fffa",
+      "bytes": 3372588,
+      "metrics": {
+        "validUniqueImages": 48,
+        "minimum": 48
+      }
+    },
+    "full_visual_source": {
+      "status": "running",
+      "timestamp": "2026-08-26T13:06:35.173928+00:00",
       "metrics": {
         "validUniqueImages": 0,
-        "minimum": 48
+        "minimum": 1500
       }
     }
   },
   "command": "ml/.venv/Scripts/python.exe -u ml/palettebrain/run_candidate11_release.py --device auto --resume",
   "logsDirectory": "ml/palettebrain/reports/candidate-11-logs",
-  "updatedAt": "2026-08-26T12:24:07.095263+00:00",
-  "currentPhase": "smoke_48_images"
+  "updatedAt": "2026-08-26T13:06:35.174455+00:00",
+  "currentPhase": "full_visual_source"
 }

@@ -13,6 +13,7 @@ import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -318,6 +319,8 @@ _OPENVERSE_LAST_SEARCH_TIME: float = 0.0
 _OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
 _OPENVERSE_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 _OPENVERSE_UNAVAILABLE: bool = False
+_MET_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+_ARTIC_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 
 
 def safe_http_get(
@@ -1230,6 +1233,9 @@ class OpenImagesBboxIndex:
 
 
 def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
+    cache_key = (query.strip().lower(), limit)
+    if cache_key in _MET_QUERY_CACHE:
+        return [dict(record) for record in _MET_QUERY_CACHE[cache_key]]
     search_url = (
         "https://collectionapi.metmuseum.org/public/collection/v1/search"
         f"?q={urllib.parse.quote(query)}&hasImages=true"
@@ -1238,13 +1244,20 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
     if not search:
         return []
     object_ids = list(search.get("objectIDs") or [])[:limit]
-    out: list[dict[str, Any]] = []
-    for object_id in object_ids:
-        obj = fetch_json(
+    def load_object(object_id: Any) -> tuple[Any, dict[str, Any] | None]:
+        return object_id, fetch_json(
             "https://collectionapi.metmuseum.org/public/collection/v1/objects/"
             + str(object_id),
             timeout=15,
         )
+
+    # The Met search API returns IDs only. Fetch independent public-domain
+    # metadata concurrently, preserving search order through executor.map.
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(object_ids)))) as executor:
+        objects = list(executor.map(load_object, object_ids))
+
+    out: list[dict[str, Any]] = []
+    for object_id, obj in objects:
         if not obj or not obj.get("isPublicDomain"):
             continue
         image_url = str(obj.get("primaryImageSmall") or obj.get("primaryImage") or "")
@@ -1274,10 +1287,14 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
                 "bbox_source": "",
             }
         )
-    return out
+    _MET_QUERY_CACHE[cache_key] = out
+    return [dict(record) for record in out]
 
 
 def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
+    cache_key = (query.strip().lower(), limit)
+    if cache_key in _ARTIC_QUERY_CACHE:
+        return [dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]]
     url = (
         "https://api.artic.edu/api/v1/artworks/search"
         f"?q={urllib.parse.quote(query)}"
@@ -1323,7 +1340,8 @@ def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
                 "bbox_source": "",
             }
         )
-    return out
+    _ARTIC_QUERY_CACHE[cache_key] = out
+    return [dict(record) for record in out]
 
 
 def openverse_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
@@ -1753,7 +1771,9 @@ def siglip_relevance_prompt(record: dict[str, Any], concept: dict[str, Any]) -> 
     bbox_class = str(record.get("bbox_class_name") or "").strip().lower()
     if record.get("source_id") == "open_images" and bbox_class:
         article = "an" if bbox_class[:1] in "aeiou" else "a"
-        return f"a close-up photo of {article} {bbox_class}"
+        # Open Images supervision is an object-centred bounding-box crop, not a
+        # whole-scene retrieval result.  State that geometry in the text side.
+        return f"a centered photo of {article} {bbox_class}"
     query = str(concept["retrieval_query"]).strip()
     if str(record.get("source_type")) == "artwork":
         return f"an artwork depicting {query}"
@@ -1845,7 +1865,7 @@ def calibrate_siglip_from_verified_openimages(
         positive_scores.append(float(all_scores[row_index, positive_col]))
 
         candidates = [
-            (float(all_scores[row_index, col]), cid)
+            (float(all_scores[row_index, col]), class_name)
             for class_name, col in query_index.items()
             if class_name != positive_class
         ]
@@ -1875,7 +1895,7 @@ def calibrate_siglip_from_verified_openimages(
         "teacherRevision": SIGLIP_REVISION,
         "source": "Open Images source-verified bbox crops",
         "negativeMode": "hardest other verified bbox-class prompt",
-        "promptTemplate": "a close-up photo of {article} {verified_bbox_class}",
+        "promptTemplate": "a centered photo of {article} {verified_bbox_class}",
         "sampleCount": len(verified),
         "conceptCount": len(unique_concepts),
         "concepts": unique_concepts,
@@ -2112,6 +2132,11 @@ def acquire_full_records(
             result = result[:limit_images]
             break
         if (index + 1) % 20 == 0 or index + 1 == len(concepts):
+            write_metadata_index(
+                raw_dir / "metadata_index.json",
+                cached_records,
+                disk=disk,
+            )
             print(
                 f"Acquisition [{index + 1}/{len(concepts)}]: "
                 f"{len(result)} raw unique records"

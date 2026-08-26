@@ -161,7 +161,7 @@ def test_siglip_relevance_prompt_uses_verified_visual_label() -> None:
         {"source_id": "open_images", "bbox_class_name": "apple", "source_type": "real_world"},
         {"retrieval_query": "ripe orchard apple still life"},
     )
-    assert prompt == "a close-up photo of an apple"
+    assert prompt == "a centered photo of an apple"
     artwork_prompt = siglip_relevance_prompt(
         {"source_id": "met", "source_type": "artwork"},
         {"retrieval_query": "misty mountain landscape"},

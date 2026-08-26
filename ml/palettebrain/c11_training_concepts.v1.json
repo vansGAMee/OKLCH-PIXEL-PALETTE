@@ -154,8 +154,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "windblown_dune_sand",
@@ -198,8 +198,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "wet_riverbed_pebbles",
@@ -286,8 +286,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "harvest_pumpkin_gourd",
@@ -440,8 +440,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "raw_wax_honeycomb",
@@ -484,8 +484,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "rough_granite_chunk",
@@ -506,8 +506,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "coarse_jute_burlap",
@@ -3718,8 +3718,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "carved_limewood_relief",
@@ -4070,8 +4070,8 @@
         "artic",
         "openverse"
       ],
-      "whole_frame_valid": false,
-      "crop_required": true
+      "whole_frame_valid": true,
+      "crop_required": false
     },
     {
       "concept_id": "traditional_japanese_sumi_ink",
