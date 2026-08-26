@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "tests": [
+    {
+      "path": "ml/palettebrain/tests/test_acquire_sources.py",
+      "classes": [
+        "MOCKED_NEURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_candidate11_architecture.py",
+      "classes": [
+        "LEGACY_PROCEDURAL",
+        "REAL_PYTORCH",
+        "REAL_ONNX",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_candidate_records.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_color_distribution.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_compare_candidate_reports.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_dataset_validation.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_evaluate_candidate.py",
+      "classes": [
+        "LEGACY_PROCEDURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_matching_loss.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_palette_targets.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_prepare_candidate_data.py",
+      "classes": [
+        "LEGACY_PROCEDURAL",
+        "MOCKED_NEURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "ml/palettebrain/tests/test_release_metrics.py",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "scripts/test-real-browser.mjs",
+      "classes": [
+        "REAL_BROWSER",
+        "SEMANTIC_QUALITY",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": true
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/aiIntegration.test.ts",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/loadingRecovery.test.ts",
+      "classes": [
+        "MOCKED_NEURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/manualIsolation.test.ts",
+      "classes": [
+        "MOCKED_NEURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/paletteAdapter.test.ts",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/paletteRuntime.test.ts",
+      "classes": [
+        "LEGACY_PROCEDURAL",
+        "MOCKED_NEURAL",
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/repro.test.ts",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/semanticOodBenchmark.test.ts",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    },
+    {
+      "path": "src/lib/ai-palette/__tests__/tokenizer.test.ts",
+      "classes": [
+        "ENGINEERING_ONLY"
+      ],
+      "releaseEligibleSemanticEvidence": false
+    }
+  ],
+  "rules": [
+    "MOCKED_NEURAL never qualifies release",
+    "LEGACY_PROCEDURAL never represents PaletteBrain neural semantics",
+    "ENGINEERING_ONLY does not prove semantic quality"
+  ]
+}

@@ -38,6 +38,8 @@ class PaletteDecoderConfig:
     layers: int = 2
     ff_multiplier: int = 2
     dropout: float = 0.0
+    visual_conditioning: str = "legacy_mean"
+    auxiliary_conditioning_scale: float = 1.0
 
     def __post_init__(self) -> None:
         if self.max_colors != MAX_COLORS:
@@ -50,8 +52,14 @@ class PaletteDecoderConfig:
             raise ValueError("d_model must be divisible by heads")
         if self.layers < 1:
             raise ValueError("layers must be positive")
+        if self.visual_conditioning not in {"legacy_mean", "slot_cross_attention"}:
+            raise ValueError(
+                "visual_conditioning must be legacy_mean or slot_cross_attention"
+            )
+        if not 0.0 < self.auxiliary_conditioning_scale <= 1.0:
+            raise ValueError("auxiliary_conditioning_scale must be in (0, 1]")
 
-    def to_dict(self) -> dict[str, int | float]:
+    def to_dict(self) -> dict[str, int | float | str]:
         return asdict(self)
 
 
@@ -159,6 +167,53 @@ class VisualPaletteBridge(nn.Module):
         return prior_logits, style_latent, color_tokens, style_token
 
 
+class PaletteVisualCrossAttention(nn.Module):
+    """Tiny slot-to-visual-token attention with an ONNX-friendly implementation.
+
+    The output projection is near-zero initialized. A repaired Candidate 11
+    therefore starts extremely close to its inherited decoder behavior while
+    gradients can immediately break the legacy identical-token symmetry.
+    """
+
+    def __init__(self, config: PaletteDecoderConfig) -> None:
+        super().__init__()
+        self.heads = config.heads
+        self.head_dim = config.d_model // config.heads
+        self.scale = 1.0 / math.sqrt(self.head_dim)
+        self.slot_norm = nn.LayerNorm(config.d_model)
+        self.visual_norm = nn.LayerNorm(config.d_model)
+        self.query = nn.Linear(config.d_model, config.d_model)
+        self.key = nn.Linear(config.d_model, config.d_model)
+        self.value = nn.Linear(config.d_model, config.d_model)
+        self.output = nn.Linear(config.d_model, config.d_model)
+        self.token_identity = nn.Parameter(torch.empty(4, config.d_model))
+        nn.init.normal_(self.token_identity, mean=0.0, std=0.02)
+        nn.init.normal_(self.output.weight, mean=0.0, std=1e-4)
+        nn.init.zeros_(self.output.bias)
+
+    def forward(self, slots: Tensor, visual_tokens: Tensor) -> tuple[Tensor, Tensor]:
+        batch_size, slot_count, model_dim = slots.shape
+        visual_count = visual_tokens.shape[1]
+        query = self.query(self.slot_norm(slots)).reshape(
+            batch_size, slot_count, self.heads, self.head_dim
+        ).transpose(1, 2)
+        visual_tokens = visual_tokens + self.token_identity.unsqueeze(0)
+        normalized_visual = self.visual_norm(visual_tokens)
+        key = self.key(normalized_visual).reshape(
+            batch_size, visual_count, self.heads, self.head_dim
+        ).transpose(1, 2)
+        value = self.value(normalized_visual).reshape(
+            batch_size, visual_count, self.heads, self.head_dim
+        ).transpose(1, 2)
+        attention = torch.softmax(
+            torch.matmul(query, key.transpose(-2, -1)) * self.scale, dim=-1
+        )
+        attended = torch.matmul(attention, value).transpose(1, 2).reshape(
+            batch_size, slot_count, model_dim
+        )
+        return self.output(attended), attention
+
+
 class PaletteDecoder(nn.Module):
     """Decode cached text semantics into a complete, lock-aware palette."""
 
@@ -180,6 +235,11 @@ class PaletteDecoder(nn.Module):
             cfg.histogram_bins,
             cfg.visual_latent_dim,
             cfg.d_model,
+        )
+        self.visual_cross_attention = (
+            PaletteVisualCrossAttention(cfg)
+            if cfg.visual_conditioning == "slot_cross_attention"
+            else None
         )
         self.count_projection = nn.Linear(cfg.max_colors, cfg.d_model)
         self.seed_projection = nn.Linear(cfg.seed_channels, cfg.d_model)
@@ -247,11 +307,20 @@ class PaletteDecoder(nn.Module):
         text_context = self.text_projection(text_embedding).unsqueeze(1)
         
         _, _, color_tokens, style_token = self.bridge(text_embedding)
-        visual_color_context = color_tokens.mean(dim=1, keepdim=True)
+        if self.visual_cross_attention is None:
+            # Compatibility path for the already-trained broken C11 checkpoint.
+            # New/repaired C11 training must select slot_cross_attention.
+            visual_color_context = color_tokens.mean(dim=1, keepdim=True)
+        else:
+            slot_visual_context, _ = self.visual_cross_attention(slots, color_tokens)
+            visual_color_context = (
+                color_tokens.mean(dim=1, keepdim=True) + slot_visual_context
+            )
         visual_style_context = style_token
 
-        count_context = self.count_projection(active).unsqueeze(1)
-        seed_context = self.seed_projection(seed_noise)
+        auxiliary_scale = self.config.auxiliary_conditioning_scale
+        count_context = self.count_projection(active).unsqueeze(1) * auxiliary_scale
+        seed_context = self.seed_projection(seed_noise) * auxiliary_scale
         effective_locked_colors = locked_colors * locks.unsqueeze(-1)
         lock_context = self.lock_projection(
             torch.cat((effective_locked_colors, locks.unsqueeze(-1)), dim=-1)
@@ -279,3 +348,54 @@ class PaletteDecoder(nn.Module):
 
     def count_parameters(self) -> int:
         return sum(parameter.numel() for parameter in self.parameters())
+
+    @torch.no_grad()
+    def visual_attention_weights(self, text_embedding: Tensor) -> Tensor | None:
+        """Return mean-over-head per-slot visual attention for diagnostics."""
+
+        if self.visual_cross_attention is None:
+            return None
+        batch_size = text_embedding.shape[0]
+        slots = self.query_slots.unsqueeze(0).expand(batch_size, -1, -1)
+        _, _, color_tokens, _ = self.bridge(text_embedding)
+        _, attention = self.visual_cross_attention(slots, color_tokens)
+        return attention.mean(dim=1)
+
+
+def load_inherited_state(
+    model: PaletteDecoder,
+    inherited_state: dict[str, Tensor],
+    *,
+    allowed_missing_prefixes: tuple[str, ...] = ("bridge.", "visual_cross_attention."),
+    allowed_unexpected_prefixes: tuple[str, ...] = ("visual_adapter.",),
+) -> tuple[list[str], list[str]]:
+    """Load all compatible inherited weights and reject accidental decoder loss."""
+
+    compatible = {
+        name: value
+        for name, value in inherited_state.items()
+        if name in model.state_dict() and model.state_dict()[name].shape == value.shape
+    }
+    result = model.load_state_dict(compatible, strict=False)
+    missing = list(result.missing_keys)
+    unexpected = [
+        name for name in inherited_state if name not in compatible
+    ]
+    bad_missing = [
+        name
+        for name in missing
+        if not name.startswith(allowed_missing_prefixes)
+    ]
+    bad_unexpected = [
+        name
+        for name in unexpected
+        if not name.startswith(allowed_unexpected_prefixes)
+    ]
+    print(f"missing inherited keys: {missing}")
+    print(f"unexpected inherited keys: {unexpected}")
+    if bad_missing or bad_unexpected:
+        raise RuntimeError(
+            "inherited decoder load lost major blocks: "
+            f"missing={bad_missing}, unexpected={bad_unexpected}"
+        )
+    return missing, unexpected

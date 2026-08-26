@@ -11,7 +11,13 @@ const chunkDir = path.join(process.cwd(), 'model-parts/multilingual-e5-small/onn
 const targetFile = path.join(modelDir, 'model_quantized.onnx');
 const partA = path.join(chunkDir, 'model_quantized.onnx.part_aa');
 const partB = path.join(chunkDir, 'model_quantized.onnx.part_ab');
-const expectedSha256 = 'f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193';
+const manifestPath = path.join(process.cwd(), 'public/models/palettebrain-v2.manifest.json');
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const expectedSha256 = manifest?.textEncoder?.sha256;
+const declaredBytes = manifest?.textEncoder?.bytes;
+if (!/^[a-f0-9]{64}$/.test(expectedSha256) || !Number.isSafeInteger(declaredBytes) || declaredBytes <= 0) {
+  throw new Error('PaletteBrain manifest has an invalid textEncoder hash/size contract');
+}
 
 function sha256(data) {
   return createHash('sha256').update(data).digest('hex');
@@ -21,6 +27,9 @@ if (fs.existsSync(partA) && fs.existsSync(partB)) {
   const statA = fs.statSync(partA);
   const statB = fs.statSync(partB);
   const expectedSize = statA.size + statB.size;
+  if (expectedSize !== declaredBytes) {
+    throw new Error(`E5 chunk size ${expectedSize} does not match manifest ${declaredBytes}`);
+  }
 
   let needsAssembly = true;
   if (fs.existsSync(targetFile)) {
@@ -44,4 +53,12 @@ if (fs.existsSync(partA) && fs.existsSync(partB)) {
     fs.renameSync(temporaryFile, targetFile);
     console.log(`Assembled model (${combined.length} bytes) successfully!`);
   }
+}
+
+if (!fs.existsSync(targetFile)) {
+  throw new Error('Assembled E5 model is missing after prepare:models');
+}
+const finalData = fs.readFileSync(targetFile);
+if (finalData.length !== declaredBytes || sha256(finalData) !== expectedSha256) {
+  throw new Error('Assembled E5 artifact does not match the PaletteBrain manifest');
 }

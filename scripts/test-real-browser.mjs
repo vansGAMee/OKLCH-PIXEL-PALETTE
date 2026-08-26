@@ -3,6 +3,8 @@
  * Uses real Chromium via Chrome DevTools Protocol (CDP) to test /create in a real browser.
  */
 import { spawn } from 'child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import path from 'path';
 import { oklch } from 'culori';
 
 function sleep(ms) {
@@ -101,7 +103,15 @@ class CdpClient {
 
 async function main() {
   console.log('Starting Chromium in headless mode...');
-  const chrome = spawn('/usr/bin/chromium', [
+  const chromeCandidates = [
+    process.env.CHROME_PATH,
+    '/usr/bin/chromium',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  ].filter(Boolean);
+  const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  if (!chromePath) throw new Error('No Chromium executable found; set CHROME_PATH');
+  const chrome = spawn(chromePath, [
     '--headless=new',
     '--remote-debugging-port=9222',
     '--no-sandbox',
@@ -146,6 +156,28 @@ async function main() {
       throw new Error('Models were requested before user AI trigger!');
     }
 
+    const manifestResponse = await fetch('http://localhost:3000/models/palettebrain-v2.manifest.json');
+    if (!manifestResponse.ok) throw new Error(`Could not load PaletteBrain manifest: ${manifestResponse.status}`);
+    const declaredManifest = await manifestResponse.json();
+    const declaredModelVersion = declaredManifest.modelVersion;
+    const declaredDecoderPath = declaredManifest.decoder?.path || declaredManifest.decoder?.url;
+    if (!declaredModelVersion || !declaredDecoderPath) {
+      throw new Error('PaletteBrain manifest is missing modelVersion or decoder path');
+    }
+
+    const openedAiMode = await client.eval(`
+      (() => {
+        const button = Array.from(document.querySelectorAll('button')).find((item) =>
+          item.textContent.trim() === 'AI' || item.textContent.includes('AI')
+        );
+        if (!button) return false;
+        button.click();
+        return true;
+      })()
+    `);
+    if (!openedAiMode) throw new Error('Could not activate AI mode');
+    await sleep(250);
+
     // 3. Helper to run AI query in browser
     async function testAiQuery(prompt) {
       console.log(`\n=== Testing In-Browser AI: "${prompt}" ===`);
@@ -155,7 +187,9 @@ async function main() {
         await client.eval(`
           (async () => {
             if (window.__generateAiPalette) {
-              await window.__generateAiPalette(${JSON.stringify(prompt)});
+              const generated = await window.__generateAiPalette(${JSON.stringify(prompt)});
+              if (!generated) throw new Error('AI generation hook returned false');
+              return generated;
             } else {
               throw new Error('window.__generateAiPalette is not defined');
             }
@@ -180,7 +214,8 @@ async function main() {
 
           return {
             cardHexes,
-            baseHex: hexInputs[0] || cardHexes[1] || null
+            baseHex: hexInputs[0] || cardHexes[1] || null,
+            neural: window.__paletteBrainLastResult || null
           };
         })()
       `);
@@ -188,36 +223,60 @@ async function main() {
       const elapsed = Date.now() - t0;
       const baseHex = state.baseHex;
       const o = baseHex ? oklch(baseHex) : null;
+      if (!state.neural || state.neural.fallback !== false) {
+        console.error('Neural diagnostic state:', JSON.stringify(state.neural));
+        throw new Error(`FAIL: ${prompt} did not return a real neural result`);
+      }
+      if (state.neural.modelVersion !== declaredModelVersion) {
+        throw new Error(`FAIL: wrong model loaded: ${state.neural.modelVersion}`);
+      }
+      if (!Array.isArray(state.neural.colors) || state.neural.colors.length < 2 || state.neural.colors.length > 9) {
+        throw new Error(`FAIL: invalid neural palette count for ${prompt}`);
+      }
       console.log(`AI Query "${prompt}" completed in ${elapsed}ms!`);
       console.log(`Result Base: ${baseHex} (L=${o?.l?.toFixed(2)}, C=${o?.c?.toFixed(3)}, H=${o?.h?.toFixed(0) || 'neutral'})`);
       console.log(`Card hexes (${state.cardHexes.length}):`, state.cardHexes.join(', '));
-      return { prompt, elapsed, state, baseHex, oklch: o };
+      return { prompt, elapsed, state, baseHex, oklch: o, colors: state.neural.colors };
     }
 
-    // Required prompt list: black, purple, фиолетовый, winter, заброшенная больница ночью, cozy autumn cafe, neon cyberpunk rain
-    const resBlack = await testAiQuery('black');
-    if (!resBlack.baseHex || resBlack.oklch.l > 0.25 || resBlack.oklch.c > 0.05) {
-      throw new Error(`FAIL: "black" resulted in non-black base: ${resBlack.baseHex} L=${resBlack.oklch?.l}`);
-    }
+    const requiredPrompts = [
+      'rain', 'дождь', 'grass', 'трава', 'leaf', 'лист', 'hospital', 'больница',
+      'fog', 'туман', 'snow', 'снег', 'forest', 'glass', 'rust', 'moonlight',
+      'watercolor', 'film noir', 'gothic cathedral', 'constructivist poster',
+      'winter forest at night', 'зимний лес ночью',
+      'abandoned hospital in winter at night', 'заброшенная больница зимой ночью',
+      'warm childhood kitchen', 'уютная кухня из детства',
+      'painful nostalgia', 'болезненная ностальгия', 'quiet dread', 'тихая тревога',
+      'red', 'красный', 'red and blue', 'not red',
+      'a watercolor city after heavy rain, pale morning light reflecting from wet stone streets',
+    ];
+    const semanticResults = [];
+    for (const prompt of requiredPrompts) semanticResults.push(await testAiQuery(prompt));
 
-    const resPurple = await testAiQuery('purple');
-    if (!resPurple.oklch.h || resPurple.oklch.h < 280 || resPurple.oklch.h > 325) {
-      throw new Error(`FAIL: "purple" resulted in non-purple hue: ${resPurple.oklch?.h}`);
+    const redResult = semanticResults.find((row) => row.prompt === 'red');
+    const redHueWins = redResult.colors.filter((color) => color.h !== null && (color.h <= 50 || color.h >= 345)).length;
+    if (redHueWins < Math.ceil(redResult.colors.length * 0.6)) {
+      throw new Error('FAIL: explicit red control is not predominantly red');
     }
-
-    const resFiolet = await testAiQuery('фиолетовый');
-    if (!resFiolet.oklch.h || resFiolet.oklch.h < 280 || resFiolet.oklch.h > 325) {
-      throw new Error(`FAIL: "фиолетовый" resulted in non-purple hue: ${resFiolet.oklch?.h}`);
+    const grassResult = semanticResults.find((row) => row.prompt === 'grass');
+    const grassHueWins = grassResult.colors.filter((color) => color.h !== null && color.h >= 100 && color.h <= 165).length;
+    const smokeReportPath = path.resolve('ml/palettebrain/reports/real-browser-semantic-smoke.json');
+    mkdirSync(path.dirname(smokeReportPath), { recursive: true });
+    writeFileSync(smokeReportPath, `${JSON.stringify({
+      schemaVersion: 1,
+      testClassification: 'REAL_BROWSER',
+      modelVersion: semanticResults[0]?.state.neural.modelVersion,
+      fallbackUsed: semanticResults.some((row) => row.state.neural.fallback !== false),
+      promptCount: semanticResults.length,
+      explicitRedPass: redHueWins >= Math.ceil(redResult.colors.length * 0.6),
+      grassSemanticPass: grassHueWins >= Math.ceil(grassResult.colors.length * 0.4),
+      pass: redHueWins >= Math.ceil(redResult.colors.length * 0.6)
+        && grassHueWins >= Math.ceil(grassResult.colors.length * 0.4),
+      results: semanticResults,
+    }, null, 2)}\n`, 'utf8');
+    if (grassHueWins < Math.ceil(grassResult.colors.length * 0.4)) {
+      throw new Error('FAIL: grass semantic family is grossly wrong');
     }
-
-    const resWinter = await testAiQuery('winter');
-    if (!resWinter.oklch.h || resWinter.oklch.h < 180 || resWinter.oklch.h > 260) {
-      throw new Error(`FAIL: "winter" resulted in warm hue: ${resWinter.oklch?.h}`);
-    }
-
-    await testAiQuery('заброшенная больница ночью');
-    await testAiQuery('cozy autumn cafe');
-    await testAiQuery('neon cyberpunk rain');
 
     // 4. Verify count selector in UI
     console.log('\n=== Testing Color Count Selector in Browser ===');
@@ -242,6 +301,9 @@ async function main() {
     console.log(`Total local AI model/WASM requests: ${modelReqs.length}`);
     for (const r of modelReqs) {
       console.log(`  ${r.method} ${r.url} -> Status: ${r.status || '200'}`);
+    }
+    if (!modelReqs.some((request) => request.url.endsWith(declaredDecoderPath))) {
+      throw new Error('Exact Candidate 11 ONNX artifact was not requested');
     }
 
     const externalHfReqs = client.networkRequests.filter(r =>

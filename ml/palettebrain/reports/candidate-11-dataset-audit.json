@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "path": "ml/palettebrain/data/palettebrain_c11_v1.npz",
+  "sha256": "5dbb2e0b0bb5b783f8383447ffe0ed71f0af9f4eb1e22551c1bf5de119cc1df6",
+  "bytes": 371663,
+  "recordCount": 192,
+  "uniqueEmbeddingCount": 192,
+  "duplicateEmbeddingCount": 0,
+  "splitCounts": {
+    "train": 155,
+    "val": 37
+  },
+  "countCoverage": {
+    "9": 192
+  },
+  "lockCoverage": {
+    "0": 192
+  },
+  "fields": [
+    "color_prior",
+    "count_mask",
+    "locked_colors",
+    "locked_mask",
+    "quality_weight",
+    "seed_noise",
+    "split",
+    "target",
+    "teacher_latent",
+    "text_embedding"
+  ],
+  "missingProvenanceFields": [
+    "crop_coordinates",
+    "image_id",
+    "license",
+    "mask_area_fraction",
+    "prompt",
+    "source_group_id",
+    "source_id"
+  ],
+  "provenance": {},
+  "meanHueBinMass": [
+    0.020322568942598686,
+    0.09716547626643053,
+    0.10611583962842511,
+    0.03627501274604583,
+    0.04450875961144145,
+    0.010096981037956235,
+    0.14777947078497772,
+    0.07017844059737399,
+    0.010309771993585553,
+    0.04091657839308027,
+    0.06826000159829466,
+    0.08849530591396615,
+    0.05359241837868467,
+    0.0027200513674567146,
+    0.01484040864064203,
+    0.01076088692449654
+  ],
+  "backgroundDominationAudit": "UNVERIFIABLE",
+  "sourceGroupLeakageAudit": "UNVERIFIABLE",
+  "pass": false,
+  "errors": [
+    "unverifiable provenance; missing fields: ['crop_coordinates', 'image_id', 'license', 'mask_area_fraction', 'prompt', 'source_group_id', 'source_id']"
+  ]
+}

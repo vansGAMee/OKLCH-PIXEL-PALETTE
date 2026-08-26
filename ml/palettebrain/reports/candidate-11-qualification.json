@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+  "testClassification": "REAL_PYTORCH_SEMANTIC_STAGE_A",
+  "gates": {
+    "directRu": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 0.95,
+      "pass": true
+    },
+    "directEn": {
+      "value": 0.5714285714285714,
+      "operator": ">=",
+      "threshold": 0.95,
+      "pass": false
+    },
+    "exclusion": {
+      "value": 0.5,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": false
+    },
+    "cleanMultiColor": {
+      "value": 0.297979797979798,
+      "operator": ">=",
+      "threshold": 0.7,
+      "pass": false
+    },
+    "nearDuplicateRate": {
+      "value": 0.702020202020202,
+      "operator": "<=",
+      "threshold": 0.05,
+      "pass": false
+    },
+    "count": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "inactive": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "locks": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "gamut": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "determinism": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "basicConcepts": {
+      "value": 0.15,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "nature": {
+      "value": 0.16666666666666666,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "weatherScenes": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "materials": {
+      "value": 0.15,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "stylesMedia": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "compositions": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.75,
+      "pass": false
+    },
+    "oodParaphrases": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.75,
+      "pass": false
+    },
+    "heldOutRelated": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.7,
+      "pass": false
+    },
+    "ruEnSemanticAgreement": {
+      "value": 0.6666666666666666,
+      "operator": ">=",
+      "threshold": 0.85,
+      "pass": false
+    },
+    "abstractConceptGate": {
+      "value": false,
+      "required": true,
+      "pass": false
+    },
+    "longPromptGate": {
+      "value": false,
+      "required": true,
+      "pass": false
+    },
+    "adversarialCompositionGate": {
+      "value": true,
+      "required": true,
+      "pass": true
+    },
+    "pytorchOnnxParity": {
+      "value": true,
+      "required": true,
+      "pass": true
+    },
+    "onnxBrowserParity": {
+      "value": true,
+      "required": true,
+      "pass": true
+    },
+    "realBrowserSemanticSmoke": {
+      "value": false,
+      "required": true,
+      "pass": false
+    }
+  },
+  "artifactIntegrity": true,
+  "productionReady": false,
+  "codename": null,
+  "pass": false,
+  "hardFailures": [
+    "directEn: 0.5714285714285714 does not satisfy >= 0.95",
+    "exclusion: 0.5 does not satisfy >= 1.0",
+    "cleanMultiColor: 0.297979797979798 does not satisfy >= 0.7",
+    "nearDuplicateRate: 0.702020202020202 does not satisfy <= 0.05",
+    "basicConcepts: 0.15 does not satisfy >= 0.8",
+    "nature: 0.16666666666666666 does not satisfy >= 0.8",
+    "weatherScenes: 0.0 does not satisfy >= 0.8",
+    "materials: 0.15 does not satisfy >= 0.8",
+    "stylesMedia: 0.0 does not satisfy >= 0.8",
+    "compositions: 0.0 does not satisfy >= 0.75",
+    "oodParaphrases: 0.0 does not satisfy >= 0.75",
+    "heldOutRelated: 0.0 does not satisfy >= 0.7",
+    "ruEnSemanticAgreement: 0.6666666666666666 does not satisfy >= 0.85",
+    "abstractConceptGate: missing or false",
+    "longPromptGate: missing or false",
+    "realBrowserSemanticSmoke: missing or false"
+  ],
+  "rule": "Every hard gate must pass; no weighted average can hide a failure."
+}

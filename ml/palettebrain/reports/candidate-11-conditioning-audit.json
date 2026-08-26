@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "rows": [
+    {
+      "prompt": "rain",
+      "activationNorms": {
+        "text": 5.041472434997559,
+        "visualMean": 0.26729851961135864,
+        "style": 1.3421993255615234,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.013801914639770985,
+      "countMeanOklabMaximumDrift": 0.033532239496707916
+    },
+    {
+      "prompt": "дождь",
+      "activationNorms": {
+        "text": 5.453730583190918,
+        "visualMean": 0.1966395378112793,
+        "style": 1.4649770259857178,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.016941513866186142,
+      "countMeanOklabMaximumDrift": 0.030925385653972626
+    },
+    {
+      "prompt": "grass",
+      "activationNorms": {
+        "text": 5.050281047821045,
+        "visualMean": 0.11370813846588135,
+        "style": 1.945919394493103,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.01845560222864151,
+      "countMeanOklabMaximumDrift": 0.10241680592298508
+    },
+    {
+      "prompt": "трава",
+      "activationNorms": {
+        "text": 5.1158576011657715,
+        "visualMean": 0.1274375021457672,
+        "style": 1.7882558107376099,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.02398618496954441,
+      "countMeanOklabMaximumDrift": 0.08338000625371933
+    },
+    {
+      "prompt": "snow",
+      "activationNorms": {
+        "text": 5.066190719604492,
+        "visualMean": 0.24654516577720642,
+        "style": 2.3392865657806396,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.008286146447062492,
+      "countMeanOklabMaximumDrift": 0.010575970634818077
+    },
+    {
+      "prompt": "снег",
+      "activationNorms": {
+        "text": 5.507136821746826,
+        "visualMean": 0.24802403151988983,
+        "style": 2.622910976409912,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.009584181942045689,
+      "countMeanOklabMaximumDrift": 0.02178485319018364
+    },
+    {
+      "prompt": "hospital",
+      "activationNorms": {
+        "text": 5.319275856018066,
+        "visualMean": 0.17957256734371185,
+        "style": 1.431541085243225,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.02486601285636425,
+      "countMeanOklabMaximumDrift": 0.127214714884758
+    },
+    {
+      "prompt": "больница",
+      "activationNorms": {
+        "text": 5.252029895782471,
+        "visualMean": 0.21081963181495667,
+        "style": 1.707431674003601,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.013246686197817326,
+      "countMeanOklabMaximumDrift": 0.0939505472779274
+    },
+    {
+      "prompt": "glass",
+      "activationNorms": {
+        "text": 5.325610160827637,
+        "visualMean": 0.19638004899024963,
+        "style": 1.430079698562622,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.011420750990509987,
+      "countMeanOklabMaximumDrift": 0.08059539645910263
+    },
+    {
+      "prompt": "red",
+      "activationNorms": {
+        "text": 5.937224864959717,
+        "visualMean": 0.1335097849369049,
+        "style": 5.201992988586426,
+        "count": 3.6023480892181396,
+        "seed": 4.138783931732178,
+        "lock": 2.086784601211548
+      },
+      "seedMeanOklabMaximumDrift": 0.006787837482988834,
+      "countMeanOklabMaximumDrift": 0.042009949684143066
+    }
+  ],
+  "summary": {
+    "seedMaximumDrift": 0.02486601285636425,
+    "countMaximumDrift": 0.127214714884758,
+    "semanticBranchesOverpowered": false
+  }
+}

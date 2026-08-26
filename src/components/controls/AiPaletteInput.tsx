@@ -134,6 +134,10 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
           .map((locked) => ({ index: locked.index, oklch: { ...locked.oklch } })),
       });
 
+      if (typeof window !== 'undefined') {
+        (window as unknown as { __paletteBrainLastResult?: typeof result }).__paletteBrainLastResult = result;
+      }
+
       if (!Array.isArray(result.colors) || result.colors.length !== requestedCount) {
         throw new Error(`AI returned ${result.colors?.length ?? 0} colors; expected ${requestedCount}.`);
       }
@@ -205,10 +209,17 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
   // Test and programmatic hook
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      (window as unknown as { __generateAiPalette?: (text: string) => Promise<void> }).__generateAiPalette = async (text: string) => {
+      const testWindow = window as unknown as {
+        __generateAiPalette?: (text: string) => Promise<boolean>;
+        __paletteBrainLastResult?: unknown;
+      };
+      testWindow.__generateAiPalette = async (text: string) => {
         setPrompt(text);
         if (inputRef.current) inputRef.current.value = text;
-        await runGeneration(text);
+        return await runGeneration(text);
+      };
+      return () => {
+        delete testWindow.__generateAiPalette;
       };
     }
   }, [runGeneration]);

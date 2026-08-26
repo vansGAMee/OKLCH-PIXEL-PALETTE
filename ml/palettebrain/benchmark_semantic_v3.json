@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 3,
+  "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+  "candidate": "candidate-11",
+  "sealed": true,
+  "rules": {
+    "explicitColorExcludedFromVisualSemanticAggregate": true,
+    "noExactHexSingleAnswerForAbstract": true,
+    "thresholdsFrozenBeforeRepairedTraining": true,
+    "projectionIsDiagnosticOnly": true
+  },
+  "buckets": {
+    "explicit_color_controls": [
+      "red", "красный", "blue", "синий", "muted orange", "navy blue",
+      "not red", "red and blue", "without green"
+    ],
+    "basic_physical": [
+      "grass", "трава", "leaf", "лист", "apple", "яблоко", "snow", "снег",
+      "glass", "стекло", "rust", "ржавчина", "coal", "sand", "steel"
+    ],
+    "nature": [
+      "forest", "лес", "meadow", "moss", "river", "lake", "dry field", "pine forest"
+    ],
+    "places_interiors": [
+      "hospital corridor", "больничный коридор", "clinic", "ward", "underground station",
+      "empty classroom", "warehouse", "old kitchen", "nightclub", "greenhouse"
+    ],
+    "weather": [
+      "rain", "дождь", "drizzle", "fog", "туман", "storm", "snowfall",
+      "overcast morning", "humid summer evening"
+    ],
+    "lighting": [
+      "moonlight", "лунный свет", "dawn", "рассвет", "sunset", "candlelight",
+      "fluorescent office lighting", "neon reflections at night"
+    ],
+    "materials": [
+      "glass", "rusted iron", "wet concrete", "polished brass", "old paper", "raw wood",
+      "ice", "porcelain", "oxidized copper"
+    ],
+    "styles_media": [
+      "watercolor", "акварель", "film noir", "gothic", "constructivist poster", "art deco",
+      "cyberpunk", "ink wash", "faded 1970s photograph", "old Soviet poster"
+    ]
+  },
+  "bilingualPairs": [
+    ["rain", "дождь"], ["grass", "трава"], ["leaf", "лист"], ["apple", "яблоко"],
+    ["hospital", "больница"], ["snow", "снег"], ["glass", "стекло"],
+    ["forest", "лес"], ["fog", "туман"], ["moonlight", "лунный свет"],
+    ["dawn", "рассвет"], ["watercolor", "акварель"]
+  ],
+  "abstract": [
+    {"en": "painful nostalgia", "ru": "болезненная ностальгия", "references": ["faded memory", "grief and tenderness"], "hardNegatives": ["carefree party", "sterile confidence"]},
+    {"en": "quiet dread", "ru": "тихая тревога", "references": ["subdued anxiety", "waiting for bad news"], "hardNegatives": ["loud celebration", "safe contentment"]},
+    {"en": "warm childhood memory", "ru": "тёплое воспоминание из детства", "references": ["comforting old memory", "tender domestic nostalgia"], "hardNegatives": ["cold authority", "clinical detachment"]},
+    {"en": "sterile loneliness", "ru": "стерильное одиночество", "references": ["empty clinical isolation", "quiet institutional solitude"], "hardNegatives": ["warm family reunion", "crowded festival"]},
+    {"en": "gentle melancholy", "ru": "мягкая меланхолия", "references": ["soft sadness", "calm wistfulness"], "hardNegatives": ["violent rage", "bright triumph"]},
+    {"en": "exhausted hope", "ru": "измученная надежда", "references": ["fragile perseverance", "faint optimism after hardship"], "hardNegatives": ["effortless victory", "total despair"]},
+    {"en": "cold authority", "ru": "холодная властность", "references": ["remote institutional power", "controlled severity"], "hardNegatives": ["playful affection", "warm vulnerability"]},
+    {"en": "fragile optimism", "ru": "хрупкий оптимизм", "references": ["tentative hope", "delicate recovery"], "hardNegatives": ["certain doom", "boastful triumph"]},
+    {"en": "quiet celebration after surviving something difficult", "ru": "тихий праздник после тяжёлого испытания", "references": ["restrained relief", "private hard-won joy"], "hardNegatives": ["carefree loud party", "defeat"]}
+  ],
+  "longText": [
+    ["a lonely bus stop after rain just before sunrise, with weak street lamps fading into cold morning fog", "одинокая автобусная остановка после дождя перед рассветом, когда слабые фонари растворяются в холодном утреннем тумане"],
+    ["an abandoned hospital corridor in winter at night, lit only by moonlight through dirty windows", "заброшенный больничный коридор зимой ночью, освещённый только лунным светом через грязные окна"],
+    ["a warm childhood kitchen remembered years later, comforting but slightly sad", "тёплая кухня из детства, вспоминаемая спустя много лет, уютная, но немного грустная"],
+    ["a watercolor city after heavy rain, pale morning light reflecting from wet stone streets", "акварельный город после сильного дождя, бледный утренний свет отражается от мокрой каменной мостовой"],
+    ["a toxic greenhouse inside a cyberpunk nightclub after midnight", "ядовитая теплица внутри киберпанк-клуба после полуночи"],
+    ["a silent railway platform under amber lamps while blue winter dawn reaches the tracks", "тихая железнодорожная платформа под янтарными фонарями, пока синий зимний рассвет касается рельсов"]
+  ],
+  "compositionContrasts": [
+    ["hospital at sunset", "hospital under moonlight"],
+    ["forest in rain", "forest by firelight"],
+    ["watercolor city", "film-noir city"]
+  ],
+  "oodParaphraseGroups": [
+    ["rain", "drizzle on pavement", "wet weather over the city", "streets after a long shower"],
+    ["дождь", "морось на асфальте", "мокрая погода над городом", "улицы после долгого ливня"],
+    ["hospital", "clinic", "ward", "clinical waiting room"],
+    ["grass", "meadow", "moss", "field vegetation"]
+  ],
+  "heldOutRelated": {
+    "nature": {"trainConcepts": ["forest", "grass"], "heldOut": ["meadow", "moss"]},
+    "clinical": {"trainConcepts": ["hospital", "room"], "heldOut": ["clinic", "ward"]},
+    "fruit": {"trainConcepts": ["apple", "berries"], "heldOut": ["pear", "plum"]}
+  },
+  "adversarialComposition": [
+    "red grass", "green blood", "warm moonlight", "cold candlelight", "blue rust",
+    "black snow", "hospital at sunset", "snow under red emergency lights",
+    "green glass in a dark nightclub"
+  ],
+  "negationControls": ["not red", "avoid blue", "without green"]
+}

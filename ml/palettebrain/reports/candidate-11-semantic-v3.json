@@ -1,0 +1,887 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+  "testClassification": "REAL_PYTORCH_SEMANTIC_STAGE_A",
+  "sources": {
+    "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+    "checkpoint": "ml/palettebrain/checkpoints/candidate-11-best.pt"
+  },
+  "metrics": {
+    "semanticFamilyWin": 0.06,
+    "directEn": 0.5714285714285714,
+    "directRu": 1.0,
+    "exclusion": 0.5,
+    "cleanMultiColor": 0.297979797979798,
+    "nearDuplicateRate": 0.702020202020202,
+    "basicConcepts": 0.15,
+    "nature": 0.16666666666666666,
+    "weatherScenes": 0.0,
+    "materials": 0.15,
+    "stylesMedia": 0.0,
+    "compositions": 0.0,
+    "oodParaphrases": 0.0,
+    "heldOutRelated": 0.0,
+    "ruEnSemanticAgreement": 0.6666666666666666,
+    "abstractConceptGate": false,
+    "longPromptGate": false,
+    "adversarialCompositionGate": true,
+    "count": 1.0,
+    "inactive": 1.0,
+    "locks": 1.0,
+    "gamut": 1.0,
+    "determinism": 1.0,
+    "pytorchOnnxParity": true,
+    "onnxBrowserParity": true,
+    "realBrowserSemanticSmoke": false
+  },
+  "categoryRates": {
+    "basic_objects": 0.15,
+    "places": 0.0,
+    "weather": 0.0,
+    "light": 0.2,
+    "styles": 0.0,
+    "compositions": 0.0,
+    "ood_paraphrases": 0.0,
+    "nature": 0.16666666666666666
+  },
+  "familyRows": [
+    {
+      "prompt": "grass",
+      "expected": "grass",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "трава",
+      "expected": "grass",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "leaf",
+      "expected": "leaf",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "лист",
+      "expected": "leaf",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "apple",
+      "expected": "apple",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "яблоко",
+      "expected": "apple",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "blood",
+      "expected": "blood",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "кровь",
+      "expected": "blood",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "rust",
+      "expected": "rust",
+      "closest": "apple",
+      "pass": false
+    },
+    {
+      "prompt": "ржавчина",
+      "expected": "rust",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "rusty iron",
+      "expected": "rust",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "ржавый металл",
+      "expected": "rust",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "gold",
+      "expected": "gold",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "золото",
+      "expected": "gold",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "shimmering gold",
+      "expected": "gold",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "золотой слиток",
+      "expected": "gold",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "ice",
+      "expected": "ice",
+      "closest": "ice",
+      "pass": true
+    },
+    {
+      "prompt": "лёд",
+      "expected": "ice",
+      "closest": "snow",
+      "pass": false
+    },
+    {
+      "prompt": "glacial ice",
+      "expected": "ice",
+      "closest": "ice",
+      "pass": true
+    },
+    {
+      "prompt": "прозрачный лёд",
+      "expected": "ice",
+      "closest": "ice",
+      "pass": true
+    },
+    {
+      "prompt": "hospital",
+      "expected": "hospital",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "больница",
+      "expected": "hospital",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "hospital interior",
+      "expected": "hospital",
+      "closest": "rain",
+      "pass": false
+    },
+    {
+      "prompt": "больничный коридор",
+      "expected": "hospital",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "forest",
+      "expected": "forest",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "лес",
+      "expected": "forest",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "pine forest",
+      "expected": "forest",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "хвойный лес",
+      "expected": "forest",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "kitchen",
+      "expected": "kitchen",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "кухня",
+      "expected": "kitchen",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "warm rustic kitchen",
+      "expected": "kitchen",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "уютная кухня",
+      "expected": "kitchen",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "nightclub",
+      "expected": "nightclub",
+      "closest": "autumn_leaves",
+      "pass": false
+    },
+    {
+      "prompt": "ночной клуб",
+      "expected": "nightclub",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "neon nightclub",
+      "expected": "nightclub",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "клуб",
+      "expected": "nightclub",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "greenhouse",
+      "expected": "greenhouse",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "теплица",
+      "expected": "greenhouse",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "botanical greenhouse",
+      "expected": "greenhouse",
+      "closest": "fog",
+      "pass": false
+    },
+    {
+      "prompt": "оранжерея",
+      "expected": "greenhouse",
+      "closest": "watercolor",
+      "pass": false
+    },
+    {
+      "prompt": "rain",
+      "expected": "rain",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "дождь",
+      "expected": "rain",
+      "closest": "fog",
+      "pass": false
+    },
+    {
+      "prompt": "rainy street",
+      "expected": "rain",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "мокрый асфальт во время дождя",
+      "expected": "rain",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "fog",
+      "expected": "fog",
+      "closest": "moonlight",
+      "pass": false
+    },
+    {
+      "prompt": "туман",
+      "expected": "fog",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "morning mist",
+      "expected": "fog",
+      "closest": "cyberpunk",
+      "pass": false
+    },
+    {
+      "prompt": "утренний туман",
+      "expected": "fog",
+      "closest": "rain",
+      "pass": false
+    },
+    {
+      "prompt": "snow",
+      "expected": "snow",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "снег",
+      "expected": "snow",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "fresh winter snow",
+      "expected": "snow",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "морозный снег",
+      "expected": "snow",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "storm",
+      "expected": "storm",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "гроза",
+      "expected": "storm",
+      "closest": "snow",
+      "pass": false
+    },
+    {
+      "prompt": "thunderstorm",
+      "expected": "storm",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "ночная гроза",
+      "expected": "storm",
+      "closest": "rain",
+      "pass": false
+    },
+    {
+      "prompt": "moonlight",
+      "expected": "moonlight",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "лунный свет",
+      "expected": "moonlight",
+      "closest": "moonlight",
+      "pass": true
+    },
+    {
+      "prompt": "silver moonlight",
+      "expected": "moonlight",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "серебряный лунный свет",
+      "expected": "moonlight",
+      "closest": "moonlight",
+      "pass": true
+    },
+    {
+      "prompt": "sunset",
+      "expected": "sunset",
+      "closest": "apple",
+      "pass": false
+    },
+    {
+      "prompt": "закат",
+      "expected": "sunset",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "candlelight",
+      "expected": "candlelight",
+      "closest": "moonlight",
+      "pass": false
+    },
+    {
+      "prompt": "свет свечи",
+      "expected": "candlelight",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "warm candle glow",
+      "expected": "candlelight",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "пламя свечи",
+      "expected": "candlelight",
+      "closest": "cyberpunk",
+      "pass": false
+    },
+    {
+      "prompt": "watercolor",
+      "expected": "watercolor",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "акварель",
+      "expected": "watercolor",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "botanical watercolor wash",
+      "expected": "watercolor",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "прозрачная акварель",
+      "expected": "watercolor",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "film noir",
+      "expected": "film_noir",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "фильм нуар",
+      "expected": "film_noir",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "high contrast monochrome noir",
+      "expected": "film_noir",
+      "closest": "apple",
+      "pass": false
+    },
+    {
+      "prompt": "нуар",
+      "expected": "film_noir",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "art deco",
+      "expected": "art_deco",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "арт деко",
+      "expected": "art_deco",
+      "closest": "apple",
+      "pass": false
+    },
+    {
+      "prompt": "gold and emerald art deco",
+      "expected": "art_deco",
+      "closest": "gold",
+      "pass": false
+    },
+    {
+      "prompt": "роскошный арт-деко",
+      "expected": "art_deco",
+      "closest": "apple",
+      "pass": false
+    },
+    {
+      "prompt": "cyberpunk",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "киберпанк",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "neon cyberpunk alley",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "неоновый киберпанк",
+      "expected": "cyberpunk",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "winter forest at night",
+      "expected": "winter_forest_at_night",
+      "closest": "film_noir",
+      "pass": false
+    },
+    {
+      "prompt": "зимний лес ночью",
+      "expected": "winter_forest_at_night",
+      "closest": "moonlight",
+      "pass": false
+    },
+    {
+      "prompt": "abandoned hospital in winter at night",
+      "expected": "abandoned_hospital_in_winter_at_night",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "заброшенная больница зимой ночью",
+      "expected": "abandoned_hospital_in_winter_at_night",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "warm peaceful childhood kitchen",
+      "expected": "warm_childhood_kitchen",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "уютная кухня из детства",
+      "expected": "warm_childhood_kitchen",
+      "closest": "sunset",
+      "pass": false
+    },
+    {
+      "prompt": "toxic cyberpunk greenhouse",
+      "expected": "toxic_cyberpunk_greenhouse",
+      "closest": "ice",
+      "pass": false
+    },
+    {
+      "prompt": "ядовитая теплица",
+      "expected": "toxic_cyberpunk_greenhouse",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "drizzle on pavement",
+      "expected": "drizzle_on_pavement",
+      "closest": "snow",
+      "pass": false
+    },
+    {
+      "prompt": "морось на асфальте",
+      "expected": "drizzle_on_pavement",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "clinical waiting room",
+      "expected": "clinical_waiting_room",
+      "closest": "fog",
+      "pass": false
+    },
+    {
+      "prompt": "клинический кабинет",
+      "expected": "clinical_waiting_room",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "desert",
+      "expected": "desert",
+      "closest": "fire",
+      "pass": false
+    },
+    {
+      "prompt": "пустыня",
+      "expected": "desert",
+      "closest": "snow",
+      "pass": false
+    },
+    {
+      "prompt": "fire",
+      "expected": "fire",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "огонь",
+      "expected": "fire",
+      "closest": "fire",
+      "pass": true
+    },
+    {
+      "prompt": "autumn leaves",
+      "expected": "autumn_leaves",
+      "closest": "nightclub",
+      "pass": false
+    },
+    {
+      "prompt": "осенние листья",
+      "expected": "autumn_leaves",
+      "closest": "ice",
+      "pass": false
+    }
+  ],
+  "directRows": [
+    {
+      "prompt": "red",
+      "pass": true
+    },
+    {
+      "prompt": "красный",
+      "pass": true
+    },
+    {
+      "prompt": "blue",
+      "pass": true
+    },
+    {
+      "prompt": "синий",
+      "pass": true
+    },
+    {
+      "prompt": "muted orange",
+      "pass": false
+    },
+    {
+      "prompt": "navy blue",
+      "pass": true
+    },
+    {
+      "prompt": "not red",
+      "pass": false
+    },
+    {
+      "prompt": "red and blue",
+      "pass": false
+    },
+    {
+      "prompt": "without green",
+      "pass": true
+    }
+  ],
+  "abstractRows": [
+    {
+      "concept": "painful nostalgia",
+      "ruEnDistance": 0.06055479496717453,
+      "referenceDistance": 0.1553281992673874,
+      "hardNegativeDistance": 0.04670518636703491,
+      "pass": false
+    },
+    {
+      "concept": "quiet dread",
+      "ruEnDistance": 0.06678139418363571,
+      "referenceDistance": 0.05741935595870018,
+      "hardNegativeDistance": 0.06338825076818466,
+      "pass": true
+    },
+    {
+      "concept": "warm childhood memory",
+      "ruEnDistance": 0.12462880462408066,
+      "referenceDistance": 0.10055304318666458,
+      "hardNegativeDistance": 0.12858712673187256,
+      "pass": false
+    },
+    {
+      "concept": "sterile loneliness",
+      "ruEnDistance": 0.10568960011005402,
+      "referenceDistance": 0.1734800636768341,
+      "hardNegativeDistance": 0.1380925327539444,
+      "pass": false
+    },
+    {
+      "concept": "gentle melancholy",
+      "ruEnDistance": 0.07598868012428284,
+      "referenceDistance": 0.08977387845516205,
+      "hardNegativeDistance": 0.08731412142515182,
+      "pass": false
+    },
+    {
+      "concept": "exhausted hope",
+      "ruEnDistance": 0.07826597988605499,
+      "referenceDistance": 0.08928903192281723,
+      "hardNegativeDistance": 0.07473740726709366,
+      "pass": false
+    },
+    {
+      "concept": "cold authority",
+      "ruEnDistance": 0.1670042872428894,
+      "referenceDistance": 0.15432648360729218,
+      "hardNegativeDistance": 0.16071507334709167,
+      "pass": false
+    },
+    {
+      "concept": "fragile optimism",
+      "ruEnDistance": 0.06061773747205734,
+      "referenceDistance": 0.16557173430919647,
+      "hardNegativeDistance": 0.1762281358242035,
+      "pass": true
+    },
+    {
+      "concept": "quiet celebration after surviving something difficult",
+      "ruEnDistance": 0.12378720939159393,
+      "referenceDistance": 0.14710228145122528,
+      "hardNegativeDistance": 0.18421053886413574,
+      "pass": false
+    }
+  ],
+  "longRows": [
+    {
+      "en": "a lonely bus stop after rain just before sunrise, with weak street lamps fading into cold morning fog",
+      "distance": 0.0614393949508667
+    },
+    {
+      "en": "an abandoned hospital corridor in winter at night, lit only by moonlight through dirty windows",
+      "distance": 0.018147878348827362
+    },
+    {
+      "en": "a warm childhood kitchen remembered years later, comforting but slightly sad",
+      "distance": 0.03690899536013603
+    },
+    {
+      "en": "a watercolor city after heavy rain, pale morning light reflecting from wet stone streets",
+      "distance": 0.09755760431289673
+    },
+    {
+      "en": "a toxic greenhouse inside a cyberpunk nightclub after midnight",
+      "distance": 0.10100016742944717
+    },
+    {
+      "en": "a silent railway platform under amber lamps while blue winter dawn reaches the tracks",
+      "distance": 0.01787473075091839
+    }
+  ],
+  "compositionRows": [
+    {
+      "pair": [
+        "hospital at sunset",
+        "hospital under moonlight"
+      ],
+      "distance": 0.049732357263565063
+    },
+    {
+      "pair": [
+        "forest in rain",
+        "forest by firelight"
+      ],
+      "distance": 0.08064326643943787
+    },
+    {
+      "pair": [
+        "watercolor city",
+        "film-noir city"
+      ],
+      "distance": 0.1672462522983551
+    }
+  ],
+  "oodRows": [
+    {
+      "group": [
+        "rain",
+        "drizzle on pavement",
+        "wet weather over the city",
+        "streets after a long shower"
+      ],
+      "maximumDistance": 0.22021356225013733
+    },
+    {
+      "group": [
+        "дождь",
+        "морось на асфальте",
+        "мокрая погода над городом",
+        "улицы после долгого ливня"
+      ],
+      "maximumDistance": 0.3096480667591095
+    },
+    {
+      "group": [
+        "hospital",
+        "clinic",
+        "ward",
+        "clinical waiting room"
+      ],
+      "maximumDistance": 0.1383267045021057
+    },
+    {
+      "group": [
+        "grass",
+        "meadow",
+        "moss",
+        "field vegetation"
+      ],
+      "maximumDistance": 0.17197571694850922
+    }
+  ],
+  "adversarialRows": [
+    {
+      "prompt": "red grass",
+      "base": "grass",
+      "distance": 0.11454996466636658
+    },
+    {
+      "prompt": "green blood",
+      "base": "blood",
+      "distance": 0.07022613286972046
+    },
+    {
+      "prompt": "warm moonlight",
+      "base": "moonlight",
+      "distance": 0.045132316648960114
+    },
+    {
+      "prompt": "cold candlelight",
+      "base": "candlelight",
+      "distance": 0.10997501760721207
+    },
+    {
+      "prompt": "blue rust",
+      "base": "rust",
+      "distance": 0.2884931266307831
+    },
+    {
+      "prompt": "black snow",
+      "base": "snow",
+      "distance": 0.38908088207244873
+    },
+    {
+      "prompt": "hospital at sunset",
+      "base": "hospital",
+      "distance": 0.10152222961187363
+    },
+    {
+      "prompt": "snow under red emergency lights",
+      "base": "snow",
+      "distance": 0.11581121385097504
+    },
+    {
+      "prompt": "green glass in a dark nightclub",
+      "base": "glass",
+      "distance": 0.1755523532629013
+    }
+  ]
+}

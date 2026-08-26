@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "phase": "candidate_11_trained_and_exported",
-  "lastCompleted": "candidate_11_visual_palette_bridge_training_and_export",
+  "phase": "candidate_11_repair_source_ready_training_blocked",
+  "lastCompleted": "candidate_11_independent_audit_and_repair_source",
   "candidateId": "candidate-11",
   "candidateCheckpoint": "ml/palettebrain/checkpoints/candidate-11-best.pt",
   "candidateOnnx": "public/models/palettebrain-v4-candidate11-b1bc9346.onnx",
@@ -33,5 +33,14 @@
     "winter_forest_at_night": ["#494247", "#6E5E65", "#6A5E65", "#62686E", "#586065"],
     "red": ["#D9243E", "#DB2443", "#DA2441", "#D92444", "#DE2545"]
   },
-  "nextAction": "Resume Stage B multi-task fine-tuning with fixed target encoding and balanced multi-anchor loss to restore multi-color >= 70% and duplicates <= 5%"
+  "confirmedRepairState": {
+    "currentCheckpointArchitecture": "legacy_mean_visual_tokens",
+    "currentVisualTokensBitIdentical": true,
+    "pytorchOnnxMaxAbsDelta": 5.617737770080566e-06,
+    "onnxBrowserMaxAbsDelta": 5.7220458984375e-06,
+    "semanticV3FamilyWin": 0.06,
+    "datasetProvenanceVerified": false,
+    "repairedArchitectureSourceReady": true
+  },
+  "nextAction": "Recover metadata-rich C11 image source archive, run Stage A on the repaired slot-cross-attention architecture, and require frozen semantic v3 family win >= 80% before Stage B"
 }

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "recoveryStatus": "PARTIAL_SOURCE_NOT_FOUND",
+  "searchedLocations": [
+    "tracked Git history and reflog",
+    "unreachable Git blobs",
+    "current working tree",
+    "Codex session and scratch directories",
+    "PowerShell history",
+    "Windows temporary directories"
+  ],
+  "missingOriginalFiles": [
+    "train_candidate11.py",
+    "build_c11_dataset.py",
+    "export_c11_onnx.py"
+  ],
+  "protectedArtifacts": {
+    "checkpoint": "ml/palettebrain/checkpoints/candidate-11-best.pt",
+    "checkpointBytes": 2816700,
+    "checkpointEpoch": 14,
+    "dataset": "ml/palettebrain/data/palettebrain_c11_v1.npz",
+    "datasetSha256": "5dbb2e0b0bb5b783f8383447ffe0ed71f0af9f4eb1e22551c1bf5de119cc1df6",
+    "onnx": "public/models/palettebrain-v4-candidate11-b1bc9346.onnx",
+    "onnxSha256": "b1bc93467e99196c55f19a61005f1fe9b7df66b7b4fe7258205cf958870c51f8"
+  },
+  "recoveredCheckpointConfig": {
+    "embedding_dim": 384,
+    "histogram_bins": 390,
+    "visual_latent_dim": 128,
+    "max_colors": 9,
+    "seed_channels": 4,
+    "locked_color_channels": 4,
+    "d_model": 64,
+    "heads": 4,
+    "layers": 2,
+    "ff_multiplier": 2,
+    "dropout": 0.0
+  },
+  "runStateClaims": {
+    "trainedFromCandidate": 8,
+    "stageAPriorLoss": 1.1436,
+    "stageAContrastWin": 0.8,
+    "stageBLoss": 0.0984
+  },
+  "notRecoverableFromArtifacts": [
+    "original optimizer and state",
+    "original scheduler and state",
+    "Stage A and Stage B epoch boundaries",
+    "original learning rates",
+    "loss weights",
+    "resume command",
+    "dataset prompts and source provenance",
+    "image IDs, crop coordinates, and masks"
+  ],
+  "replacementPipeline": {
+    "builder": "ml/palettebrain/build_c11_dataset.py",
+    "trainer": "ml/palettebrain/train_candidate11.py",
+    "exporter": "ml/palettebrain/export_c11_onnx.py",
+    "claim": "auditable repaired continuation; not claimed to reproduce the missing original scripts"
+  }
+}

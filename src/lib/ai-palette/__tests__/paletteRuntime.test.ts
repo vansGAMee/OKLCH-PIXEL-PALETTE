@@ -262,7 +262,7 @@ describe('PaletteBrain v2 browser runtime', () => {
 
       const raw = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       const { validateDecoderManifest } = await import('../inference');
-      const validated = validateDecoderManifest(raw);
+      const validated = validateDecoderManifest(raw, { allowExperimental: true });
 
       expect(validated.modelVersion).toBeTruthy();
       expect(typeof validated.modelVersion).toBe('string');
@@ -278,9 +278,21 @@ describe('PaletteBrain v2 browser runtime', () => {
     it('rejects invalid manifests with missing or empty version', async () => {
       const { validateDecoderManifest } = await import('../inference');
       expect(() => validateDecoderManifest(null)).toThrow('manifest must be a JSON object');
-      expect(() => validateDecoderManifest({})).toThrow('manifest modelVersion must be a non-empty string');
-      expect(() => validateDecoderManifest({ modelVersion: '   ' })).toThrow('manifest modelVersion must be a non-empty string');
-      expect(() => validateDecoderManifest({ modelVersion: 'valid-v1', decoder: { path: 'invalid/path' } })).toThrow('manifest decoder path must be a valid path under /models/');
+      expect(() => validateDecoderManifest({})).toThrow('manifest schemaVersion must be 2');
+      expect(() => validateDecoderManifest({ schemaVersion: 2, modelVersion: '   ' })).toThrow('manifest modelVersion must be a non-empty string');
+      expect(() => validateDecoderManifest({ schemaVersion: 2, modelVersion: 'valid-v1', decoder: { path: 'invalid/path' } })).toThrow('manifest decoder path must be a valid path under /models/');
+    });
+
+    it('refuses an experimental decoder unless the qualification override is explicit', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const raw = JSON.parse(fs.readFileSync(
+        path.resolve(process.cwd(), 'public/models/palettebrain-v2.manifest.json'),
+        'utf-8',
+      ));
+      const { validateDecoderManifest } = await import('../inference');
+      expect(() => validateDecoderManifest(raw)).toThrow('manifest marks this decoder experimental');
+      expect(validateDecoderManifest(raw, { allowExperimental: true }).productionReady).toBe(false);
     });
   });
 });

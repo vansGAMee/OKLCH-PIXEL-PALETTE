@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "encoder": "intfloat/multilingual-e5-small",
+  "groups": [
+    {
+      "group": "weather",
+      "positiveMean": 0.8271993398666382,
+      "hardNegativeMaximum": 0.8874956369400024,
+      "meanNegative": 0.8259110291798909,
+      "meanMargin": 0.0012883106867472849
+    },
+    {
+      "group": "vegetation",
+      "positiveMean": 0.8435429732004801,
+      "hardNegativeMaximum": 0.8929344415664673,
+      "meanNegative": 0.824847666422526,
+      "meanMargin": 0.018695306777954057
+    },
+    {
+      "group": "clinical",
+      "positiveMean": 0.8779227534929911,
+      "hardNegativeMaximum": 0.8678820133209229,
+      "meanNegative": 0.8276677449544271,
+      "meanMargin": 0.05025500853856402
+    },
+    {
+      "group": "transparent_material",
+      "positiveMean": 0.8565542300542196,
+      "hardNegativeMaximum": 0.8929344415664673,
+      "meanNegative": 0.8299229184786479,
+      "meanMargin": 0.026631311575571748
+    },
+    {
+      "group": "painting",
+      "positiveMean": 0.8322754899660746,
+      "hardNegativeMaximum": 0.8795965313911438,
+      "meanNegative": 0.8198845068613688,
+      "meanMargin": 0.012390983104705766
+    },
+    {
+      "group": "melancholy",
+      "positiveMean": 0.8369320034980774,
+      "hardNegativeMaximum": 0.8757894039154053,
+      "meanNegative": 0.8172599911689759,
+      "meanMargin": 0.01967201232910154
+    }
+  ],
+  "bilingual": [
+    {
+      "en": "rain",
+      "ru": "дождь",
+      "cosine": 0.8942771553993225
+    },
+    {
+      "en": "grass",
+      "ru": "трава",
+      "cosine": 0.8535909652709961
+    },
+    {
+      "en": "hospital",
+      "ru": "больница",
+      "cosine": 0.899690568447113
+    },
+    {
+      "en": "snow",
+      "ru": "снег",
+      "cosine": 0.9564272165298462
+    },
+    {
+      "en": "glass",
+      "ru": "стекло",
+      "cosine": 0.8481249809265137
+    }
+  ],
+  "pass": true,
+  "interpretation": "PASS means semantic signal exists in E5; it does not qualify the color decoder."
+}

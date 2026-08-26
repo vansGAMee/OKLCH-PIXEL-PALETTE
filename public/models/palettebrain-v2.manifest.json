@@ -5,9 +5,11 @@
   "trainedFromCandidate": 11,
   "productionReady": false,
   "decoder": {
+    "path": "/models/palettebrain-v4-candidate11-b1bc9346.onnx",
     "url": "/models/palettebrain-v4-candidate11-b1bc9346.onnx",
     "sha256": "b1bc93467e99196c55f19a61005f1fe9b7df66b7b4fe7258205cf958870c51f8",
     "bytes": 2829409,
+    "sizeBytes": 2829409,
     "format": "onnx",
     "opset": 17,
     "inputs": {
@@ -44,9 +46,13 @@
   },
   "textEncoder": {
     "id": "intfloat/multilingual-e5-small",
+    "browserId": "multilingual-e5-small",
     "dimension": 384,
     "prefix": "query: ",
     "pooling": "mean",
-    "l2Normalized": true
+    "l2Normalized": true,
+    "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+    "bytes": 118308185,
+    "revision": "ae61bf0193ce3851dc8a45147e459b04ed783d8a"
   }
 }

@@ -7,9 +7,7 @@
       "category": "basic_objects",
       "prompts": [
         "grass",
-        "трава",
-        "green grass",
-        "зелёная трава"
+        "трава"
       ],
       "expected_hue_range": [
         110.0,
@@ -47,9 +45,7 @@
       "category": "basic_objects",
       "prompts": [
         "leaf",
-        "лист",
-        "green leaf",
-        "зелёный лист"
+        "лист"
       ],
       "expected_hue_range": [
         110.0,
@@ -80,9 +76,7 @@
       "category": "basic_objects",
       "prompts": [
         "apple",
-        "яблоко",
-        "red apple",
-        "красное яблоко"
+        "яблоко"
       ],
       "expected_hue_range": [
         20.0,
@@ -109,9 +103,7 @@
       "category": "basic_objects",
       "prompts": [
         "blood",
-        "кровь",
-        "crimson blood",
-        "алая кровь"
+        "кровь"
       ],
       "expected_hue_range": [
         20.0,
@@ -537,9 +529,7 @@
       "category": "light",
       "prompts": [
         "sunset",
-        "закат",
-        "crimson sunset",
-        "багровый закат"
+        "закат"
       ],
       "expected_hue_range": [
         15.0,
@@ -825,7 +815,7 @@
     "clinical_waiting_room": {
       "category": "ood_paraphrases",
       "prompts": [
-        "clinical waiting room with teal tiles",
+        "clinical waiting room",
         "клинический кабинет"
       ],
       "expected_hue_range": [
@@ -848,8 +838,48 @@
           "#ADCFCF"
         ]
       ]
+    },
+    "desert": {
+      "category": "nature",
+      "prompts": ["desert", "пустыня"],
+      "expected_hue_range": [55.0, 100.0],
+      "reference_palettes": [
+        ["#5A3B21", "#8A6135", "#B98B4E", "#D8B36B", "#E8D39A"],
+        ["#49301F", "#765033", "#A97845", "#CFA361", "#E2C58A"]
+      ]
+    },
+    "fire": {
+      "category": "nature",
+      "prompts": ["fire", "огонь"],
+      "expected_hue_range": [20.0, 90.0],
+      "reference_palettes": [
+        ["#3A0804", "#7E1608", "#C63A0B", "#F07813", "#FFD15B"],
+        ["#4B0B05", "#921D08", "#D84B0D", "#F6931C", "#FFE082"]
+      ]
+    },
+    "autumn_leaves": {
+      "category": "nature",
+      "prompts": ["autumn leaves", "осенние листья"],
+      "expected_hue_range": [25.0, 95.0],
+      "reference_palettes": [
+        ["#4D1F12", "#7D3218", "#A9501D", "#D77B25", "#D8A43B"],
+        ["#3F2314", "#71401E", "#9E6226", "#C88A35", "#D9B45A"]
+      ]
     }
   },
+  "explicit_color_controls": [
+    {"prompt": "green grass", "baseConcept": "grass", "modifier": "green"},
+    {"prompt": "зелёная трава", "baseConcept": "grass", "modifier": "green"},
+    {"prompt": "green leaf", "baseConcept": "leaf", "modifier": "green"},
+    {"prompt": "зелёный лист", "baseConcept": "leaf", "modifier": "green"},
+    {"prompt": "red apple", "baseConcept": "apple", "modifier": "red"},
+    {"prompt": "красное яблоко", "baseConcept": "apple", "modifier": "red"},
+    {"prompt": "crimson blood", "baseConcept": "blood", "modifier": "crimson"},
+    {"prompt": "алая кровь", "baseConcept": "blood", "modifier": "crimson"},
+    {"prompt": "crimson sunset", "baseConcept": "sunset", "modifier": "crimson"},
+    {"prompt": "багровый закат", "baseConcept": "sunset", "modifier": "crimson"},
+    {"prompt": "clinical waiting room with teal tiles", "baseConcept": "clinical_waiting_room", "modifier": "teal"}
+  ],
   "contrast_pairs": [
     {
       "prompt_a": "grass",
@@ -879,13 +909,13 @@
       "prompt_a": "snow",
       "prompt_b": "fire",
       "concept_a": "snow",
-      "concept_b": "sunset"
+      "concept_b": "fire"
     },
     {
       "prompt_a": "снег",
       "prompt_b": "огонь",
       "concept_a": "snow",
-      "concept_b": "sunset"
+      "concept_b": "fire"
     },
     {
       "prompt_a": "hospital",
@@ -915,7 +945,7 @@
       "prompt_a": "winter forest at night",
       "prompt_b": "autumn leaves",
       "concept_a": "winter_forest_at_night",
-      "concept_b": "kitchen"
+      "concept_b": "autumn_leaves"
     }
   ]
 }

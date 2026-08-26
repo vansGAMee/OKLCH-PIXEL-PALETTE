@@ -382,7 +382,8 @@ async function collectRuntimeMetadata() {
     '@huggingface/transformers package metadata',
   );
   const declaredTransformersOrtVersion = transformersPackage?.dependencies?.['onnxruntime-web'];
-  const decoderPath = resolvePublicArtifact(manifest?.decoder?.path);
+  const decoderUrl = manifest?.decoder?.path ?? manifest?.decoder?.url;
+  const decoderPath = resolvePublicArtifact(decoderUrl);
   const encoderModelPath = path.join(MODELS_DIR, ENCODER_MODEL_ID, 'onnx', 'model_quantized.onnx');
   const tokenizerPath = path.join(MODELS_DIR, ENCODER_MODEL_ID, 'tokenizer.json');
   const encoderConfigPath = path.join(MODELS_DIR, ENCODER_MODEL_ID, 'config.json');
@@ -416,9 +417,8 @@ async function collectRuntimeMetadata() {
     packageVersion('@huggingface', 'transformers', 'node_modules', 'onnxruntime-node'),
   ]);
 
-  const declaredEncoderId = typeof manifest.encoder === 'string'
-    ? manifest.encoder
-    : manifest?.encoder?.modelId;
+  const declaredEncoderId = manifest?.textEncoder?.browserId
+    ?? (typeof manifest.encoder === 'string' ? manifest.encoder : manifest?.encoder?.modelId);
   if (declaredEncoderId !== ENCODER_MODEL_ID) {
     throw new Error(
       `Manifest encoder ${String(declaredEncoderId)} does not match runtime ${ENCODER_MODEL_ID}`,
@@ -426,7 +426,9 @@ async function collectRuntimeMetadata() {
   }
 
   const declaredDecoderSha = manifest?.decoder?.sha256 ?? manifest.decoderSha256;
-  const declaredDecoderBytes = manifest?.decoder?.sizeBytes ?? manifest.decoderBytes;
+  const declaredDecoderBytes = manifest?.decoder?.sizeBytes
+    ?? manifest?.decoder?.bytes
+    ?? manifest.decoderBytes;
   if (declaredDecoderSha && declaredDecoderSha !== decoderMeta.sha256) {
     throw new Error('Decoder SHA-256 does not match the manifest');
   }
@@ -522,6 +524,7 @@ function assertSessionInputs(session, required, label) {
 }
 
 async function createRuntime(mode, runtimeMetadata) {
+  let lastDecoderOutput = null;
   const [{ AutoTokenizer, env: transformersEnv }, ort] = await Promise.all([
     import('@huggingface/transformers'),
     import('onnxruntime-web/webgpu'),
@@ -621,6 +624,10 @@ async function createRuntime(mode, runtimeMetadata) {
           if (!palette || palette.type !== 'float32') {
             throw new Error('PaletteBrain ONNX model did not return float32 palette');
           }
+          lastDecoderOutput = {
+            dims: [...palette.dims],
+            data: Array.from(palette.data),
+          };
           return { data: palette.data, dims: palette.dims };
         },
       };
@@ -641,6 +648,7 @@ async function createRuntime(mode, runtimeMetadata) {
     inference,
     normalizeText: tokenizerModule.normalizeText,
     legacy,
+    getLastDecoderOutput: () => lastDecoderOutput,
   };
 }
 
@@ -693,6 +701,7 @@ async function runPaletteBrain(requests, runtime) {
         lockedColors: request.lockedColors,
       },
       result,
+      rawDecoderOutput: runtime.getLastDecoderOutput(),
       elapsedMs: roundedMs(startedAt),
     });
   }

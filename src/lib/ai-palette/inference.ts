@@ -73,7 +73,7 @@ const ENCODER_EMBEDDING_SIZE = 384;
 const MAX_PALETTE_SIZE = 9;
 const PROMPT_EMBEDDING_CACHE_LIMIT = 16;
 const DECODER_MANIFEST_PATH = '/models/palettebrain-v2.manifest.json';
-const DECODER_MODEL_PATH = '/models/palettebrain-v3-candidate7-bb52e9d9.onnx';
+const E5_UPSTREAM_MODEL_ID = 'intfloat/multilingual-e5-small';
 
 let encoderPromise: Promise<EncoderSession> | null = null;
 let customEncoderLoader: (() => Promise<EncoderSession>) | null = null;
@@ -199,27 +199,50 @@ export interface DecoderManifestContract {
   modelVersion?: string;
   codename?: string | null;
   status?: string;
-  trainedFromCandidate?: string;
+  trainedFromCandidate?: number;
   productionReady?: boolean;
-  encoder?: {
-    modelId?: string;
-    embeddingSize?: number;
+  textEncoder?: {
+    id?: string;
+    browserId?: string;
+    dimension?: number;
+    prefix?: string;
+    pooling?: string;
+    l2Normalized?: boolean;
+    sha256?: string;
+    bytes?: number;
   };
   decoder?: {
     path?: string;
     url?: string;
     sha256?: string;
     sizeBytes?: number;
+    bytes?: number;
+    format?: string;
+    opset?: number;
     parameters?: number;
   };
 }
 
-export function validateDecoderManifest(raw: unknown): { modelVersion: string; decoderPath: string } {
+export interface ValidatedDecoderManifest {
+  modelVersion: string;
+  decoderPath: string;
+  decoderSha256: string;
+  decoderBytes: number;
+  productionReady: boolean;
+}
+
+export function validateDecoderManifest(
+  raw: unknown,
+  options: { allowExperimental?: boolean } = {},
+): ValidatedDecoderManifest {
   if (!raw || typeof raw !== 'object') {
     throw new Error('manifest must be a JSON object');
   }
 
   const manifest = raw as DecoderManifestContract;
+  if (manifest.schemaVersion !== 2) {
+    throw new Error('manifest schemaVersion must be 2');
+  }
   const version = typeof manifest.modelVersion === 'string' && manifest.modelVersion.trim()
     ? manifest.modelVersion.trim()
     : (typeof manifest.version === 'string' && manifest.version.trim() ? manifest.version.trim() : null);
@@ -228,19 +251,66 @@ export function validateDecoderManifest(raw: unknown): { modelVersion: string; d
     throw new Error('manifest modelVersion must be a non-empty string');
   }
 
-  const rawPath = manifest.decoder?.url ?? manifest.decoder?.path;
-  const decoderPath = typeof rawPath === 'string' && rawPath.trim()
-    ? rawPath.trim()
-    : DECODER_MODEL_PATH;
+  const rawPath = manifest.decoder?.path ?? manifest.decoder?.url;
+  const decoderPath = typeof rawPath === 'string' && rawPath.trim() ? rawPath.trim() : null;
 
-  if (!decoderPath.startsWith('/models/')) {
+  if (!decoderPath || !decoderPath.startsWith('/models/')) {
     throw new Error('manifest decoder path must be a valid path under /models/');
   }
+  if (decoderPath.includes('..') || !decoderPath.endsWith('.onnx')) {
+    throw new Error('manifest decoder path must identify an ONNX file under /models/');
+  }
+  const decoderSha256 = manifest.decoder?.sha256;
+  if (typeof decoderSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(decoderSha256)) {
+    throw new Error('manifest decoder sha256 must be 64 lowercase hexadecimal characters');
+  }
+  const decoderBytes = manifest.decoder?.sizeBytes ?? manifest.decoder?.bytes;
+  if (!Number.isSafeInteger(decoderBytes) || Number(decoderBytes) <= 0) {
+    throw new Error('manifest decoder bytes must be a positive safe integer');
+  }
+  if (manifest.decoder?.format !== 'onnx' || !Number.isInteger(manifest.decoder?.opset)) {
+    throw new Error('manifest decoder format/opset contract is invalid');
+  }
+  const encoder = manifest.textEncoder;
+  if (
+    encoder?.id !== E5_UPSTREAM_MODEL_ID
+    || encoder.browserId !== ENCODER_MODEL_ID
+    || encoder.dimension !== ENCODER_EMBEDDING_SIZE
+    || encoder.prefix !== 'query: '
+    || encoder.pooling !== 'mean'
+    || encoder.l2Normalized !== true
+    || typeof encoder.sha256 !== 'string'
+    || !/^[a-f0-9]{64}$/.test(encoder.sha256)
+    || !Number.isSafeInteger(encoder.bytes)
+    || Number(encoder.bytes) <= 0
+  ) {
+    throw new Error('manifest textEncoder does not match the frozen production E5 contract');
+  }
+  if (typeof manifest.productionReady !== 'boolean') {
+    throw new Error('manifest productionReady must be boolean');
+  }
+  if (!Number.isInteger(manifest.trainedFromCandidate) || manifest.trainedFromCandidate !== 11) {
+    throw new Error('manifest trainedFromCandidate must identify Candidate 11');
+  }
+  if (!manifest.productionReady && manifest.codename !== null) {
+    throw new Error('experimental Candidate 11 manifest codename must be null');
+  }
+  if (!manifest.productionReady && !options.allowExperimental) {
+    throw new Error(
+      'manifest marks this decoder experimental; set NEXT_PUBLIC_PALETTEBRAIN_ALLOW_EXPERIMENTAL=1 only for development qualification',
+    );
+  }
 
-  return { modelVersion: version, decoderPath };
+  return {
+    modelVersion: version,
+    decoderPath,
+    decoderSha256,
+    decoderBytes: Number(decoderBytes),
+    productionReady: manifest.productionReady,
+  };
 }
 
-async function loadDecoderManifest(): Promise<{ modelVersion: string; decoderPath: string }> {
+async function loadDecoderManifest(): Promise<ValidatedDecoderManifest> {
   if (typeof fetch !== 'function') {
     throw new Error('fetch is unavailable');
   }
@@ -254,11 +324,21 @@ async function loadDecoderManifest(): Promise<{ modelVersion: string; decoderPat
   }
 
   const raw = await response.json() as unknown;
-  return validateDecoderManifest(raw);
+  return validateDecoderManifest(raw, {
+    allowExperimental: process.env.NEXT_PUBLIC_PALETTEBRAIN_ALLOW_EXPERIMENTAL === '1',
+  });
+}
+
+async function sha256Hex(value: ArrayBuffer): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Web Crypto SHA-256 is unavailable');
+  }
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', value);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
-  let manifest: { modelVersion: string; decoderPath: string };
+  let manifest: ValidatedDecoderManifest;
   try {
     manifest = await loadDecoderManifest();
   } catch (err) {
@@ -276,9 +356,29 @@ async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.proxy = false;
 
+  let decoderBytes: ArrayBuffer;
+  try {
+    const response = await fetch(manifest.decoderPath, { cache: 'no-cache' });
+    if (!response.ok) {
+      throw new Error(`GET ${manifest.decoderPath} returned ${response.status}`);
+    }
+    decoderBytes = await response.arrayBuffer();
+    if (decoderBytes.byteLength !== manifest.decoderBytes) {
+      throw new Error(
+        `decoder byte size mismatch: manifest=${manifest.decoderBytes}, actual=${decoderBytes.byteLength}`,
+      );
+    }
+    const actualSha256 = await sha256Hex(decoderBytes);
+    if (actualSha256 !== manifest.decoderSha256) {
+      throw new Error('decoder SHA-256 does not match the manifest');
+    }
+  } catch (err) {
+    throw errorWithCause(`AI palette decoder integrity check failed: ${errorDetail(err)}`, err);
+  }
+
   let session: import('onnxruntime-web/webgpu').InferenceSession;
   try {
-    session = await ort.InferenceSession.create(manifest.decoderPath, {
+    session = await ort.InferenceSession.create(decoderBytes, {
       executionProviders: ['wasm'],
       graphOptimizationLevel: 'all',
     });
