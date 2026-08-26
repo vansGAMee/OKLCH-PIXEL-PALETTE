@@ -14,8 +14,10 @@ from ml.palettebrain.color_distribution import palette_or_pixels_to_oklch_histog
 from ml.palettebrain.prepare_c11_recovered_source import (
     SIGLIP_REVISION,
     choose_balanced_smoke,
+    choose_calibration_threshold,
     extract_deterministic_palette,
     rgb_to_oklab_array,
+    siglip_relevance_prompt,
     split_by_group,
 )
 
@@ -143,6 +145,30 @@ def test_smoke_can_use_stable_sources_when_openverse_is_unavailable() -> None:
     assert {row["source_id"] for row in selected} == {"met", "artic", "open_images"}
 
 
+def test_calibration_threshold_prioritizes_required_recall_then_youden_j() -> None:
+    positive = np.asarray([0.90, 0.80, 0.70, 0.60, 0.50, 0.40], dtype=np.float32)
+    negative = np.asarray([0.65, 0.55, 0.35, 0.25, 0.15, 0.05], dtype=np.float32)
+    threshold, metrics = choose_calibration_threshold(positive, negative, minimum_tpr=0.85)
+    assert threshold <= 0.45
+    assert metrics["truePositiveRate"] >= 0.85
+    assert metrics["youdenJ"] == pytest.approx(
+        metrics["truePositiveRate"] - metrics["falsePositiveRate"]
+    )
+
+
+def test_siglip_relevance_prompt_uses_verified_visual_label() -> None:
+    prompt = siglip_relevance_prompt(
+        {"source_id": "open_images", "bbox_class_name": "apple", "source_type": "real_world"},
+        {"retrieval_query": "ripe orchard apple still life"},
+    )
+    assert prompt == "a close-up photo of an apple"
+    artwork_prompt = siglip_relevance_prompt(
+        {"source_id": "met", "source_type": "artwork"},
+        {"retrieval_query": "misty mountain landscape"},
+    )
+    assert artwork_prompt == "an artwork depicting misty mountain landscape"
+
+
 def test_outlier_noise_cluster_rejection() -> None:
     # 2000 dominant forest green / earthy brown / golden amber pixels
     rng = np.random.RandomState(42)
@@ -209,4 +235,3 @@ def test_crop_required_policy_enforcement(tmp_path: Path) -> None:
     assert np.allclose(crop_coords, [0.1, 0.2, 0.8, 0.9])
     assert 0.40 <= mask_fraction <= 0.60
     assert oklab_px.shape[1] == 3
-

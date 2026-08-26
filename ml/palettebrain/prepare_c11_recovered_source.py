@@ -65,6 +65,12 @@ NEAR_DUP_HAMMING = 2
 
 SMOKE_VALID_IMAGES = 48
 SMOKE_MIN_VALID_PER_SOURCE = 2
+SMOKE_SOURCE_TARGETS = {
+    "open_images": 20,
+    "met": 60,
+    "artic": 60,
+    "openverse": 20,
+}
 FULL_MIN_UNIQUE_IMAGES = 1500
 FULL_TARGET_UNIQUE_IMAGES = 2500
 FULL_MAX_VALID_IMAGES = 3500
@@ -1635,7 +1641,10 @@ def encode_siglip_images(
 ) -> np.ndarray:
     chunks: list[np.ndarray] = []
     for start in range(0, len(images), batch_size):
-        batch = images[start : start + batch_size]
+        # SigLIP's pinned processor owns resize/rescale/normalization.  Supplying
+        # explicit RGB PIL images prevents alpha/grayscale and BGR array inputs
+        # from silently changing the model contract.
+        batch = [image.convert("RGB") for image in images[start : start + batch_size]]
         inputs = processor(images=batch, return_tensors="pt")
         inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.inference_mode():
@@ -1672,6 +1681,8 @@ def encode_siglip_texts(
 def choose_calibration_threshold(
     positive: np.ndarray,
     negative: np.ndarray,
+    *,
+    minimum_tpr: float = 0.85,
 ) -> tuple[float, dict[str, float]]:
     values = np.unique(np.concatenate([positive, negative]))
     if len(values) < 2:
@@ -1680,21 +1691,34 @@ def choose_calibration_threshold(
         float((values[i] + values[i + 1]) / 2.0)
         for i in range(len(values) - 1)
     ]
-    best: tuple[float, float, float, float] | None = None
+    best: tuple[float, float, float, float, float] | None = None
     for threshold in candidates:
         tpr = float(np.mean(positive >= threshold))
         fpr = float(np.mean(negative >= threshold))
         balanced = 0.5 * (tpr + (1.0 - fpr))
-        candidate = (balanced, -fpr, tpr, threshold)
+        precision_denominator = int(np.sum(positive >= threshold)) + int(np.sum(negative >= threshold))
+        precision = float(np.sum(positive >= threshold) / precision_denominator) if precision_denominator else 0.0
+        f1 = 2.0 * precision * tpr / (precision + tpr) if precision + tpr else 0.0
+        youden_j = tpr - fpr
+        # Enforce recall first, then maximize Youden's J with F1 as a stable
+        # tie-breaker.  This avoids the previous high-threshold/low-TPR optimum.
+        candidate = (float(tpr >= minimum_tpr), youden_j, f1, -fpr, threshold)
         if best is None or candidate > best:
             best = candidate
     assert best is not None
-    balanced, neg_fpr, tpr, threshold = best
-    fpr = -neg_fpr
+    _, _, _, _, threshold = best
+    tpr = float(np.mean(positive >= threshold))
+    fpr = float(np.mean(negative >= threshold))
+    balanced = 0.5 * (tpr + (1.0 - fpr))
+    precision_denominator = int(np.sum(positive >= threshold)) + int(np.sum(negative >= threshold))
+    precision = float(np.sum(positive >= threshold) / precision_denominator) if precision_denominator else 0.0
+    f1 = 2.0 * precision * tpr / (precision + tpr) if precision + tpr else 0.0
     metrics = {
         "balancedAccuracy": balanced,
         "truePositiveRate": tpr,
         "falsePositiveRate": fpr,
+        "youdenJ": tpr - fpr,
+        "f1": f1,
         "positiveMean": float(np.mean(positive)),
         "positiveMedian": float(np.median(positive)),
         "positiveMin": float(np.min(positive)),
@@ -1708,6 +1732,34 @@ def choose_calibration_threshold(
     return threshold, metrics
 
 
+def validate_siglip_preprocessing(processor: Any) -> dict[str, Any]:
+    """Prove the pinned processor produces normalized RGB in [-1, 1]."""
+    red = Image.new("RGB", (224, 224), (255, 0, 0))
+    values = processor(images=[red], return_tensors="pt")["pixel_values"]
+    if values.ndim != 4 or values.shape[1] != 3:
+        raise RuntimeError(f"SigLIP processor emitted invalid pixel shape {tuple(values.shape)}")
+    minimum = float(values.min())
+    maximum = float(values.max())
+    channel_means = values.mean(dim=(0, 2, 3)).tolist()
+    if minimum < -1.001 or maximum > 1.001:
+        raise RuntimeError(f"SigLIP processor scaling is outside [-1,1]: {minimum}, {maximum}")
+    if not (channel_means[0] > 0.9 and channel_means[1] < -0.9 and channel_means[2] < -0.9):
+        raise RuntimeError(f"SigLIP processor RGB channel order is invalid: {channel_means}")
+    return {"range": [minimum, maximum], "solidRedChannelMeans": channel_means}
+
+
+def siglip_relevance_prompt(record: dict[str, Any], concept: dict[str, Any]) -> str:
+    """Align text with the visual evidence actually verified by each source."""
+    bbox_class = str(record.get("bbox_class_name") or "").strip().lower()
+    if record.get("source_id") == "open_images" and bbox_class:
+        article = "an" if bbox_class[:1] in "aeiou" else "a"
+        return f"a close-up photo of {article} {bbox_class}"
+    query = str(concept["retrieval_query"]).strip()
+    if str(record.get("source_type")) == "artwork":
+        return f"an artwork depicting {query}"
+    return f"a photo depicting {query}"
+
+
 def calibrate_siglip_from_verified_openimages(
     *,
     model: Any,
@@ -1718,6 +1770,9 @@ def calibrate_siglip_from_verified_openimages(
     device: torch.device,
     report_path: Path,
     disk: DiskBudget,
+    minimum_tpr: float = 0.85,
+    minimum_balanced_accuracy: float = 0.80,
+    maximum_fpr: float = 0.35,
 ) -> float:
     verified = [
         r
@@ -1759,64 +1814,81 @@ def calibrate_siglip_from_verified_openimages(
     images = [r["processed_pil"] for r in verified]
     sample_concepts = [str(r["concept_id"]) for r in verified]
     unique_concepts = sorted(set(sample_concepts))
-    concept_queries = {
-        cid: str(concept_map[cid]["retrieval_query"]).strip()
-        for cid in unique_concepts
+    class_names = sorted({str(r["bbox_class_name"]).strip().lower() for r in verified})
+    if len(class_names) < 4:
+        raise RuntimeError("SigLIP calibration requires >=4 distinct verified bbox classes")
+    class_prompts = {
+        name: siglip_relevance_prompt(
+            {"source_id": "open_images", "bbox_class_name": name},
+            {"retrieval_query": name},
+        )
+        for name in class_names
     }
-    if any(not query for query in concept_queries.values()):
-        raise RuntimeError("SigLIP calibration found an empty retrieval query")
 
     image_features = encode_siglip_images(model, processor, images, device)
     query_features = encode_siglip_texts(
         model,
         tokenizer,
-        [concept_queries[cid] for cid in unique_concepts],
+        [class_prompts[name] for name in class_names],
         device,
     )
-    query_index = {cid: i for i, cid in enumerate(unique_concepts)}
+    query_index = {name: i for i, name in enumerate(class_names)}
     all_scores = image_features @ query_features.T
 
     positive_scores: list[float] = []
     hard_negative_scores: list[float] = []
-    hard_negative_concepts: list[str] = []
+    hard_negative_classes: list[str] = []
 
-    for row_index, positive_cid in enumerate(sample_concepts):
-        positive_col = query_index[positive_cid]
+    for row_index, record in enumerate(verified):
+        positive_class = str(record["bbox_class_name"]).strip().lower()
+        positive_col = query_index[positive_class]
         positive_scores.append(float(all_scores[row_index, positive_col]))
 
         candidates = [
             (float(all_scores[row_index, col]), cid)
-            for cid, col in query_index.items()
-            if cid != positive_cid
+            for class_name, col in query_index.items()
+            if class_name != positive_class
         ]
         if not candidates:
             raise RuntimeError("SigLIP calibration has no hard-negative candidates")
-        hard_score, hard_cid = max(candidates, key=lambda pair: pair[0])
+        hard_score, hard_class = max(candidates, key=lambda pair: pair[0])
         hard_negative_scores.append(hard_score)
-        hard_negative_concepts.append(hard_cid)
+        hard_negative_classes.append(hard_class)
 
     positive = np.asarray(positive_scores, dtype=np.float32)
     negative = np.asarray(hard_negative_scores, dtype=np.float32)
-    threshold, metrics = choose_calibration_threshold(positive, negative)
+    threshold, metrics = choose_calibration_threshold(
+        positive,
+        negative,
+        minimum_tpr=minimum_tpr,
+    )
 
     passed = (
         metrics["meanSeparation"] >= 0.02
-        and metrics["truePositiveRate"] >= 0.75
-        and metrics["falsePositiveRate"] <= 0.20
-        and metrics["balancedAccuracy"] >= 0.78
+        and metrics["truePositiveRate"] >= minimum_tpr
+        and metrics["falsePositiveRate"] <= maximum_fpr
+        and metrics["balancedAccuracy"] >= minimum_balanced_accuracy
     )
     report = {
         "schema": CALIBRATION_SCHEMA,
         "teacherModelId": SIGLIP_MODEL_ID,
         "teacherRevision": SIGLIP_REVISION,
         "source": "Open Images source-verified bbox crops",
-        "negativeMode": "hardest other verified concept retrieval query",
+        "negativeMode": "hardest other verified bbox-class prompt",
+        "promptTemplate": "a close-up photo of {article} {verified_bbox_class}",
         "sampleCount": len(verified),
         "conceptCount": len(unique_concepts),
         "concepts": unique_concepts,
+        "verifiedBboxClasses": class_names,
         "threshold": threshold,
         "metrics": metrics,
-        "hardNegativeConcepts": hard_negative_concepts,
+        "criteria": {
+            "minimumTruePositiveRate": minimum_tpr,
+            "minimumBalancedAccuracy": minimum_balanced_accuracy,
+            "maximumFalsePositiveRate": maximum_fpr,
+            "minimumMeanSeparation": 0.02,
+        },
+        "hardNegativeClasses": hard_negative_classes,
         "passed": passed,
     }
     guarded_atomic_write_text(
@@ -1879,12 +1951,7 @@ def acquire_smoke_records(
     open_images: OpenImagesBboxIndex,
 ) -> list[dict[str, Any]]:
     global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL
-    source_targets = {
-        "open_images": 12,
-        "met": 20,
-        "artic": 20,
-        "openverse": 20,
-    }
+    source_targets = SMOKE_SOURCE_TARGETS
     result: list[dict[str, Any]] = []
 
     for source, target in source_targets.items():
@@ -2134,7 +2201,7 @@ def score_and_filter_relevance(
         return [], 0
     images = [r["processed_pil"] for r in processed]
     queries = [
-        str(concept_map[str(r["concept_id"])]["retrieval_query"])
+        siglip_relevance_prompt(r, concept_map[str(r["concept_id"])])
         for r in processed
     ]
     image_features = encode_siglip_images(model, processor, images, device)
@@ -2737,6 +2804,9 @@ def build_c11_dataset(
     seed: int,
     device: str,
     cache_dir: str,
+    calibration_min_tpr: float = 0.85,
+    calibration_min_balanced_accuracy: float = 0.80,
+    calibration_max_fpr: float = 0.35,
 ) -> dict[str, Any]:
     manifest = load_and_validate_manifest(manifest_path)
     policy = manifest.get("acquisition_policy", {})
@@ -2869,6 +2939,7 @@ def build_c11_dataset(
         revision=SIGLIP_REVISION,
         cache_dir=cache_dir,
     ).to(resolved_device).eval()
+    preprocessing_audit = validate_siglip_preprocessing(processor)
 
     calibration_path = (
         Path("ml/palettebrain/reports")
@@ -2885,6 +2956,9 @@ def build_c11_dataset(
             device=resolved_device,
             report_path=calibration_path,
             disk=disk,
+            minimum_tpr=calibration_min_tpr,
+            minimum_balanced_accuracy=calibration_min_balanced_accuracy,
+            maximum_fpr=calibration_max_fpr,
         )
     else:
         threshold = load_frozen_calibration(calibration_path)
@@ -3038,6 +3112,7 @@ def build_c11_dataset(
         "e5ModelId": E5_MODEL_ID,
         "e5Revision": E5_REVISION,
         "transformersVersion": transformers.__version__,
+        "siglipPreprocessing": preprocessing_audit,
         "conceptBankSha256": concepts_sha256,
         "sourceManifestSha256": manifest_sha256,
         "siglipCalibrationReportSha256": calibration_sha256,
@@ -3087,6 +3162,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=20260826)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--cache-dir", default="ml/.cache/hub")
+    parser.add_argument("--calibration-min-tpr", type=float, default=0.85)
+    parser.add_argument("--calibration-min-balanced-accuracy", type=float, default=0.80)
+    parser.add_argument("--calibration-max-fpr", type=float, default=0.35)
     args = parser.parse_args()
 
     build_c11_dataset(
@@ -3099,6 +3177,9 @@ def main() -> None:
         seed=int(args.seed),
         device=str(args.device),
         cache_dir=str(args.cache_dir),
+        calibration_min_tpr=float(args.calibration_min_tpr),
+        calibration_min_balanced_accuracy=float(args.calibration_min_balanced_accuracy),
+        calibration_max_fpr=float(args.calibration_max_fpr),
     )
 
 
