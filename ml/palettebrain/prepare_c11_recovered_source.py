@@ -422,8 +422,18 @@ def safe_http_get(
     return None
 
 
-def fetch_json(url: str, *, timeout: int = 20) -> dict[str, Any] | None:
-    raw = safe_http_get(url, timeout=timeout, max_bytes=MAX_API_BYTES)
+def fetch_json(
+    url: str,
+    *,
+    timeout: int = 20,
+    max_retries: int = 2,
+) -> dict[str, Any] | None:
+    raw = safe_http_get(
+        url,
+        timeout=timeout,
+        max_retries=max_retries,
+        max_bytes=MAX_API_BYTES,
+    )
     if not raw:
         return None
     try:
@@ -1240,7 +1250,7 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
         "https://collectionapi.metmuseum.org/public/collection/v1/search"
         f"?q={urllib.parse.quote(query)}&hasImages=true"
     )
-    search = fetch_json(search_url, timeout=15)
+    search = fetch_json(search_url, timeout=10, max_retries=1)
     if not search:
         return []
     object_ids = list(search.get("objectIDs") or [])[:limit]
@@ -1248,7 +1258,8 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
         return object_id, fetch_json(
             "https://collectionapi.metmuseum.org/public/collection/v1/objects/"
             + str(object_id),
-            timeout=15,
+            timeout=8,
+            max_retries=0,
         )
 
     # The Met search API returns IDs only. Fetch independent public-domain
@@ -1302,7 +1313,7 @@ def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
         "&fields=id,title,artist_display,image_id,is_public_domain"
         f"&limit={int(limit)}"
     )
-    payload = fetch_json(url, timeout=15)
+    payload = fetch_json(url, timeout=10, max_retries=1)
     if not payload:
         return []
     iiif_base = str(
@@ -1459,8 +1470,8 @@ def download_candidate(
     for url in urls:
         data = safe_http_get(
             url,
-            timeout=25,
-            max_retries=2,
+            timeout=15,
+            max_retries=1,
             max_bytes=disk.max_download_bytes(MAX_SINGLE_IMAGE_BYTES),
             headers=custom_headers,
         )
