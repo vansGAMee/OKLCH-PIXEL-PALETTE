@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "path": "ml/palettebrain/data/palettebrain_c11_smoke_repaired.npz",
+  "sha256": "3a69d4be8571c85536cbccaeeebc900774831db0f7b64ed63297e2c5ebdd3d3b",
+  "bytes": 252000,
+  "recordCount": 144,
+  "uniqueEmbeddingCount": 115,
+  "duplicateEmbeddingCount": 29,
+  "splitCounts": {
+    "train": 124,
+    "val": 20
+  },
+  "countCoverage": {
+    "2": 36,
+    "3": 36,
+    "5": 36,
+    "8": 36
+  },
+  "lockCoverage": {
+    "0": 115,
+    "1": 14,
+    "2": 15
+  },
+  "fields": [
+    "category",
+    "color_prior",
+    "concept_id",
+    "count_mask",
+    "creator",
+    "crop_coordinates",
+    "image_id",
+    "landing_url",
+    "language",
+    "license",
+    "locked_colors",
+    "locked_mask",
+    "mask_area_fraction",
+    "prompt",
+    "quality_weight",
+    "seed_noise",
+    "source_group_id",
+    "source_id",
+    "source_url",
+    "split",
+    "target",
+    "teacher_latent",
+    "text_embedding"
+  ],
+  "missingProvenanceFields": [],
+  "provenance": {
+    "uniquePromptCount": 115,
+    "duplicatePromptCount": 29,
+    "uniqueImageCount": 34,
+    "duplicateImageRecordCount": 110,
+    "sourceGroupLeakCount": 0,
+    "licenses": [
+      "CC BY 2.0",
+      "CC CC0 1.0",
+      "CC PDM 1.0",
+      "CC0 1.0"
+    ],
+    "russianPromptFraction": 0.5486111111111112,
+    "maskAreaMean": 0.9824553240740741,
+    "backgroundDominationSuspiciousCount": 0
+  },
+  "meanHueBinMass": [
+    0.005619708856116465,
+    0.057532390137810314,
+    0.07852424621973524,
+    0.17504008854440656,
+    0.08893361645181767,
+    0.03059950889490122,
+    0.01344500665132829,
+    0.0030575197821784677,
+    0.006432408359566495,
+    0.01082514726404084,
+    0.011407978903360573,
+    0.032431910350525256,
+    0.022462742916821567,
+    0.0017528219699904754,
+    0.0010963702606463326,
+    0.0011113179110355557
+  ],
+  "backgroundDominationAudit": "MEASURED",
+  "sourceGroupLeakageAudit": "MEASURED",
+  "pass": true,
+  "errors": []
+}

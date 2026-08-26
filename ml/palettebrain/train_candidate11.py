@@ -184,12 +184,18 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     optimizer = torch.optim.AdamW(parameter_groups, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     start_epoch = 0
+    history: list[dict[str, Any]] = []
+    best_loss = float("inf")
     if args.resume:
         resumed = torch.load(args.resume, map_location="cpu", weights_only=True)
         model.load_state_dict(resumed["model_state_dict"], strict=True)
         optimizer.load_state_dict(resumed["optimizer_state_dict"])
         scheduler.load_state_dict(resumed["scheduler_state_dict"])
         start_epoch = int(resumed["epoch"]) + 1
+        history = list(resumed.get("history", []))
+        best_loss = float(resumed.get("best_val_loss", min(
+            (row["val"]["loss"] for row in history), default=float("inf")
+        )))
 
     train_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "train")]
     val_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "val")]
@@ -216,9 +222,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     )
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
     loss_function = _stage_a_loss if args.stage == "a" else _stage_b_loss
-    history: list[dict[str, Any]] = []
-    best_loss = float("inf")
     output = Path(args.output)
+    last_output = output.with_name(f"{output.stem}-last{output.suffix}")
     output.parent.mkdir(parents=True, exist_ok=True)
     for epoch in range(start_epoch, args.epochs):
         row: dict[str, Any] = {"epoch": epoch}
@@ -245,14 +250,19 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             row[split] = {name: value / batches for name, value in totals.items()}
         scheduler.step()
         history.append(row)
-        if row["val"]["loss"] < best_loss:
+        improved = row["val"]["loss"] < best_loss
+        if improved:
             best_loss = row["val"]["loss"]
-            payload = {
-                "candidate": "candidate-11", "stage": args.stage, "epoch": epoch,
-                "model_config": model.config.to_dict(), "model_state_dict": model.state_dict(),
-                "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict(),
-                "training_args": vars(args), "history": history,
-            }
+        payload = {
+            "candidate": "candidate-11", "stage": args.stage, "epoch": epoch,
+            "model_config": model.config.to_dict(), "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict(),
+            "training_args": vars(args), "history": history, "best_val_loss": best_loss,
+        }
+        last_temporary = last_output.with_suffix(last_output.suffix + ".tmp")
+        torch.save(payload, last_temporary)
+        last_temporary.replace(last_output)
+        if improved:
             temporary = output.with_suffix(output.suffix + ".tmp")
             torch.save(payload, temporary)
             temporary.replace(output)

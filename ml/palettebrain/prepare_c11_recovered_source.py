@@ -1,0 +1,3082 @@
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import io
+import json
+import math
+import re
+import sys
+import time
+import unicodedata
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+from typing import Any, Iterable
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+import numpy as np
+from PIL import Image
+import torch
+import torch.nn.functional as F
+import transformers
+from transformers import AutoModel, AutoProcessor, AutoTokenizer
+
+from ml.palettebrain.color_distribution import palette_or_pixels_to_oklch_histogram
+from ml.palettebrain.dataset import MAX_COLORS, seed_noise_from_uint32
+from ml.palettebrain.e5_embedding import (
+    E5_MODEL_ID,
+    E5_REVISION,
+    embed_texts,
+    load_encoder,
+)
+from ml.palettebrain.palette_targets import oklab_to_oklch, physical_oklch_to_target
+
+SIGLIP_MODEL_ID = "google/siglip-base-patch16-224"
+SIGLIP_REVISION = "7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed"
+
+METADATA_INDEX_SCHEMA = "palettebrain-c11-metadata-index/v3"
+CALIBRATION_SCHEMA = "palettebrain-c11-siglip-calibration/v1"
+
+OPEN_IMAGES_RELEASE = "Open Images V7"
+OPEN_IMAGES_CLASS_URL = (
+    "https://storage.googleapis.com/openimages/v7/"
+    "oidv7-class-descriptions-boxable.csv"
+)
+# The official Open Images V7 download page intentionally links these legacy object URLs.
+OPEN_IMAGES_VALIDATION_BBOX_URL = (
+    "https://storage.googleapis.com/openimages/v5/"
+    "validation-annotations-bbox.csv"
+)
+OPEN_IMAGES_VALIDATION_META_URL = (
+    "https://storage.googleapis.com/openimages/2018_04/validation/"
+    "validation-images-with-rotation.csv"
+)
+
+MAX_SINGLE_IMAGE_BYTES = 25 * 1024 * 1024
+MAX_API_BYTES = 16 * 1024 * 1024
+MAX_OPEN_IMAGES_METADATA_BYTES = 256 * 1024 * 1024
+NEAR_DUP_HAMMING = 2
+
+SMOKE_VALID_IMAGES = 48
+SMOKE_MIN_VALID_PER_SOURCE = 2
+FULL_MIN_UNIQUE_IMAGES = 1500
+FULL_TARGET_UNIQUE_IMAGES = 2500
+FULL_MAX_VALID_IMAGES = 3500
+FULL_ACQUISITION_CAPS = (8, 10, 12, 14)
+FULL_MAX_PER_CONCEPT = max(FULL_ACQUISITION_CAPS)
+FULL_MIN_CATEGORY_COVERAGE = 0.65
+FULL_MIN_CATEGORY_IMAGES = 20
+FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE = 1.0
+FULL_MIN_CROP_REQUIRED_IMAGES_PER_CONCEPT = 2
+FULL_MIN_REAL_WORLD_FRACTION = 0.20
+FULL_MIN_ARTWORK_FRACTION = 0.20
+
+ALLOWED_OPENVERSE_LICENSES = {"pdm", "cc0", "by"}
+
+# Exact Open Images boxable names are resolved against the official class CSV.
+# If a candidate name is absent, that mapping is skipped instead of guessed.
+CONCEPT_TO_OPENIMAGES_CLASSES: dict[str, tuple[str, ...]] = {
+    "ripe_orchard_apple": ("Apple", "Fruit"),
+    "antique_glass_bottle": ("Bottle",),
+    "anthracite_coal_lump": ("Coal", "Rock"),
+    "structural_steel_beam": ("Building material",),
+    "antique_leather_volume": ("Book",),
+    "terracotta_earthenware_pot": ("Flowerpot", "Vase"),
+    "iridescent_nacre_seashell": ("Shell",),
+    "harvest_pumpkin_gourd": ("Pumpkin", "Fruit"),
+    "sliced_pomegranate_fruit": ("Fruit",),
+    "fresh_purple_fig": ("Fruit",),
+    "wild_chanterelle_mushrooms": ("Mushroom",),
+    "sunflower_head_seeds": ("Flower",),
+    "bleached_beach_driftwood": ("Wood",),
+    "raw_wax_honeycomb": ("Food",),
+    "glossy_obsidian_mineral": ("Rock",),
+    "rough_granite_chunk": ("Rock",),
+    "vintage_brass_pocketwatch": ("Watch", "Clock"),
+    "hammered_copper_kettle": ("Kettle", "Teapot"),
+    "blacksmith_iron_anvil": ("Tool",),
+    "carved_walnut_chest": ("Chest of drawers", "Box"),
+    "wild_blackberry_cluster": ("Fruit",),
+    "ripe_dark_cherries": ("Fruit",),
+    "yellow_citrus_lemon": ("Lemon", "Fruit"),
+    "walnut_in_cracked_shell": ("Nut", "Food"),
+    "dark_grape_cluster": ("Grape", "Fruit"),
+    "scarlet_poppy_blossom": ("Flower",),
+    "white_waterlily_flower": ("Flower",),
+    "raw_flax_fiber": ("Textile",),
+    "carved_amber_pendant": ("Necklace",),
+    "hand_carved_soapstone": ("Sculpture",),
+    "polished_lapis_lazuli": ("Gemstone", "Rock"),
+}
+
+
+class HardDiskLimitError(RuntimeError):
+    pass
+
+
+class ProvenanceError(RuntimeError):
+    pass
+
+
+def normalize_text(text: str) -> str:
+    return " ".join(unicodedata.normalize("NFKC", str(text)).lower().strip().split())
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
+def atomic_write_bytes(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_bytes(data)
+    tmp.replace(path)
+
+
+def atomic_savez(path: Path, **arrays: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp.npz")
+    np.savez(tmp, **arrays)
+    with np.load(tmp, allow_pickle=False):
+        pass
+    tmp.replace(path)
+
+
+def get_disk_usage_bytes(paths: Iterable[Path]) -> int:
+    total = 0
+    seen: set[Path] = set()
+    for raw in paths:
+        p = raw.resolve()
+        if p in seen or not p.exists():
+            continue
+        seen.add(p)
+        if p.is_file():
+            total += p.stat().st_size
+        else:
+            for f in p.rglob("*"):
+                if f.is_file():
+                    total += f.stat().st_size
+    return total
+
+
+class DiskBudget:
+    def __init__(
+        self,
+        *,
+        raw_dir: Path,
+        cache_dir: Path,
+        target_bytes: int,
+        hard_bytes: int,
+    ) -> None:
+        self.raw_dir = raw_dir
+        self.cache_dir = cache_dir
+        self.target_bytes = int(target_bytes)
+        self.hard_bytes = int(hard_bytes)
+        if self.target_bytes <= 0 or self.hard_bytes <= 0:
+            raise ValueError("disk budgets must be positive")
+        if self.target_bytes >= self.hard_bytes:
+            raise ValueError("target disk budget must be below hard disk budget")
+        self._tracked_artifacts: set[Path] = set()
+
+    def _covered_by_primary_tree(self, path: Path) -> bool:
+        resolved = path.resolve()
+        for root in (self.raw_dir.resolve(), self.cache_dir.resolve()):
+            try:
+                resolved.relative_to(root)
+                return True
+            except ValueError:
+                continue
+        return False
+
+    def track_artifact(self, path: Path) -> None:
+        resolved = path.resolve()
+        if not self._covered_by_primary_tree(resolved):
+            self._tracked_artifacts.add(resolved)
+
+    def usage(self) -> int:
+        return get_disk_usage_bytes(
+            [self.raw_dir, self.cache_dir, *sorted(self._tracked_artifacts)]
+        )
+
+    def before_download(self) -> bool:
+        usage = self.usage()
+        if usage >= self.hard_bytes:
+            raise HardDiskLimitError(
+                f"HARD DISK LIMIT EXCEEDED: {usage} >= {self.hard_bytes}"
+            )
+        return usage < self.target_bytes
+
+    def max_download_bytes(self, cap: int = MAX_SINGLE_IMAGE_BYTES) -> int:
+        usage = self.usage()
+        remaining = self.hard_bytes - usage - 1
+        if remaining <= 0:
+            raise HardDiskLimitError("no disk budget remains")
+        return max(1, min(int(cap), remaining))
+
+    def before_write(self, byte_count: int) -> None:
+        usage = self.usage()
+        projected = usage + int(byte_count)
+        if projected >= self.hard_bytes:
+            raise HardDiskLimitError(
+                f"HARD DISK LIMIT EXCEEDED BEFORE WRITE: "
+                f"{projected} >= {self.hard_bytes}"
+            )
+
+    def before_temp_commit(self, temp_path: Path) -> None:
+        if not temp_path.is_file():
+            raise FileNotFoundError(temp_path)
+        # A temp file inside raw/cache is already included in usage(); an external
+        # temp artifact is not, so count it explicitly.
+        projected = self.usage()
+        if not self._covered_by_primary_tree(temp_path):
+            projected += temp_path.stat().st_size
+        if projected >= self.hard_bytes:
+            raise HardDiskLimitError(
+                f"HARD DISK LIMIT EXCEEDED BEFORE ARTIFACT COMMIT: "
+                f"{projected} >= {self.hard_bytes}"
+            )
+
+
+def estimate_npz_bytes(arrays: dict[str, Any]) -> int:
+    total = 64 * 1024
+    for value in arrays.values():
+        arr = np.asarray(value)
+        total += int(arr.nbytes) + 512
+    return total
+
+
+def guarded_atomic_savez(
+    path: Path,
+    *,
+    disk: DiskBudget,
+    arrays: dict[str, Any],
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    disk.track_artifact(path)
+    disk.before_write(estimate_npz_bytes(arrays))
+    tmp = path.with_suffix(".tmp.npz")
+    np.savez(tmp, **arrays)
+    try:
+        with np.load(tmp, allow_pickle=False):
+            pass
+        disk.before_temp_commit(tmp)
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def guarded_atomic_write_text(
+    path: Path,
+    text: str,
+    *,
+    disk: DiskBudget,
+) -> None:
+    encoded = text.encode("utf-8")
+    disk.track_artifact(path)
+    disk.before_write(len(encoded))
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_bytes(encoded)
+    try:
+        disk.before_temp_commit(tmp)
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+_OPENVERSE_COOLDOWN_UNTIL: float = 0.0
+_OPENVERSE_CONSECUTIVE_429: int = 0
+_OPENVERSE_LAST_SEARCH_TIME: float = 0.0
+_OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
+_OPENVERSE_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+
+
+def safe_http_get(
+    url: str,
+    *,
+    timeout: int = 20,
+    max_retries: int = 2,
+    max_bytes: int = MAX_API_BYTES,
+    pause_seconds: float = 0.15,
+    headers: dict[str, str] | None = None,
+) -> bytes | None:
+    global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL
+    if not url.startswith(("https://", "http://")):
+        return None
+    request_headers = {
+        "User-Agent": "PaletteBrain-C11-DataBuilder/1.0",
+        "Accept": "*/*",
+    }
+    if headers:
+        request_headers.update(headers)
+    for attempt in range(max_retries + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers=request_headers,
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if "openverse.org" in url:
+                    _OPENVERSE_CONSECUTIVE_429 = 0
+                    burst_avail = resp.headers.get(
+                        "x-ratelimit-available-anon_burst"
+                    )
+                    if burst_avail is not None:
+                        try:
+                            if int(burst_avail) <= 1:
+                                time.sleep(4.0)
+                        except ValueError:
+                            pass
+                length = resp.headers.get("Content-Length")
+                if length:
+                    try:
+                        if int(length) > max_bytes:
+                            return None
+                    except ValueError:
+                        pass
+                out = bytearray()
+                while True:
+                    chunk = resp.read(1024 * 256)
+                    if not chunk:
+                        break
+                    out.extend(chunk)
+                    if len(out) > max_bytes:
+                        return None
+                if pause_seconds > 0:
+                    time.sleep(pause_seconds)
+                return bytes(out)
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429:
+                retry_after = exc.headers.get("Retry-After")
+                wait_sec = 2.0 ** (attempt + 1)
+                if retry_after:
+                    try:
+                        wait_sec = float(retry_after)
+                    except ValueError:
+                        pass
+                wait_sec = min(max(wait_sec, 2.0), 35.0)
+                if attempt < max_retries:
+                    time.sleep(wait_sec)
+                    continue
+                if "openverse.org" in url:
+                    _OPENVERSE_CONSECUTIVE_429 += 1
+                    if _OPENVERSE_CONSECUTIVE_429 >= 2:
+                        _OPENVERSE_COOLDOWN_UNTIL = time.time() + 60.0
+                        print(
+                            "Openverse circuit breaker tripped after repeated "
+                            "429 responses; cooldown for 60s."
+                        )
+                return None
+            elif exc.code in (500, 502, 503, 504) and attempt < max_retries:
+                time.sleep(min(2.0 ** attempt, 8.0))
+                continue
+            return None
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt < max_retries:
+                time.sleep(min(0.75 * (attempt + 1), 3.0))
+                continue
+            return None
+    return None
+
+
+def fetch_json(url: str, *, timeout: int = 20) -> dict[str, Any] | None:
+    raw = safe_http_get(url, timeout=timeout, max_bytes=MAX_API_BYTES)
+    if not raw:
+        return None
+    try:
+        obj = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return obj if isinstance(obj, dict) else None
+
+
+def load_and_validate_manifest(manifest_path: Path) -> dict[str, Any]:
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"Source manifest not found: {manifest_path}")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("schema") != "palettebrain-c11-source-manifest/v1":
+        raise ValueError(f"Invalid manifest schema: {manifest.get('schema')}")
+
+    teacher = manifest.get("teacher", {})
+    if teacher.get("revision") != SIGLIP_REVISION:
+        raise ValueError(
+            f"Manifest teacher revision mismatch: "
+            f"{teacher.get('revision')} vs {SIGLIP_REVISION}"
+        )
+    teacher_id = teacher.get("model_id") or teacher.get("modelId")
+    if teacher_id and teacher_id != SIGLIP_MODEL_ID:
+        raise ValueError(
+            f"Manifest teacher model mismatch: {teacher_id} vs {SIGLIP_MODEL_ID}"
+        )
+
+    text_encoder = manifest.get("text_encoder") or manifest.get("textEncoder") or {}
+    if isinstance(text_encoder, dict):
+        model_id = text_encoder.get("model_id") or text_encoder.get("modelId")
+        revision = text_encoder.get("revision")
+        if model_id and model_id != E5_MODEL_ID:
+            raise ValueError(f"Manifest E5 model mismatch: {model_id} vs {E5_MODEL_ID}")
+        if revision and revision != E5_REVISION:
+            raise ValueError(
+                f"Manifest E5 revision mismatch: {revision} vs {E5_REVISION}"
+            )
+
+    policy = manifest.get("acquisition_policy", {})
+    max_disk = int(policy.get("maximum_disk_budget_bytes", 10 * 1024**3))
+    target_disk = int(policy.get("target_disk_budget_bytes", int(8.5 * 1024**3)))
+    if target_disk >= max_disk:
+        raise ValueError("manifest target disk budget must be below hard budget")
+    return manifest
+
+
+def preflight_anti_leakage(concepts: list[dict[str, Any]]) -> None:
+    benchmark_paths = [
+        Path("ml/palettebrain/benchmark_semantic_v3.json"),
+        Path("ml/palettebrain/benchmark_visual_semantic_v2.json"),
+    ]
+    benchmark_texts: set[str] = set()
+
+    v3_path = benchmark_paths[0]
+    if not v3_path.is_file():
+        raise FileNotFoundError(f"Frozen benchmark missing: {v3_path}")
+    v3 = json.loads(v3_path.read_text(encoding="utf-8"))
+    for bucket in v3.get("buckets", {}).values():
+        for p in bucket:
+            benchmark_texts.add(normalize_text(p))
+    for pair in v3.get("bilingualPairs", []):
+        for p in pair:
+            benchmark_texts.add(normalize_text(p))
+    for item in v3.get("abstract", []):
+        for key in ("en", "ru"):
+            if item.get(key):
+                benchmark_texts.add(normalize_text(item[key]))
+        for key in ("references", "hardNegatives"):
+            for p in item.get(key, []):
+                benchmark_texts.add(normalize_text(p))
+    for key in ("longText", "compositionContrasts"):
+        for group in v3.get(key, []):
+            for p in group:
+                benchmark_texts.add(normalize_text(p))
+    for group in v3.get("oodParaphraseGroups", []):
+        for p in group:
+            benchmark_texts.add(normalize_text(p))
+    for key in ("adversarialComposition", "negationControls"):
+        for p in v3.get(key, []):
+            benchmark_texts.add(normalize_text(p))
+
+    v2_path = benchmark_paths[1]
+    if not v2_path.is_file():
+        raise FileNotFoundError(f"Frozen benchmark missing: {v2_path}")
+    v2 = json.loads(v2_path.read_text(encoding="utf-8"))
+    for c in v2.get("concepts", {}).values():
+        for p in c.get("prompts", []):
+            benchmark_texts.add(normalize_text(p))
+
+    held_out_tokens = {
+        "meadow", "meadows", "moss", "mossy", "mosses",
+        "clinic", "clinics", "ward", "wards", "pear", "pears", "plum", "plums",
+        "поляна", "поляне", "поляны", "поляну", "поляной", "полянами",
+        "луг", "лугу", "луга", "лугом", "лугах", "луговой",
+        "мох", "мхом", "мха", "мхи", "мшистый", "мшистом", "мшистая",
+        "мшистые", "мхами", "мхах",
+        "клиника", "клинике", "клиники", "клинику", "клиникой", "клиниках",
+        "палата", "палате", "палаты", "палату", "палатой", "палатах",
+        "груша", "груши", "грушей", "грушу", "грушами", "грушевый",
+        "слива", "сливы", "сливой", "сливу", "сливами", "сливовый",
+    }
+
+    benchmark_collisions: list[tuple[str, str]] = []
+    held_out_collisions: list[tuple[str, str, list[str]]] = []
+    seen_ids: set[str] = set()
+
+    for c in concepts:
+        cid = str(c["concept_id"])
+        if cid in seen_ids:
+            raise RuntimeError(f"duplicate concept_id: {cid}")
+        seen_ids.add(cid)
+        texts = (
+            list(c.get("phrasings_en", []))
+            + list(c.get("phrasings_ru", []))
+            + [cid, str(c.get("retrieval_query", ""))]
+        )
+        for text in texts:
+            norm = normalize_text(text)
+            if norm in benchmark_texts:
+                benchmark_collisions.append((cid, text))
+            tokens = set(re.findall(r"\w+", norm))
+            hit = sorted(tokens & held_out_tokens)
+            if hit:
+                held_out_collisions.append((cid, text, hit))
+
+    if benchmark_collisions or held_out_collisions:
+        raise RuntimeError(
+            f"PREFLIGHT ANTI-LEAKAGE FAILED: "
+            f"{len(benchmark_collisions)} benchmark collisions, "
+            f"{len(held_out_collisions)} held-out collisions"
+        )
+    print(
+        f"Preflight anti-leakage PASSED: 0 benchmark collisions, "
+        f"0 held-out collisions across {len(concepts)} concepts."
+    )
+
+
+def rgb_to_oklab_array(rgb: np.ndarray) -> np.ndarray:
+    rgb = np.asarray(rgb, dtype=np.float32)
+    if rgb.ndim != 2 or rgb.shape[1] != 3:
+        raise ValueError("rgb must have shape [N,3]")
+    r = np.where(
+        rgb[:, 0] > 0.04045,
+        ((rgb[:, 0] + 0.055) / 1.055) ** 2.4,
+        rgb[:, 0] / 12.92,
+    )
+    g = np.where(
+        rgb[:, 1] > 0.04045,
+        ((rgb[:, 1] + 0.055) / 1.055) ** 2.4,
+        rgb[:, 1] / 12.92,
+    )
+    b = np.where(
+        rgb[:, 2] > 0.04045,
+        ((rgb[:, 2] + 0.055) / 1.055) ** 2.4,
+        rgb[:, 2] / 12.92,
+    )
+    l_val = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
+    m_val = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
+    s_val = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+    l_root = np.cbrt(np.maximum(l_val, 0.0))
+    m_root = np.cbrt(np.maximum(m_val, 0.0))
+    s_root = np.cbrt(np.maximum(s_val, 0.0))
+    return np.stack(
+        [
+            0.2104542553 * l_root
+            + 0.7936177850 * m_root
+            - 0.0040720468 * s_root,
+            1.9779984951 * l_root
+            - 2.4285922050 * m_root
+            + 0.4505937099 * s_root,
+            0.0259040371 * l_root
+            + 0.7827717662 * m_root
+            - 0.8086757660 * s_root,
+        ],
+        axis=-1,
+    ).astype(np.float32)
+
+
+def extract_deterministic_palette(
+    oklab_pixels: np.ndarray,
+    target_count: int,
+    seed: int = 42,
+) -> np.ndarray:
+    if not 2 <= target_count <= MAX_COLORS:
+        raise ValueError(f"target_count must be 2..{MAX_COLORS}")
+    pixels = np.asarray(oklab_pixels, dtype=np.float32)
+    if pixels.ndim != 2 or pixels.shape[1] != 3:
+        raise ValueError("oklab_pixels must have shape [N,3]")
+    if len(pixels) < target_count:
+        raise ValueError("not enough pixels")
+
+    rng = np.random.RandomState(seed)
+    if len(pixels) > 4000:
+        pts = pixels[rng.choice(len(pixels), 4000, replace=False)]
+    else:
+        pts = pixels.copy()
+
+    k = min(24, len(pts))
+    centers = [pts[int(rng.randint(0, len(pts)))]]
+    for _ in range(1, k):
+        centers_arr = np.asarray(centers, dtype=np.float32)
+        d2 = np.min(
+            np.sum((pts[:, None, :] - centers_arr[None, :, :]) ** 2, axis=-1),
+            axis=1,
+        )
+        total = float(d2.sum())
+        probs = d2 / total if total > 1e-12 else np.full(len(pts), 1.0 / len(pts))
+        centers.append(pts[int(rng.choice(len(pts), p=probs))])
+    centers_arr = np.asarray(centers, dtype=np.float32)
+
+    labels = np.zeros(len(pts), dtype=np.int32)
+    for _ in range(15):
+        distances = np.linalg.norm(
+            pts[:, None, :] - centers_arr[None, :, :], axis=-1
+        )
+        labels = np.argmin(distances, axis=1)
+        updated = centers_arr.copy()
+        for i in range(k):
+            members = pts[labels == i]
+            if len(members):
+                updated[i] = members.mean(axis=0)
+        centers_arr = updated
+
+    counts = np.bincount(labels, minlength=k)
+    masses = counts.astype(np.float32) / float(len(pts))
+    keep = masses >= 0.015
+    if not keep.any():
+        keep[int(np.argmax(masses))] = True
+
+    candidate_centers = centers_arr[keep]
+    candidate_masses = masses[keep]
+    candidate_labels = np.where(keep)[0]
+
+    merged_centers: list[np.ndarray] = []
+    merged_masses: list[float] = []
+    merged_pixels: list[np.ndarray] = []
+
+    for idx in np.argsort(-candidate_masses):
+        center = candidate_centers[idx]
+        mass = float(candidate_masses[idx])
+        subset = pts[labels == candidate_labels[idx]]
+        if not merged_centers:
+            merged_centers.append(center.copy())
+            merged_masses.append(mass)
+            merged_pixels.append(subset.copy())
+            continue
+
+        distances = np.asarray(
+            [np.linalg.norm(center - existing) for existing in merged_centers]
+        )
+        closest = int(np.argmin(distances))
+        if float(distances[closest]) < 0.04:
+            old_mass = merged_masses[closest]
+            new_mass = old_mass + mass
+            merged_centers[closest] = (
+                merged_centers[closest] * old_mass + center * mass
+            ) / max(new_mass, 1e-12)
+            merged_masses[closest] = new_mass
+            merged_pixels[closest] = np.vstack([merged_pixels[closest], subset])
+        else:
+            merged_centers.append(center.copy())
+            merged_masses.append(mass)
+            merged_pixels.append(subset.copy())
+
+    while len(merged_centers) < target_count:
+        splittable = [
+            i
+            for i, subset in enumerate(merged_pixels)
+            if len(subset) >= 10 and float(np.std(subset)) > 1e-3
+        ]
+        if not splittable:
+            raise ValueError(
+                f"insufficient real color modes for target_count={target_count}"
+            )
+        split_idx = max(splittable, key=lambda i: merged_masses[i])
+        subset = merged_pixels[split_idx]
+
+        c0 = subset[0]
+        c1 = subset[int(np.argmax(np.linalg.norm(subset - c0, axis=1)))]
+        sub_centers = np.stack([c0, c1]).astype(np.float32)
+        sub_labels = np.zeros(len(subset), dtype=np.int32)
+
+        for _ in range(8):
+            d = np.linalg.norm(
+                subset[:, None, :] - sub_centers[None, :, :], axis=-1
+            )
+            sub_labels = np.argmin(d, axis=1)
+            if not np.any(sub_labels == 0) or not np.any(sub_labels == 1):
+                raise ValueError("cannot split a monochromatic cluster")
+            sub_centers[0] = subset[sub_labels == 0].mean(axis=0)
+            sub_centers[1] = subset[sub_labels == 1].mean(axis=0)
+
+        n0 = int(np.sum(sub_labels == 0))
+        n1 = int(np.sum(sub_labels == 1))
+        parent_mass = merged_masses[split_idx]
+        merged_centers[split_idx] = sub_centers[0]
+        merged_masses[split_idx] = parent_mass * n0 / (n0 + n1)
+        merged_pixels[split_idx] = subset[sub_labels == 0]
+        merged_centers.append(sub_centers[1])
+        merged_masses.append(parent_mass * n1 / (n0 + n1))
+        merged_pixels.append(subset[sub_labels == 1])
+
+    cand = np.asarray(merged_centers, dtype=np.float32)
+    mass = np.asarray(merged_masses, dtype=np.float32)
+
+    selected = [int(np.argmax(mass))]
+    while len(selected) < target_count:
+        remaining = [i for i in range(len(cand)) if i not in selected]
+        if not remaining:
+            raise ValueError("not enough unique candidate colors")
+        best_idx = remaining[0]
+        best_score = -1.0
+        for idx in remaining:
+            min_dist = min(
+                float(np.linalg.norm(cand[idx] - cand[chosen]))
+                for chosen in selected
+            )
+            score = min_dist * float(mass[idx] ** 0.35)
+            if score > best_score:
+                best_score = score
+                best_idx = idx
+        selected.append(best_idx)
+
+    chosen = cand[selected]
+    return chosen[np.argsort(chosen[:, 0])]
+
+
+def perceptual_hash64(image: Image.Image) -> str:
+    gray = image.convert("L").resize((9, 8), Image.Resampling.LANCZOS)
+    arr = np.asarray(gray, dtype=np.int16)
+    bits = (arr[:, 1:] > arr[:, :-1]).reshape(-1)
+    value = 0
+    for bit in bits:
+        value = (value << 1) | int(bit)
+    return f"{value:016x}"
+
+
+def phash_distance(a: str, b: str) -> int:
+    return (int(a, 16) ^ int(b, 16)).bit_count()
+
+
+def decode_image_bytes(data: bytes) -> tuple[Image.Image, str]:
+    with Image.open(io.BytesIO(data)) as img:
+        img.load()
+        fmt = (img.format or "JPEG").upper()
+        rgb = img.convert("RGB")
+    extension = {
+        "JPEG": ".jpg",
+        "JPG": ".jpg",
+        "PNG": ".png",
+        "WEBP": ".webp",
+    }.get(fmt, ".img")
+    return rgb, extension
+
+
+def strict_openverse_license(item: dict[str, Any]) -> tuple[str, str] | None:
+    code = str(item.get("license", "")).strip().lower()
+    if code not in ALLOWED_OPENVERSE_LICENSES:
+        return None
+    url = str(item.get("license_url") or "").strip()
+    if not url:
+        return None
+    normalized = url.lower().replace("http://", "https://")
+    if not normalized.startswith("https://creativecommons.org/"):
+        return None
+
+    if code == "cc0":
+        if "/publicdomain/zero/" not in normalized:
+            return None
+        return "CC0", url
+    if code == "pdm":
+        if "/publicdomain/mark/" not in normalized:
+            return None
+        return "PDM", url
+    if code == "by":
+        if "/licenses/by/" not in normalized:
+            return None
+        version = str(item.get("license_version") or "").strip()
+        return f"CC BY {version}".strip(), url
+    return None
+
+
+def strict_openimages_license(url: str) -> tuple[str, str] | None:
+    raw = str(url or "").strip()
+    normalized = raw.lower().replace("http://", "https://")
+    allowed = (
+        ("https://creativecommons.org/licenses/by/2.0/", "CC BY 2.0"),
+        ("https://creativecommons.org/publicdomain/zero/1.0/", "CC0 1.0"),
+        ("https://creativecommons.org/publicdomain/mark/1.0/", "PDM 1.0"),
+    )
+    for prefix, label in allowed:
+        if normalized.startswith(prefix):
+            return label, raw
+    return None
+
+
+def metadata_required_fields() -> set[str]:
+    return {
+        "filename",
+        "content_sha256",
+        "perceptual_hash64",
+        "concept_id",
+        "category",
+        "source_id",
+        "source_type",
+        "source_group_id",
+        "image_id",
+        "crop_coordinates",
+        "license",
+        "license_url",
+        "provider",
+        "foreign_identifier",
+        "source_url",
+        "landing_url",
+        "creator",
+        "title",
+    }
+
+
+def validate_cached_record(record: dict[str, Any], raw_dir: Path) -> dict[str, Any] | None:
+    if not metadata_required_fields().issubset(record):
+        return None
+    path = raw_dir / str(record["filename"])
+    if not path.is_file() or path.stat().st_size <= 0:
+        return None
+    if sha256_file(path) != record["content_sha256"]:
+        return None
+    try:
+        with Image.open(path) as img:
+            img.load()
+            rgb = img.convert("RGB")
+        if perceptual_hash64(rgb) != record["perceptual_hash64"]:
+            return None
+    except Exception:
+        return None
+
+    if record["source_group_id"] != f"content_{record['content_sha256']}":
+        return None
+
+    crop = record.get("crop_coordinates")
+    if record.get("source_id") == "open_images":
+        if (
+            not isinstance(crop, list)
+            or len(crop) != 4
+            or not record.get("bbox_provenance")
+            or not record.get("bbox_annotation_key")
+            or not record.get("bbox_class_name")
+            or not record.get("bbox_label_mid")
+            or not record.get("bbox_source")
+        ):
+            return None
+
+    copy = dict(record)
+    copy["local_path"] = path
+    return copy
+
+
+def load_metadata_index(
+    index_path: Path,
+    raw_dir: Path,
+) -> tuple[dict[str, dict[str, Any]], list[str], int]:
+    if not index_path.is_file():
+        return {}, [], 0
+    try:
+        payload = json.loads(index_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}, [], 0
+    if payload.get("schema") != METADATA_INDEX_SCHEMA:
+        return {}, [], 0
+
+    records: dict[str, dict[str, Any]] = {}
+    phashes: list[str] = []
+    invalid = 0
+    for raw in payload.get("records", []):
+        if not isinstance(raw, dict):
+            invalid += 1
+            continue
+        valid = validate_cached_record(raw, raw_dir)
+        if valid is None:
+            invalid += 1
+            continue
+        sha = str(valid["content_sha256"])
+        if sha in records:
+            invalid += 1
+            continue
+        records[sha] = valid
+        phashes.append(str(valid["perceptual_hash64"]))
+    return records, phashes, invalid
+
+
+def write_metadata_index(
+    index_path: Path,
+    records: dict[str, dict[str, Any]],
+    *,
+    disk: DiskBudget,
+) -> None:
+    serializable: list[dict[str, Any]] = []
+    for record in sorted(records.values(), key=lambda r: str(r["content_sha256"])):
+        item = {
+            key: value
+            for key, value in record.items()
+            if key
+            not in {
+                "local_path",
+                "oklab_pixels",
+                "color_prior",
+                "processed_pil",
+                "siglip_feature",
+            }
+        }
+        if isinstance(item.get("crop_coordinates"), np.ndarray):
+            item["crop_coordinates"] = item["crop_coordinates"].tolist()
+        serializable.append(item)
+    guarded_atomic_write_text(
+        index_path,
+        json.dumps(
+            {"schema": METADATA_INDEX_SCHEMA, "records": serializable},
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        disk=disk,
+    )
+
+
+def store_image_record(
+    *,
+    raw_dir: Path,
+    prefix: str,
+    image_bytes: bytes,
+    record: dict[str, Any],
+    seen_hashes: set[str],
+    seen_phashes: list[str],
+    disk: DiskBudget,
+    stats: dict[str, int],
+) -> dict[str, Any] | None:
+    disk.before_write(len(image_bytes))
+    sha = sha256_bytes(image_bytes)
+    if sha in seen_hashes:
+        stats["exact_duplicates"] = stats.get("exact_duplicates", 0) + 1
+        return None
+
+    try:
+        rgb, extension = decode_image_bytes(image_bytes)
+    except Exception:
+        stats["invalid_images"] = stats.get("invalid_images", 0) + 1
+        return None
+
+    phash = perceptual_hash64(rgb)
+    if any(phash_distance(phash, existing) <= NEAR_DUP_HAMMING for existing in seen_phashes):
+        stats["near_duplicates"] = stats.get("near_duplicates", 0) + 1
+        return None
+
+    dest = raw_dir / f"{prefix}_{sha[:20]}{extension}"
+    tmp = dest.with_name(dest.name + ".tmp")
+    tmp.write_bytes(image_bytes)
+    try:
+        with Image.open(tmp) as check:
+            check.load()
+            check.convert("RGB")
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        stats["invalid_images"] = stats.get("invalid_images", 0) + 1
+        return None
+    tmp.replace(dest)
+
+    seen_hashes.add(sha)
+    seen_phashes.append(phash)
+
+    out = dict(record)
+    out.update(
+        {
+            "filename": dest.name,
+            "local_path": dest,
+            "content_sha256": sha,
+            "perceptual_hash64": phash,
+            "source_group_id": f"content_{sha}",
+        }
+    )
+    return out
+
+
+class OpenImagesBboxIndex:
+    def __init__(self, *, cache_dir: Path, disk: DiskBudget) -> None:
+        self.cache_dir = cache_dir
+        self.disk = disk
+        self.class_map: dict[str, str] = {}
+        self.records_by_class: dict[str, list[dict[str, Any]]] = {}
+        self._loaded = False
+
+    def _ensure_file(self, filename: str, url: str) -> Path:
+        path = self.cache_dir / filename
+        if path.is_file() and path.stat().st_size > 0:
+            return path
+        if not self.disk.before_download():
+            raise HardDiskLimitError(
+                "target disk budget reached while acquiring Open Images metadata"
+            )
+        data = safe_http_get(
+            url,
+            timeout=60,
+            max_retries=2,
+            max_bytes=min(
+                MAX_OPEN_IMAGES_METADATA_BYTES,
+                self.disk.max_download_bytes(MAX_OPEN_IMAGES_METADATA_BYTES),
+            ),
+            pause_seconds=0.0,
+        )
+        if not data:
+            raise RuntimeError(f"failed to download Open Images metadata: {url}")
+        self.disk.before_write(len(data))
+        atomic_write_bytes(path, data)
+        return path
+
+    def load(self) -> None:
+        if self._loaded:
+            return
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+        class_path = self._ensure_file(
+            "oidv7-class-descriptions-boxable.csv",
+            OPEN_IMAGES_CLASS_URL,
+        )
+        bbox_path = self._ensure_file(
+            "validation-annotations-bbox.csv",
+            OPEN_IMAGES_VALIDATION_BBOX_URL,
+        )
+        image_meta_path = self._ensure_file(
+            "validation-images-with-rotation.csv",
+            OPEN_IMAGES_VALIDATION_META_URL,
+        )
+
+        with class_path.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.reader(handle):
+                if len(row) >= 2:
+                    self.class_map[normalize_text(row[1])] = row[0].strip()
+
+        desired_names = {
+            normalize_text(name)
+            for candidates in CONCEPT_TO_OPENIMAGES_CLASSES.values()
+            for name in candidates
+        }
+        wanted_mid_to_name = {
+            mid: name
+            for name, mid in self.class_map.items()
+            if name in desired_names
+        }
+
+        boxes_by_image: dict[str, list[dict[str, Any]]] = {}
+        with bbox_path.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                mid = str(row.get("LabelName") or "")
+                if mid not in wanted_mid_to_name:
+                    continue
+                if str(row.get("Confidence") or "") not in {"1", "1.0"}:
+                    continue
+                if str(row.get("IsGroupOf") or "0") != "0":
+                    continue
+                if str(row.get("IsDepiction") or "0") != "0":
+                    continue
+                if str(row.get("IsInside") or "0") != "0":
+                    continue
+                if str(row.get("IsTruncated") or "0") != "0":
+                    continue
+                if str(row.get("IsOccluded") or "0") != "0":
+                    continue
+
+                try:
+                    x0 = float(row["XMin"])
+                    x1 = float(row["XMax"])
+                    y0 = float(row["YMin"])
+                    y1 = float(row["YMax"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if not (0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1):
+                    continue
+                width, height = x1 - x0, y1 - y0
+                area = width * height
+                if width < 0.10 or height < 0.10 or area < 0.025 or area > 0.85:
+                    continue
+
+                image_id = str(row.get("ImageID") or "").strip()
+                source = str(row.get("Source") or "").strip()
+                if not image_id or source not in {"xclick", "activemil"}:
+                    continue
+
+                annotation_material = "|".join(
+                    [
+                        image_id,
+                        mid,
+                        source,
+                        f"{x0:.6f}",
+                        f"{y0:.6f}",
+                        f"{x1:.6f}",
+                        f"{y1:.6f}",
+                    ]
+                )
+                annotation_key = hashlib.sha256(
+                    annotation_material.encode("utf-8")
+                ).hexdigest()
+
+                boxes_by_image.setdefault(image_id, []).append(
+                    {
+                        "bbox_label_mid": mid,
+                        "bbox_class_name": wanted_mid_to_name[mid],
+                        "bbox_source": source,
+                        "bbox_annotation_key": annotation_key,
+                        "crop_coordinates": [x0, y0, x1, y1],
+                        "bbox_provenance": (
+                            f"{OPEN_IMAGES_RELEASE}|validation|"
+                            f"{OPEN_IMAGES_VALIDATION_BBOX_URL}|"
+                            f"annotation_sha256={annotation_key}"
+                        ),
+                    }
+                )
+
+        records_by_class: dict[str, list[dict[str, Any]]] = {}
+        with image_meta_path.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                image_id = str(row.get("ImageID") or "").strip()
+                if image_id not in boxes_by_image:
+                    continue
+
+                rotation = str(row.get("Rotation") or "").strip().lower()
+                if rotation not in {"0", "0.0"}:
+                    continue
+
+                license_info = strict_openimages_license(str(row.get("License") or ""))
+                if license_info is None:
+                    continue
+                license_name, license_url = license_info
+
+                original_url = str(row.get("OriginalURL") or "").strip()
+                thumbnail_url = str(row.get("Thumbnail300KURL") or "").strip()
+                source_url = original_url or thumbnail_url
+                if not source_url.startswith(("http://", "https://")):
+                    continue
+
+                landing = str(row.get("OriginalLandingURL") or "").strip()
+                if not landing:
+                    landing = (
+                        "https://openimages.org/web/detail?image_id="
+                        + urllib.parse.quote(image_id)
+                    )
+
+                for bbox in boxes_by_image[image_id]:
+                    class_name = bbox["bbox_class_name"]
+                    record = {
+                        "source_id": "open_images",
+                        "source_type": "real_world",
+                        "image_id": f"openimages_{image_id}",
+                        "foreign_identifier": image_id,
+                        "provider": "openimages",
+                        "source_url": source_url,
+                        "source_url_fallback": thumbnail_url
+                        if thumbnail_url and thumbnail_url != source_url
+                        else "",
+                        "landing_url": landing,
+                        "creator": str(row.get("Author") or "Unknown"),
+                        "title": str(row.get("Title") or class_name),
+                        "license": license_name,
+                        "license_url": license_url,
+                        "open_images_release": OPEN_IMAGES_RELEASE,
+                        "open_images_subset": "validation",
+                        "open_images_rotation": 0,
+                        "open_images_image_metadata_url": OPEN_IMAGES_VALIDATION_META_URL,
+                        "source_dataset_release": OPEN_IMAGES_RELEASE,
+                        "source_annotation_url": OPEN_IMAGES_VALIDATION_BBOX_URL,
+                        "source_image_metadata_url": OPEN_IMAGES_VALIDATION_META_URL,
+                        **bbox,
+                    }
+                    records_by_class.setdefault(class_name, []).append(record)
+
+        for class_name, records in records_by_class.items():
+            records.sort(
+                key=lambda r: hashlib.sha256(
+                    str(r["image_id"]).encode("utf-8")
+                ).hexdigest()
+            )
+        self.records_by_class = records_by_class
+        self._loaded = True
+
+        print(
+            "Open Images bbox index loaded: "
+            f"{sum(len(v) for v in self.records_by_class.values())} "
+            f"records across {len(self.records_by_class)} mapped classes."
+        )
+
+    def get_records(self, concept_id: str, max_count: int) -> list[dict[str, Any]]:
+        self.load()
+        names = CONCEPT_TO_OPENIMAGES_CLASSES.get(concept_id, ())
+        found: list[dict[str, Any]] = []
+        used_images: set[str] = set()
+        for name in names:
+            normalized = normalize_text(name)
+            if normalized not in self.class_map:
+                continue
+            for record in self.records_by_class.get(normalized, []):
+                if record["image_id"] in used_images:
+                    continue
+                found.append(dict(record))
+                used_images.add(record["image_id"])
+                if len(found) >= max_count:
+                    return found
+        return found
+
+
+def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
+    search_url = (
+        "https://collectionapi.metmuseum.org/public/collection/v1/search"
+        f"?q={urllib.parse.quote(query)}&hasImages=true"
+    )
+    search = fetch_json(search_url, timeout=15)
+    if not search:
+        return []
+    object_ids = list(search.get("objectIDs") or [])[:limit]
+    out: list[dict[str, Any]] = []
+    for object_id in object_ids:
+        obj = fetch_json(
+            "https://collectionapi.metmuseum.org/public/collection/v1/objects/"
+            + str(object_id),
+            timeout=15,
+        )
+        if not obj or not obj.get("isPublicDomain"):
+            continue
+        image_url = str(obj.get("primaryImageSmall") or obj.get("primaryImage") or "")
+        if not image_url:
+            continue
+        out.append(
+            {
+                "source_id": "met",
+                "source_type": "artwork",
+                "image_id": f"met_{object_id}",
+                "foreign_identifier": str(object_id),
+                "provider": "metmuseum.org",
+                "source_url": image_url,
+                "landing_url": str(
+                    obj.get("objectURL")
+                    or f"https://www.metmuseum.org/art/collection/search/{object_id}"
+                ),
+                "creator": str(obj.get("artistDisplayName") or "Unknown"),
+                "title": str(obj.get("title") or ""),
+                "license": "CC0 1.0",
+                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+                "crop_coordinates": None,
+                "bbox_provenance": "",
+                "bbox_annotation_key": "",
+                "bbox_class_name": "",
+                "bbox_label_mid": "",
+                "bbox_source": "",
+            }
+        )
+    return out
+
+
+def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
+    url = (
+        "https://api.artic.edu/api/v1/artworks/search"
+        f"?q={urllib.parse.quote(query)}"
+        "&query[term][is_public_domain]=true"
+        "&fields=id,title,artist_display,image_id,is_public_domain"
+        f"&limit={int(limit)}"
+    )
+    payload = fetch_json(url, timeout=15)
+    if not payload:
+        return []
+    iiif_base = str(
+        payload.get("config", {}).get("iiif_url")
+        or "https://www.artic.edu/iiif/2"
+    ).rstrip("/")
+    out: list[dict[str, Any]] = []
+    for item in payload.get("data", []):
+        if not item.get("is_public_domain"):
+            continue
+        image_id = item.get("image_id")
+        object_id = item.get("id")
+        if not image_id or object_id is None:
+            continue
+        out.append(
+            {
+                "source_id": "artic",
+                "source_type": "artwork",
+                "image_id": f"artic_{object_id}",
+                "foreign_identifier": str(object_id),
+                "provider": "artic.edu",
+                "source_url": (
+                    f"{iiif_base}/{image_id}/full/600,/0/default.jpg"
+                ),
+                "landing_url": f"https://www.artic.edu/artworks/{object_id}",
+                "creator": str(item.get("artist_display") or "Unknown"),
+                "title": str(item.get("title") or ""),
+                "license": "CC0 1.0",
+                "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+                "crop_coordinates": None,
+                "bbox_provenance": "",
+                "bbox_annotation_key": "",
+                "bbox_class_name": "",
+                "bbox_label_mid": "",
+                "bbox_source": "",
+            }
+        )
+    return out
+
+
+def openverse_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
+    global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME
+    cache_key = (query.strip().lower(), limit)
+    if cache_key in _OPENVERSE_QUERY_CACHE:
+        return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
+    if time.time() < _OPENVERSE_COOLDOWN_UNTIL:
+        remaining = int(_OPENVERSE_COOLDOWN_UNTIL - time.time())
+        print(f"Openverse in cooldown ({remaining}s remaining), skipping query: {query}")
+        return []
+    elapsed = time.time() - _OPENVERSE_LAST_SEARCH_TIME
+    if elapsed < _OPENVERSE_SEARCH_MIN_INTERVAL:
+        time.sleep(_OPENVERSE_SEARCH_MIN_INTERVAL - elapsed)
+    _OPENVERSE_LAST_SEARCH_TIME = time.time()
+    url = (
+        "https://api.openverse.org/v1/images/"
+        f"?q={urllib.parse.quote(query)}"
+        "&license=pdm,cc0,by"
+        f"&page_size={min(80, int(limit))}"
+    )
+    payload = fetch_json(url, timeout=20)
+    if not payload:
+        return []
+    out: list[dict[str, Any]] = []
+    for item in payload.get("results", []):
+        if not isinstance(item, dict):
+            continue
+        license_info = strict_openverse_license(item)
+        if license_info is None:
+            continue
+        license_name, license_url = license_info
+        image_id = str(item.get("id") or "").strip()
+        image_url = str(item.get("url") or "").strip()
+        if not image_id or not image_url.startswith(("http://", "https://")):
+            continue
+
+        category = str(item.get("category") or "").strip().lower()
+        if category == "photograph":
+            source_type = "real_world"
+        elif category in {"illustration", "digitized_artwork", "drawing"}:
+            source_type = "artwork"
+        else:
+            source_type = "unknown"
+
+        landing_url = str(
+            item.get("foreign_landing_url") or item.get("detail_url") or ""
+        ).strip()
+        if not landing_url.startswith(("http://", "https://")):
+            continue
+
+        out.append(
+            {
+                "source_id": "openverse",
+                "source_type": source_type,
+                "image_id": f"openverse_{image_id}",
+                "foreign_identifier": str(
+                    item.get("foreign_identifier") or image_id
+                ),
+                "provider": str(item.get("provider") or "openverse"),
+                "source_url": image_url,
+                "landing_url": landing_url,
+                "creator": str(item.get("creator") or "Unknown"),
+                "title": str(item.get("title") or ""),
+                "license": license_name,
+                "license_url": license_url,
+                "crop_coordinates": None,
+                "bbox_provenance": "",
+                "bbox_annotation_key": "",
+                "bbox_class_name": "",
+                "bbox_label_mid": "",
+                "bbox_source": "",
+            }
+        )
+    res = out[:limit]
+    _OPENVERSE_QUERY_CACHE[cache_key] = res
+    return res
+
+
+def download_candidate(
+    *,
+    candidate: dict[str, Any],
+    concept: dict[str, Any],
+    raw_dir: Path,
+    seen_hashes: set[str],
+    seen_phashes: list[str],
+    disk: DiskBudget,
+    stats: dict[str, int],
+) -> dict[str, Any] | None:
+    if not disk.before_download():
+        return None
+
+    urls = [str(candidate["source_url"])]
+    fallback = str(candidate.get("source_url_fallback") or "")
+    if fallback:
+        urls.append(fallback)
+
+    custom_headers: dict[str, str] | None = None
+    if str(candidate.get("source_id")) == "artic":
+        custom_headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            ),
+            "Accept": (
+                "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+            ),
+            "Referer": "https://www.artic.edu/",
+        }
+
+    data: bytes | None = None
+    downloaded_url = ""
+    for url in urls:
+        data = safe_http_get(
+            url,
+            timeout=25,
+            max_retries=2,
+            max_bytes=disk.max_download_bytes(MAX_SINGLE_IMAGE_BYTES),
+            headers=custom_headers,
+        )
+        if data:
+            downloaded_url = url
+            break
+    if not data:
+        key = f"network_fail_{candidate['source_id']}"
+        stats[key] = stats.get(key, 0) + 1
+        return None
+
+    record = dict(candidate)
+    record.update(
+        {
+            "concept_id": concept["concept_id"],
+            "category": concept["category"],
+            "downloaded_url": downloaded_url,
+        }
+    )
+    prefix = {
+        "met": "met",
+        "artic": "artic",
+        "openverse": "ov",
+        "open_images": "oi",
+    }.get(str(candidate["source_id"]), "src")
+
+    return store_image_record(
+        raw_dir=raw_dir,
+        prefix=prefix,
+        image_bytes=data,
+        record=record,
+        seen_hashes=seen_hashes,
+        seen_phashes=seen_phashes,
+        disk=disk,
+        stats=stats,
+    )
+
+
+def acquire_for_concept(
+    *,
+    concept: dict[str, Any],
+    raw_dir: Path,
+    max_count: int,
+    allowed_sources: tuple[str, ...],
+    seen_hashes: set[str],
+    seen_phashes: list[str],
+    disk: DiskBudget,
+    stats: dict[str, int],
+    open_images: OpenImagesBboxIndex,
+) -> list[dict[str, Any]]:
+    if max_count <= 0:
+        return []
+
+    crop_required = bool(concept.get("crop_required", False))
+    query = str(concept["retrieval_query"])
+    source_lists: dict[str, list[dict[str, Any]]] = {}
+
+    def _get_candidates(src: str) -> list[dict[str, Any]]:
+        if src not in source_lists:
+            if src == "open_images":
+                source_lists[src] = open_images.get_records(
+                    str(concept["concept_id"]),
+                    max_count=max(max_count * 4, 20),
+                )
+            elif src == "met":
+                source_lists[src] = met_candidates(query)
+            elif src == "artic":
+                source_lists[src] = artic_candidates(query)
+            elif src == "openverse":
+                source_lists[src] = openverse_candidates(query)
+            else:
+                source_lists[src] = []
+        return source_lists[src]
+
+    if crop_required:
+        if "open_images" not in allowed_sources:
+            return []
+        ordered_sources = ["open_images"]
+    else:
+        ordered_sources = [
+            source for source in allowed_sources if source in ("met", "artic", "openverse")
+        ]
+
+    pointers = {source: 0 for source in ordered_sources}
+    results: list[dict[str, Any]] = []
+
+    while len(results) < max_count:
+        made_progress = False
+        for source in ordered_sources:
+            candidates = _get_candidates(source)
+            pointer = pointers[source]
+            while pointer < len(candidates):
+                candidate = candidates[pointer]
+                pointer += 1
+                pointers[source] = pointer
+                record = download_candidate(
+                    candidate=candidate,
+                    concept=concept,
+                    raw_dir=raw_dir,
+                    seen_hashes=seen_hashes,
+                    seen_phashes=seen_phashes,
+                    disk=disk,
+                    stats=stats,
+                )
+                if record is not None:
+                    results.append(record)
+                    made_progress = True
+                    break
+            if len(results) >= max_count:
+                break
+        if not made_progress:
+            break
+    return results
+
+
+def process_image(
+    path: Path,
+    *,
+    crop_required: bool,
+    whole_frame_valid: bool,
+    meta_crop: list[float] | tuple[float, float, float, float] | None,
+) -> tuple[np.ndarray, np.ndarray, Image.Image, np.ndarray, float] | None:
+    try:
+        with Image.open(path) as img:
+            img.load()
+            rgb = img.convert("RGB")
+
+        max_dim = max(rgb.size)
+        if max_dim > 600:
+            scale = 600.0 / max_dim
+            rgb = rgb.resize(
+                (
+                    max(1, round(rgb.width * scale)),
+                    max(1, round(rgb.height * scale)),
+                ),
+                Image.Resampling.BILINEAR,
+            )
+
+        width, height = rgb.size
+        if crop_required:
+            if meta_crop is None or len(meta_crop) != 4:
+                return None
+            x0, y0, x1, y1 = (float(v) for v in meta_crop)
+            if not (0 <= x0 < x1 <= 1 and 0 <= y0 < y1 <= 1):
+                return None
+            px0 = max(0, min(width, int(math.floor(x0 * width))))
+            py0 = max(0, min(height, int(math.floor(y0 * height))))
+            px1 = max(0, min(width, int(math.ceil(x1 * width))))
+            py1 = max(0, min(height, int(math.ceil(y1 * height))))
+            if px1 <= px0 or py1 <= py0:
+                return None
+            rgb = rgb.crop((px0, py0, px1, py1))
+            crop = np.asarray([x0, y0, x1, y1], dtype=np.float64)
+            mask_fraction = ((px1 - px0) * (py1 - py0)) / float(width * height)
+        elif whole_frame_valid:
+            crop = np.asarray([0.0, 0.0, 1.0, 1.0], dtype=np.float64)
+            mask_fraction = 1.0
+        else:
+            return None
+
+        pixels = np.asarray(rgb, dtype=np.float32).reshape(-1, 3) / 255.0
+        if len(pixels) < 100 or float(np.std(pixels)) < 1e-4:
+            return None
+        oklab = rgb_to_oklab_array(pixels)
+        color_prior = palette_or_pixels_to_oklch_histogram(oklab)
+        return oklab, color_prior, rgb, crop, float(mask_fraction)
+    except Exception:
+        return None
+
+
+def resolve_device(device: str) -> torch.device:
+    if device == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    resolved = torch.device(device)
+    if resolved.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA requested but unavailable")
+    return resolved
+
+
+def siglip_feature_tensor(value: Any) -> torch.Tensor:
+    if isinstance(value, torch.Tensor):
+        return value
+    for attr in ("pooler_output", "image_embeds", "text_embeds"):
+        maybe = getattr(value, attr, None)
+        if isinstance(maybe, torch.Tensor):
+            return maybe
+    raise TypeError(f"unsupported SigLIP feature return type: {type(value)!r}")
+
+
+def encode_siglip_images(
+    model: Any,
+    processor: Any,
+    images: list[Image.Image],
+    device: torch.device,
+    batch_size: int = 16,
+) -> np.ndarray:
+    chunks: list[np.ndarray] = []
+    for start in range(0, len(images), batch_size):
+        batch = images[start : start + batch_size]
+        inputs = processor(images=batch, return_tensors="pt")
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        with torch.inference_mode():
+            features = siglip_feature_tensor(model.get_image_features(**inputs))
+            features = F.normalize(features, p=2, dim=-1)
+        chunks.append(features.float().cpu().numpy())
+    return np.concatenate(chunks, axis=0).astype(np.float32)
+
+
+def encode_siglip_texts(
+    model: Any,
+    tokenizer: Any,
+    texts: list[str],
+    device: torch.device,
+    batch_size: int = 32,
+) -> np.ndarray:
+    chunks: list[np.ndarray] = []
+    for start in range(0, len(texts), batch_size):
+        batch = texts[start : start + batch_size]
+        inputs = tokenizer(
+            batch,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        )
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        with torch.inference_mode():
+            features = siglip_feature_tensor(model.get_text_features(**inputs))
+            features = F.normalize(features, p=2, dim=-1)
+        chunks.append(features.float().cpu().numpy())
+    return np.concatenate(chunks, axis=0).astype(np.float32)
+
+
+def choose_calibration_threshold(
+    positive: np.ndarray,
+    negative: np.ndarray,
+) -> tuple[float, dict[str, float]]:
+    values = np.unique(np.concatenate([positive, negative]))
+    if len(values) < 2:
+        raise RuntimeError("SigLIP calibration scores have no separation")
+    candidates = [
+        float((values[i] + values[i + 1]) / 2.0)
+        for i in range(len(values) - 1)
+    ]
+    best: tuple[float, float, float, float] | None = None
+    for threshold in candidates:
+        tpr = float(np.mean(positive >= threshold))
+        fpr = float(np.mean(negative >= threshold))
+        balanced = 0.5 * (tpr + (1.0 - fpr))
+        candidate = (balanced, -fpr, tpr, threshold)
+        if best is None or candidate > best:
+            best = candidate
+    assert best is not None
+    balanced, neg_fpr, tpr, threshold = best
+    fpr = -neg_fpr
+    metrics = {
+        "balancedAccuracy": balanced,
+        "truePositiveRate": tpr,
+        "falsePositiveRate": fpr,
+        "positiveMean": float(np.mean(positive)),
+        "positiveMedian": float(np.median(positive)),
+        "positiveMin": float(np.min(positive)),
+        "positiveMax": float(np.max(positive)),
+        "negativeMean": float(np.mean(negative)),
+        "negativeMedian": float(np.median(negative)),
+        "negativeMin": float(np.min(negative)),
+        "negativeMax": float(np.max(negative)),
+        "meanSeparation": float(np.mean(positive) - np.mean(negative)),
+    }
+    return threshold, metrics
+
+
+def calibrate_siglip_from_verified_openimages(
+    *,
+    model: Any,
+    processor: Any,
+    tokenizer: Any,
+    processed_records: list[dict[str, Any]],
+    concept_map: dict[str, dict[str, Any]],
+    device: torch.device,
+    report_path: Path,
+    disk: DiskBudget,
+) -> float:
+    verified = [
+        r
+        for r in processed_records
+        if r.get("source_id") == "open_images"
+        and r.get("bbox_class_name")
+        and isinstance(r.get("processed_pil"), Image.Image)
+        and str(r.get("concept_id")) in concept_map
+    ]
+
+    concept_ids = sorted({str(r["concept_id"]) for r in verified})
+    if len(verified) < 8 or len(concept_ids) < 4:
+        raise RuntimeError(
+            "SigLIP calibration requires >=8 source-verified Open Images crops "
+            "across >=4 distinct concept families"
+        )
+
+    # Deterministic cap, balanced across concept families.
+    by_concept: dict[str, list[dict[str, Any]]] = {}
+    for record in verified:
+        by_concept.setdefault(str(record["concept_id"]), []).append(record)
+    for records in by_concept.values():
+        records.sort(key=lambda r: str(r["content_sha256"]))
+
+    balanced: list[dict[str, Any]] = []
+    while len(balanced) < 48:
+        progressed = False
+        for cid in concept_ids:
+            bucket = by_concept[cid]
+            if bucket:
+                balanced.append(bucket.pop(0))
+                progressed = True
+                if len(balanced) >= 48:
+                    break
+        if not progressed:
+            break
+    verified = balanced
+
+    images = [r["processed_pil"] for r in verified]
+    sample_concepts = [str(r["concept_id"]) for r in verified]
+    unique_concepts = sorted(set(sample_concepts))
+    concept_queries = {
+        cid: str(concept_map[cid]["retrieval_query"]).strip()
+        for cid in unique_concepts
+    }
+    if any(not query for query in concept_queries.values()):
+        raise RuntimeError("SigLIP calibration found an empty retrieval query")
+
+    image_features = encode_siglip_images(model, processor, images, device)
+    query_features = encode_siglip_texts(
+        model,
+        tokenizer,
+        [concept_queries[cid] for cid in unique_concepts],
+        device,
+    )
+    query_index = {cid: i for i, cid in enumerate(unique_concepts)}
+    all_scores = image_features @ query_features.T
+
+    positive_scores: list[float] = []
+    hard_negative_scores: list[float] = []
+    hard_negative_concepts: list[str] = []
+
+    for row_index, positive_cid in enumerate(sample_concepts):
+        positive_col = query_index[positive_cid]
+        positive_scores.append(float(all_scores[row_index, positive_col]))
+
+        candidates = [
+            (float(all_scores[row_index, col]), cid)
+            for cid, col in query_index.items()
+            if cid != positive_cid
+        ]
+        if not candidates:
+            raise RuntimeError("SigLIP calibration has no hard-negative candidates")
+        hard_score, hard_cid = max(candidates, key=lambda pair: pair[0])
+        hard_negative_scores.append(hard_score)
+        hard_negative_concepts.append(hard_cid)
+
+    positive = np.asarray(positive_scores, dtype=np.float32)
+    negative = np.asarray(hard_negative_scores, dtype=np.float32)
+    threshold, metrics = choose_calibration_threshold(positive, negative)
+
+    passed = (
+        metrics["meanSeparation"] >= 0.02
+        and metrics["truePositiveRate"] >= 0.75
+        and metrics["falsePositiveRate"] <= 0.20
+        and metrics["balancedAccuracy"] >= 0.78
+    )
+    report = {
+        "schema": CALIBRATION_SCHEMA,
+        "teacherModelId": SIGLIP_MODEL_ID,
+        "teacherRevision": SIGLIP_REVISION,
+        "source": "Open Images source-verified bbox crops",
+        "negativeMode": "hardest other verified concept retrieval query",
+        "sampleCount": len(verified),
+        "conceptCount": len(unique_concepts),
+        "concepts": unique_concepts,
+        "threshold": threshold,
+        "metrics": metrics,
+        "hardNegativeConcepts": hard_negative_concepts,
+        "passed": passed,
+    }
+    guarded_atomic_write_text(
+        report_path,
+        json.dumps(report, indent=2) + "\n",
+        disk=disk,
+    )
+    if not passed:
+        raise RuntimeError(
+            "SigLIP calibration FAILED: " + json.dumps(metrics, sort_keys=True)
+        )
+    return float(threshold)
+
+
+def load_frozen_calibration(report_path: Path) -> float:
+    if not report_path.is_file():
+        raise FileNotFoundError(
+            f"frozen SigLIP calibration report missing: {report_path}"
+        )
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if report.get("schema") != CALIBRATION_SCHEMA or not report.get("passed"):
+        raise RuntimeError("SigLIP calibration report is missing or failed")
+    if report.get("teacherModelId") != SIGLIP_MODEL_ID:
+        raise RuntimeError("SigLIP calibration model ID mismatch")
+    if report.get("teacherRevision") != SIGLIP_REVISION:
+        raise RuntimeError("SigLIP calibration revision mismatch")
+    threshold = float(report["threshold"])
+    if not np.isfinite(threshold):
+        raise RuntimeError("invalid frozen SigLIP threshold")
+    return threshold
+
+
+def split_by_group(
+    group_ids: list[str],
+    *,
+    train_ratio: float = 0.85,
+    seed: int = 20260826,
+) -> dict[str, str]:
+    assignments: dict[str, str] = {}
+    for group_id in sorted(set(group_ids)):
+        digest = hashlib.sha256(
+            f"c11-split:{seed}:{group_id}".encode("utf-8")
+        ).hexdigest()
+        bucket = int(digest[:8], 16) % 10000
+        assignments[group_id] = (
+            "train" if bucket < int(train_ratio * 10000) else "val"
+        )
+    return assignments
+
+
+def acquire_smoke_records(
+    *,
+    concepts: list[dict[str, Any]],
+    raw_dir: Path,
+    cached_records: dict[str, dict[str, Any]],
+    seen_hashes: set[str],
+    seen_phashes: list[str],
+    disk: DiskBudget,
+    stats: dict[str, int],
+    open_images: OpenImagesBboxIndex,
+) -> list[dict[str, Any]]:
+    source_targets = {
+        "open_images": 12,
+        "met": 20,
+        "artic": 20,
+        "openverse": 20,
+    }
+    result: list[dict[str, Any]] = []
+
+    for source, target in source_targets.items():
+        source_records = [
+            r for r in cached_records.values() if r.get("source_id") == source
+        ]
+        for record in source_records[:target]:
+            result.append(record)
+
+        needed = max(0, target - len(source_records))
+        if needed == 0:
+            continue
+
+        if source == "openverse":
+            openverse_waited_cooldown = False
+            for concept in concepts:
+                if needed <= 0:
+                    break
+                if bool(concept.get("crop_required", False)):
+                    continue
+                if _OPENVERSE_COOLDOWN_UNTIL > 0 and time.time() < _OPENVERSE_COOLDOWN_UNTIL:
+                    if not openverse_waited_cooldown:
+                        wait_sec = max(_OPENVERSE_COOLDOWN_UNTIL - time.time(), 0.0) + 1.5
+                        print(
+                            f"Openverse cooling down; waiting {wait_sec:.1f}s "
+                            "once before retrying smoke acquisition..."
+                        )
+                        time.sleep(wait_sec)
+                        _OPENVERSE_COOLDOWN_UNTIL = 0.0
+                        _OPENVERSE_CONSECUTIVE_429 = 0
+                        openverse_waited_cooldown = True
+                    else:
+                        continue
+
+                batch_count = min(needed, 3)
+                records = acquire_for_concept(
+                    concept=concept,
+                    raw_dir=raw_dir,
+                    max_count=batch_count,
+                    allowed_sources=("openverse",),
+                    seen_hashes=seen_hashes,
+                    seen_phashes=seen_phashes,
+                    disk=disk,
+                    stats=stats,
+                    open_images=open_images,
+                )
+                for record in records:
+                    cached_records[record["content_sha256"]] = record
+                    result.append(record)
+                    needed -= 1
+                    if needed <= 0:
+                        break
+
+            ov_valid = sum(
+                1
+                for r in result
+                if r.get("source_id") == "openverse"
+            )
+            if ov_valid < SMOKE_MIN_VALID_PER_SOURCE:
+                raise RuntimeError(
+                    "Openverse API unavailable / rate-limited during smoke build: "
+                    f"acquired only {ov_valid} records (minimum "
+                    f"{SMOKE_MIN_VALID_PER_SOURCE} required)."
+                )
+        else:
+            for concept in concepts:
+                if needed <= 0:
+                    break
+                crop_required = bool(concept.get("crop_required", False))
+                if source == "open_images" and not crop_required:
+                    continue
+                if source != "open_images" and crop_required:
+                    continue
+                records = acquire_for_concept(
+                    concept=concept,
+                    raw_dir=raw_dir,
+                    max_count=1,
+                    allowed_sources=(source,),
+                    seen_hashes=seen_hashes,
+                    seen_phashes=seen_phashes,
+                    disk=disk,
+                    stats=stats,
+                    open_images=open_images,
+                )
+                for record in records:
+                    cached_records[record["content_sha256"]] = record
+                    result.append(record)
+                    needed -= 1
+                    if needed <= 0:
+                        break
+
+    unique: dict[str, dict[str, Any]] = {}
+    for record in result:
+        unique[str(record["content_sha256"])] = record
+    return list(unique.values())
+
+
+def acquire_full_records(
+    *,
+    concepts: list[dict[str, Any]],
+    raw_dir: Path,
+    cached_records: dict[str, dict[str, Any]],
+    seen_hashes: set[str],
+    seen_phashes: list[str],
+    disk: DiskBudget,
+    stats: dict[str, int],
+    open_images: OpenImagesBboxIndex,
+    limit_images: int | None,
+    per_concept_cap: int,
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    if per_concept_cap < 1 or per_concept_cap > FULL_MAX_PER_CONCEPT:
+        raise ValueError(
+            f"per_concept_cap must be 1..{FULL_MAX_PER_CONCEPT}, "
+            f"got {per_concept_cap}"
+        )
+    per_concept = (
+        max(1, math.ceil(limit_images / max(1, len(concepts))))
+        if limit_images
+        else per_concept_cap
+    )
+    per_concept = min(max(per_concept, 1), per_concept_cap)
+
+    for index, concept in enumerate(concepts):
+        cid = str(concept["concept_id"])
+        cached = [
+            r for r in cached_records.values() if r.get("concept_id") == cid
+        ][:per_concept]
+        result.extend(cached)
+        needed = per_concept - len(cached)
+
+        if needed > 0:
+            allowed = (
+                ("open_images",)
+                if bool(concept.get("crop_required", False))
+                else ("met", "artic", "openverse")
+            )
+            records = acquire_for_concept(
+                concept=concept,
+                raw_dir=raw_dir,
+                max_count=needed,
+                allowed_sources=allowed,
+                seen_hashes=seen_hashes,
+                seen_phashes=seen_phashes,
+                disk=disk,
+                stats=stats,
+                open_images=open_images,
+            )
+            for record in records:
+                cached_records[record["content_sha256"]] = record
+            result.extend(records)
+
+        if limit_images and len(result) >= limit_images:
+            result = result[:limit_images]
+            break
+        if (index + 1) % 20 == 0 or index + 1 == len(concepts):
+            print(
+                f"Acquisition [{index + 1}/{len(concepts)}]: "
+                f"{len(result)} raw unique records"
+            )
+
+    unique: dict[str, dict[str, Any]] = {}
+    for record in result:
+        unique[str(record["content_sha256"])] = record
+    return list(unique.values())
+
+
+def select_balanced_full_records(
+    records: list[dict[str, Any]],
+    max_images: int,
+) -> list[dict[str, Any]]:
+    if len(records) <= max_images:
+        return records
+    by_concept: dict[str, list[dict[str, Any]]] = {}
+    for record in records:
+        by_concept.setdefault(str(record["concept_id"]), []).append(record)
+    for bucket in by_concept.values():
+        bucket.sort(key=lambda r: str(r["content_sha256"]))
+
+    concept_ids = sorted(by_concept)
+    selected: list[dict[str, Any]] = []
+    while len(selected) < max_images:
+        progressed = False
+        for cid in concept_ids:
+            bucket = by_concept[cid]
+            if bucket:
+                selected.append(bucket.pop(0))
+                progressed = True
+                if len(selected) >= max_images:
+                    break
+        if not progressed:
+            break
+    return selected
+
+
+def process_acquired_records(
+    *,
+    acquired: list[dict[str, Any]],
+    concept_map: dict[str, dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    processed: list[dict[str, Any]] = []
+    counters = {
+        "crop_required_accepted_before_relevance": 0,
+        "crop_required_skipped_no_valid_crop": 0,
+    }
+    for record in acquired:
+        concept = concept_map[str(record["concept_id"])]
+        crop_required = bool(concept.get("crop_required", False))
+        processed_data = process_image(
+            Path(record["local_path"]),
+            crop_required=crop_required,
+            whole_frame_valid=bool(concept.get("whole_frame_valid", True)),
+            meta_crop=record.get("crop_coordinates"),
+        )
+        if processed_data is None:
+            if crop_required:
+                counters["crop_required_skipped_no_valid_crop"] += 1
+            continue
+        oklab, prior, pil_image, crop, mask_fraction = processed_data
+        out = dict(record)
+        out["oklab_pixels"] = oklab
+        out["color_prior"] = prior
+        out["processed_pil"] = pil_image
+        out["crop_coordinates"] = crop
+        out["mask_area_fraction"] = mask_fraction
+        if crop_required:
+            counters["crop_required_accepted_before_relevance"] += 1
+        processed.append(out)
+    return processed, counters
+
+
+def score_and_filter_relevance(
+    *,
+    processed: list[dict[str, Any]],
+    concept_map: dict[str, dict[str, Any]],
+    model: Any,
+    processor: Any,
+    tokenizer: Any,
+    device: torch.device,
+    threshold: float,
+) -> tuple[list[dict[str, Any]], int]:
+    if not processed:
+        return [], 0
+    images = [r["processed_pil"] for r in processed]
+    queries = [
+        str(concept_map[str(r["concept_id"])]["retrieval_query"])
+        for r in processed
+    ]
+    image_features = encode_siglip_images(model, processor, images, device)
+    text_features = encode_siglip_texts(model, tokenizer, queries, device)
+    scores = np.sum(image_features * text_features, axis=1)
+
+    valid: list[dict[str, Any]] = []
+    rejected = 0
+    for index, record in enumerate(processed):
+        score = float(scores[index])
+        if score < threshold:
+            rejected += 1
+            continue
+        out = dict(record)
+        out["relevance_score"] = score
+        out["siglip_feature"] = image_features[index]
+        valid.append(out)
+    return valid, rejected
+
+
+def choose_balanced_smoke(
+    valid: list[dict[str, Any]],
+    target: int = SMOKE_VALID_IMAGES,
+) -> list[dict[str, Any]]:
+    required = ("met", "artic", "openverse", "open_images")
+    by_source = {
+        source: [r for r in valid if r.get("source_id") == source]
+        for source in required
+    }
+    missing = {
+        source: len(rows)
+        for source, rows in by_source.items()
+        if len(rows) < SMOKE_MIN_VALID_PER_SOURCE
+    }
+    if missing:
+        raise RuntimeError(
+            f"smoke did not exercise all sources with enough valid data: {missing}"
+        )
+
+    selected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for source in required:
+        for record in by_source[source][:SMOKE_MIN_VALID_PER_SOURCE]:
+            selected.append(record)
+            seen.add(record["content_sha256"])
+
+    for record in valid:
+        if len(selected) >= target:
+            break
+        if record["content_sha256"] in seen:
+            continue
+        selected.append(record)
+        seen.add(record["content_sha256"])
+
+    if len(selected) < target:
+        raise RuntimeError(
+            f"smoke requires {target} valid images, got {len(selected)}"
+        )
+    return selected[:target]
+
+
+def fit_pca(
+    *,
+    features: np.ndarray,
+    records: list[dict[str, Any]],
+    smoke: bool,
+    output_dir: Path,
+    disk: DiskBudget,
+) -> tuple[np.ndarray, dict[str, Any]]:
+    group_ids = [str(r["source_group_id"]) for r in records]
+    splits = split_by_group(group_ids)
+    train_indices = [
+        i for i, record in enumerate(records)
+        if splits[str(record["source_group_id"])] == "train"
+    ]
+    val_indices = [
+        i for i, record in enumerate(records)
+        if splits[str(record["source_group_id"])] == "val"
+    ]
+    if len(train_indices) < 2 or len(val_indices) < 1:
+        raise RuntimeError(
+            f"invalid train/val split: train={len(train_indices)}, val={len(val_indices)}"
+        )
+
+    train = features[train_indices]
+    mean = train.mean(axis=0, keepdims=True)
+    centered = train - mean
+    rank = int(np.linalg.matrix_rank(centered))
+    requested = 128
+    _, _, vt = np.linalg.svd(centered, full_matrices=False)
+    effective_components = min(rank, requested, int(vt.shape[0]))
+
+    if not smoke and effective_components < requested:
+        raise RuntimeError(
+            f"FULL PCA FAILED: effective components {effective_components} < 128"
+        )
+    if effective_components <= 0:
+        raise RuntimeError("PCA has zero effective components")
+
+    components = np.zeros(
+        (features.shape[1], requested),
+        dtype=np.float32,
+    )
+    components[:, :effective_components] = vt[:effective_components].T.astype(
+        np.float32
+    )
+
+    train_group_ids = sorted(
+        str(records[i]["source_group_id"]) for i in train_indices
+    )
+    train_groups_sha = hashlib.sha256(
+        "\n".join(train_group_ids).encode("utf-8")
+    ).hexdigest()
+
+    pca_path = output_dir / "palettebrain_c11_pca_projection.npz"
+    guarded_atomic_savez(
+        pca_path,
+        disk=disk,
+        arrays={
+            "mean": mean.astype(np.float32),
+            "components": components,
+            "teacher_model_id": np.array(SIGLIP_MODEL_ID, dtype=str),
+            "teacher_revision": np.array(SIGLIP_REVISION, dtype=str),
+            "train_source_groups_sha256": np.array(train_groups_sha, dtype=str),
+            "requested_components": np.array(requested, dtype=np.int32),
+            "effective_rank": np.array(rank, dtype=np.int32),
+            "effective_components": np.array(effective_components, dtype=np.int32),
+            "zero_padded_for_smoke": np.array(
+                smoke and effective_components < requested,
+                dtype=bool,
+            ),
+        },
+    )
+    pca_sha = sha256_file(pca_path)
+
+    projected = (features - mean) @ components
+    norms = np.linalg.norm(projected, axis=1, keepdims=True)
+    latents = (projected / np.maximum(norms, 1e-12)).astype(np.float32)
+
+    for record in records:
+        record["split"] = splits[str(record["source_group_id"])]
+
+    diagnostics = {
+        "pcaPath": str(pca_path).replace("\\", "/"),
+        "pcaSha256": pca_sha,
+        "requestedComponents": requested,
+        "effectiveRank": rank,
+        "effectiveComponents": effective_components,
+        "zeroPaddedForSmoke": smoke and effective_components < requested,
+        "trainImages": len(train_indices),
+        "valImages": len(val_indices),
+        "trainSourceGroupsSha256": train_groups_sha,
+    }
+    return latents, diagnostics
+
+
+def build_rows(
+    *,
+    records: list[dict[str, Any]],
+    teacher_latents: np.ndarray,
+    concept_map: dict[str, dict[str, Any]],
+    smoke: bool,
+    seed: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for image_index, record in enumerate(records):
+        concept = concept_map[str(record["concept_id"])]
+        en = list(concept.get("phrasings_en", []))
+        ru = list(concept.get("phrasings_ru", []))
+        if not en or not ru:
+            raise RuntimeError(
+                f"concept {record['concept_id']} lacks RU/EN phrasings"
+            )
+
+        if smoke:
+            counts = list(range(2, 10))
+        else:
+            counts = [
+                2 + ((image_index * 4 + offset) % 8)
+                for offset in range(4)
+            ]
+
+        for count in counts:
+            try:
+                palette = extract_deterministic_palette(
+                    record["oklab_pixels"],
+                    count,
+                    seed=seed + image_index * 17 + count,
+                )
+            except ValueError:
+                continue
+
+            target = np.zeros((MAX_COLORS, 5), dtype=np.float32)
+            lock_values = np.zeros((MAX_COLORS, 4), dtype=np.float32)
+            for slot, color in enumerate(palette):
+                encoded, lock = physical_oklch_to_target(
+                    *oklab_to_oklch(color)
+                )
+                target[slot] = encoded
+                lock_values[slot] = lock
+
+            count_mask = np.zeros(MAX_COLORS, dtype=np.float32)
+            count_mask[:count] = 1.0
+
+            lang = "ru" if ((image_index + count) % 2) else "en"
+            phrases = ru if lang == "ru" else en
+            phrase_seed = int(
+                hashlib.sha256(
+                    f"{record['content_sha256']}:{count}:{lang}".encode("utf-8")
+                ).hexdigest()[:8],
+                16,
+            )
+            phrase = phrases[phrase_seed % len(phrases)]
+
+            lock_seed = int(
+                hashlib.sha256(
+                    f"{record['content_sha256']}:{count}:locks".encode("utf-8")
+                ).hexdigest()[:8],
+                16,
+            )
+            lock_rng = np.random.RandomState(lock_seed)
+            locked_mask = np.zeros(MAX_COLORS, dtype=np.float32)
+            locked_colors = np.zeros((MAX_COLORS, 4), dtype=np.float32)
+            lock_count = 0
+            if count >= 3 and lock_rng.random_sample() < 0.25:
+                lock_count = 1 if lock_rng.random_sample() < 0.70 else 2
+                for idx in lock_rng.choice(count, size=lock_count, replace=False):
+                    locked_mask[idx] = 1.0
+                    locked_colors[idx] = lock_values[idx]
+
+            row_seed = int(
+                hashlib.sha256(
+                    (
+                        f"{record['content_sha256']}:{count}:{phrase}:{lock_count}"
+                    ).encode("utf-8")
+                ).hexdigest()[:8],
+                16,
+            )
+
+            rows.append(
+                {
+                    "prompt": phrase,
+                    "language": lang,
+                    "count": count,
+                    "concept_id": record["concept_id"],
+                    "category": record["category"],
+                    "source_id": record["source_id"],
+                    "source_type": record["source_type"],
+                    "source_group_id": record["source_group_id"],
+                    "image_id": record["image_id"],
+                    "content_sha256": record["content_sha256"],
+                    "perceptual_hash64": record["perceptual_hash64"],
+                    "crop_coordinates": record["crop_coordinates"],
+                    "mask_area_fraction": record["mask_area_fraction"],
+                    "relevance_score": record["relevance_score"],
+                    "bbox_provenance": record.get("bbox_provenance", ""),
+                    "bbox_annotation_key": record.get("bbox_annotation_key", ""),
+                    "bbox_class_name": record.get("bbox_class_name", ""),
+                    "bbox_label_mid": record.get("bbox_label_mid", ""),
+                    "bbox_source": record.get("bbox_source", ""),
+                    "source_dataset_release": record.get("source_dataset_release", ""),
+                    "source_annotation_url": record.get("source_annotation_url", ""),
+                    "source_image_metadata_url": record.get("source_image_metadata_url", ""),
+                    "license": record["license"],
+                    "license_url": record["license_url"],
+                    "provider": record["provider"],
+                    "foreign_identifier": record["foreign_identifier"],
+                    "source_url": record["source_url"],
+                    "downloaded_url": record.get(
+                        "downloaded_url", record["source_url"]
+                    ),
+                    "landing_url": record["landing_url"],
+                    "creator": record["creator"],
+                    "color_prior": record["color_prior"],
+                    "teacher_latent": teacher_latents[image_index],
+                    "count_mask": count_mask,
+                    "seed_noise": seed_noise_from_uint32(row_seed),
+                    "locked_mask": locked_mask,
+                    "locked_colors": locked_colors,
+                    "target": target,
+                    "quality_weight": 1.0,
+                    "split": record["split"],
+                }
+            )
+    if not rows:
+        raise RuntimeError("no training rows were generated")
+    return rows
+
+
+def audit_rows(rows: list[dict[str, Any]], *, smoke: bool) -> dict[str, Any]:
+    counts = {count: 0 for count in range(2, 10)}
+    languages = {"ru": 0, "en": 0}
+    locked_rows = 0
+    for row in rows:
+        counts[int(row["count"])] += 1
+        languages[str(row["language"])] += 1
+        if float(np.sum(row["locked_mask"])) > 0:
+            locked_rows += 1
+
+    missing_counts = [count for count, value in counts.items() if value == 0]
+    if missing_counts:
+        raise RuntimeError(f"count coverage missing: {missing_counts}")
+    if languages["ru"] == 0 or languages["en"] == 0:
+        raise RuntimeError(f"language coverage failed: {languages}")
+
+    if not smoke:
+        minimum_per_count = max(25, int(len(rows) * 0.01))
+        weak = {
+            count: value
+            for count, value in counts.items()
+            if value < minimum_per_count
+        }
+        if weak:
+            raise RuntimeError(f"full count coverage too weak: {weak}")
+        if locked_rows < int(len(rows) * 0.10):
+            raise RuntimeError(
+                f"lock coverage too weak: {locked_rows}/{len(rows)}"
+            )
+
+    return {
+        "countRows": {str(k): v for k, v in counts.items()},
+        "languageRows": languages,
+        "lockedRows": locked_rows,
+        "lockedFraction": locked_rows / len(rows),
+    }
+
+
+def audit_visual_coverage(
+    *,
+    records: list[dict[str, Any]],
+    concepts: list[dict[str, Any]],
+    smoke: bool,
+) -> dict[str, Any]:
+    categories = sorted({str(c["category"]) for c in concepts})
+    by_category: dict[str, dict[str, Any]] = {}
+    zero_concepts: list[str] = []
+
+    for category in categories:
+        family_ids = {
+            str(c["concept_id"])
+            for c in concepts
+            if str(c["category"]) == category
+        }
+        rows = [r for r in records if str(r["category"]) == category]
+        covered = {str(r["concept_id"]) for r in rows}
+        fraction = len(covered) / len(family_ids) if family_ids else 0.0
+        by_category[category] = {
+            "images": len(rows),
+            "coveredConcepts": len(covered),
+            "totalConcepts": len(family_ids),
+            "coverageFraction": fraction,
+            "zeroConcepts": sorted(family_ids - covered),
+        }
+        zero_concepts.extend(sorted(family_ids - covered))
+
+        if not smoke and (
+            len(rows) < FULL_MIN_CATEGORY_IMAGES
+            or fraction < FULL_MIN_CATEGORY_COVERAGE
+        ):
+            raise RuntimeError(
+                f"FULL CATEGORY COVERAGE FAILED for {category}: "
+                f"{len(rows)} images, {len(covered)}/{len(family_ids)} "
+                f"({fraction:.1%})"
+            )
+
+    source_counts: dict[str, int] = {}
+    type_counts: dict[str, int] = {}
+    for record in records:
+        source = str(record["source_id"])
+        source_type = str(record["source_type"])
+        source_counts[source] = source_counts.get(source, 0) + 1
+        type_counts[source_type] = type_counts.get(source_type, 0) + 1
+
+    if smoke:
+        for source in ("met", "artic", "openverse", "open_images"):
+            if source_counts.get(source, 0) < SMOKE_MIN_VALID_PER_SOURCE:
+                raise RuntimeError(
+                    f"smoke source coverage failed for {source}: "
+                    f"{source_counts.get(source, 0)}"
+                )
+    else:
+        total = max(1, len(records))
+        real_fraction = type_counts.get("real_world", 0) / total
+        artwork_fraction = type_counts.get("artwork", 0) / total
+        if real_fraction < FULL_MIN_REAL_WORLD_FRACTION:
+            raise RuntimeError(
+                f"FULL real-world grounding too weak: {real_fraction:.1%}"
+            )
+        if artwork_fraction < FULL_MIN_ARTWORK_FRACTION:
+            raise RuntimeError(
+                f"FULL artwork grounding too weak: {artwork_fraction:.1%}"
+            )
+
+    bbox_valid = sum(
+        1
+        for r in records
+        if r.get("source_id") == "open_images"
+        and r.get("bbox_provenance")
+        and r.get("crop_coordinates") is not None
+    )
+    if smoke and bbox_valid < SMOKE_MIN_VALID_PER_SOURCE:
+        raise RuntimeError(
+            f"smoke requires real bbox examples, got {bbox_valid}"
+        )
+
+    crop_required_concepts = {
+        str(c["concept_id"]) for c in concepts if bool(c.get("crop_required", False))
+    }
+    crop_counts = {
+        cid: sum(1 for r in records if str(r["concept_id"]) == cid)
+        for cid in sorted(crop_required_concepts)
+    }
+    crop_covered = {cid for cid, count in crop_counts.items() if count > 0}
+    crop_coverage = (
+        len(crop_covered) / len(crop_required_concepts)
+        if crop_required_concepts
+        else 1.0
+    )
+    weak_crop_concepts = {
+        cid: count
+        for cid, count in crop_counts.items()
+        if count < FULL_MIN_CROP_REQUIRED_IMAGES_PER_CONCEPT
+    }
+
+    if not smoke and crop_required_concepts:
+        if crop_coverage < FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE:
+            raise RuntimeError(
+                "FULL crop-required concept coverage FAILED: "
+                f"{len(crop_covered)}/{len(crop_required_concepts)} "
+                f"({crop_coverage:.1%})"
+            )
+        if weak_crop_concepts:
+            raise RuntimeError(
+                "FULL crop-required grounding too weak: "
+                + json.dumps(weak_crop_concepts, sort_keys=True)
+            )
+
+    return {
+        "categoryCoverage": by_category,
+        "zeroImageConcepts": sorted(set(zero_concepts)),
+        "sourceCounts": source_counts,
+        "sourceTypeCounts": type_counts,
+        "realBboxImages": bbox_valid,
+        "cropRequiredConcepts": len(crop_required_concepts),
+        "cropRequiredCoveredConcepts": len(crop_covered),
+        "cropRequiredConceptCoverage": crop_coverage,
+        "cropRequiredImageCounts": crop_counts,
+    }
+
+
+def save_dataset(
+    *,
+    output_path: Path,
+    rows: list[dict[str, Any]],
+    relevance_threshold: float,
+    pca_diagnostics: dict[str, Any],
+    cache_dir: str,
+    disk: DiskBudget,
+    concepts_sha256: str,
+    manifest_sha256: str,
+    calibration_sha256: str,
+    builder_sha256: str,
+) -> tuple[str, int]:
+    unique_prompts = list(dict.fromkeys(str(r["prompt"]) for r in rows))
+    print(f"Embedding {len(unique_prompts)} unique prompts with repository E5...")
+    encoder = load_encoder(
+        device="auto",
+        cache_dir=cache_dir,
+        local_files_only=False,
+    )
+    embeddings = embed_texts(
+        unique_prompts,
+        encoder=encoder,
+        batch_size=128,
+    )
+    prompt_to_embedding = dict(zip(unique_prompts, embeddings, strict=True))
+
+    arrays = {
+        "text_embedding": np.stack(
+            [prompt_to_embedding[r["prompt"]] for r in rows]
+        ).astype(np.float32),
+        "color_prior": np.stack([r["color_prior"] for r in rows]).astype(np.float32),
+        "teacher_latent": np.stack(
+            [r["teacher_latent"] for r in rows]
+        ).astype(np.float32),
+        "count_mask": np.stack([r["count_mask"] for r in rows]).astype(np.float32),
+        "seed_noise": np.stack([r["seed_noise"] for r in rows]).astype(np.float32),
+        "locked_mask": np.stack(
+            [r["locked_mask"] for r in rows]
+        ).astype(np.float32),
+        "locked_colors": np.stack(
+            [r["locked_colors"] for r in rows]
+        ).astype(np.float32),
+        "target": np.stack([r["target"] for r in rows]).astype(np.float32),
+        "quality_weight": np.asarray(
+            [r["quality_weight"] for r in rows], dtype=np.float32
+        ),
+        "split": np.asarray([r["split"] for r in rows], dtype=str),
+        "prompt": np.asarray([r["prompt"] for r in rows], dtype=str),
+        "language": np.asarray([r["language"] for r in rows], dtype=str),
+        "count": np.asarray([r["count"] for r in rows], dtype=np.int16),
+        "concept_id": np.asarray([r["concept_id"] for r in rows], dtype=str),
+        "category": np.asarray([r["category"] for r in rows], dtype=str),
+        "source_id": np.asarray([r["source_id"] for r in rows], dtype=str),
+        "source_type": np.asarray([r["source_type"] for r in rows], dtype=str),
+        "source_group_id": np.asarray(
+            [r["source_group_id"] for r in rows], dtype=str
+        ),
+        "image_id": np.asarray([r["image_id"] for r in rows], dtype=str),
+        "content_sha256": np.asarray(
+            [r["content_sha256"] for r in rows], dtype=str
+        ),
+        "perceptual_hash64": np.asarray(
+            [r["perceptual_hash64"] for r in rows], dtype=str
+        ),
+        "crop_coordinates": np.stack(
+            [np.asarray(r["crop_coordinates"], dtype=np.float64) for r in rows]
+        ),
+        "mask_area_fraction": np.asarray(
+            [r["mask_area_fraction"] for r in rows], dtype=np.float64
+        ),
+        "relevance_score": np.asarray(
+            [r["relevance_score"] for r in rows], dtype=np.float32
+        ),
+        "bbox_provenance": np.asarray(
+            [r["bbox_provenance"] for r in rows], dtype=str
+        ),
+        "bbox_annotation_key": np.asarray(
+            [r["bbox_annotation_key"] for r in rows], dtype=str
+        ),
+        "bbox_class_name": np.asarray(
+            [r["bbox_class_name"] for r in rows], dtype=str
+        ),
+        "bbox_label_mid": np.asarray(
+            [r["bbox_label_mid"] for r in rows], dtype=str
+        ),
+        "bbox_source": np.asarray(
+            [r["bbox_source"] for r in rows], dtype=str
+        ),
+        "source_dataset_release": np.asarray(
+            [r["source_dataset_release"] for r in rows], dtype=str
+        ),
+        "source_annotation_url": np.asarray(
+            [r["source_annotation_url"] for r in rows], dtype=str
+        ),
+        "source_image_metadata_url": np.asarray(
+            [r["source_image_metadata_url"] for r in rows], dtype=str
+        ),
+        "license": np.asarray([r["license"] for r in rows], dtype=str),
+        "license_url": np.asarray([r["license_url"] for r in rows], dtype=str),
+        "provider": np.asarray([r["provider"] for r in rows], dtype=str),
+        "foreign_identifier": np.asarray(
+            [r["foreign_identifier"] for r in rows], dtype=str
+        ),
+        "source_url": np.asarray([r["source_url"] for r in rows], dtype=str),
+        "downloaded_url": np.asarray(
+            [r["downloaded_url"] for r in rows], dtype=str
+        ),
+        "landing_url": np.asarray([r["landing_url"] for r in rows], dtype=str),
+        "creator": np.asarray([r["creator"] for r in rows], dtype=str),
+        "teacher_model_id": np.array(SIGLIP_MODEL_ID, dtype=str),
+        "teacher_revision": np.array(SIGLIP_REVISION, dtype=str),
+        "transformers_version": np.array(transformers.__version__, dtype=str),
+        "e5_model_id": np.array(E5_MODEL_ID, dtype=str),
+        "e5_revision": np.array(E5_REVISION, dtype=str),
+        "relevance_threshold": np.array(relevance_threshold, dtype=np.float32),
+        "pca_artifact_sha256": np.array(
+            pca_diagnostics["pcaSha256"], dtype=str
+        ),
+        "pca_train_source_groups_sha256": np.array(
+            pca_diagnostics["trainSourceGroupsSha256"], dtype=str
+        ),
+        "concept_bank_sha256": np.array(concepts_sha256, dtype=str),
+        "source_manifest_sha256": np.array(manifest_sha256, dtype=str),
+        "siglip_calibration_report_sha256": np.array(calibration_sha256, dtype=str),
+        "builder_sha256": np.array(builder_sha256, dtype=str),
+    }
+    guarded_atomic_savez(output_path, disk=disk, arrays=arrays)
+    with np.load(output_path, allow_pickle=False) as loaded:
+        if loaded["text_embedding"].shape[0] != len(rows):
+            raise RuntimeError("saved dataset row count mismatch")
+        if loaded["text_embedding"].shape[1] != 384:
+            raise RuntimeError("saved E5 embeddings are not 384-dimensional")
+    return sha256_file(output_path), output_path.stat().st_size
+
+
+def build_c11_dataset(
+    *,
+    concepts_path: Path,
+    manifest_path: Path,
+    raw_dir: Path,
+    output_path: Path,
+    smoke: bool,
+    limit_images: int | None,
+    seed: int,
+    device: str,
+    cache_dir: str,
+) -> dict[str, Any]:
+    manifest = load_and_validate_manifest(manifest_path)
+    policy = manifest.get("acquisition_policy", {})
+    hard_disk = int(
+        policy.get("maximum_disk_budget_bytes", 10 * 1024**3)
+    )
+    target_disk = int(
+        policy.get("target_disk_budget_bytes", int(8.5 * 1024**3))
+    )
+
+    concepts_sha256 = sha256_file(concepts_path)
+    manifest_sha256 = sha256_file(manifest_path)
+    builder_sha256 = sha256_file(Path(__file__).resolve())
+
+    concept_payload = json.loads(concepts_path.read_text(encoding="utf-8"))
+    concepts = list(concept_payload.get("concepts", []))
+    if not concepts:
+        raise RuntimeError("concept bank is empty")
+    concept_map = {str(c["concept_id"]): c for c in concepts}
+    if len(concept_map) != len(concepts):
+        raise RuntimeError("concept bank contains duplicate IDs")
+    print(f"Loaded {len(concepts)} concept families.")
+
+    preflight_anti_leakage(concepts)
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = Path(cache_dir)
+    disk = DiskBudget(
+        raw_dir=raw_dir,
+        cache_dir=cache_path,
+        target_bytes=target_disk,
+        hard_bytes=hard_disk,
+    )
+
+    index_path = raw_dir / "metadata_index.json"
+    cached_records, seen_phashes, invalid_cache = load_metadata_index(
+        index_path,
+        raw_dir,
+    )
+    seen_hashes = set(cached_records)
+    print(
+        f"Resume: {len(cached_records)} verified cache records; "
+        f"{invalid_cache} invalid/legacy records ignored."
+    )
+
+    stats: dict[str, int] = {}
+    open_images = OpenImagesBboxIndex(
+        cache_dir=raw_dir / "open_images_meta",
+        disk=disk,
+    )
+
+    # crop_required means whole-frame fallback is forbidden. In full mode every such
+    # family must resolve to at least one real Open Images boxable class.
+    if not smoke:
+        open_images.load()
+        unresolved_crop_required: list[str] = []
+        for concept in concepts:
+            if not bool(concept.get("crop_required", False)):
+                continue
+            cid = str(concept["concept_id"])
+            names = CONCEPT_TO_OPENIMAGES_CLASSES.get(cid, ())
+            resolved_names = [
+                normalize_text(name)
+                for name in names
+                if normalize_text(name) in open_images.class_map
+            ]
+            if not resolved_names:
+                unresolved_crop_required.append(cid)
+        if unresolved_crop_required:
+            raise RuntimeError(
+                "FULL crop-required preflight FAILED; no verified Open Images "
+                "boxable mapping for: " + ", ".join(sorted(unresolved_crop_required))
+            )
+
+    if smoke:
+        acquired = acquire_smoke_records(
+            concepts=concepts,
+            raw_dir=raw_dir,
+            cached_records=cached_records,
+            seen_hashes=seen_hashes,
+            seen_phashes=seen_phashes,
+            disk=disk,
+            stats=stats,
+            open_images=open_images,
+        )
+    else:
+        acquired = acquire_full_records(
+            concepts=concepts,
+            raw_dir=raw_dir,
+            cached_records=cached_records,
+            seen_hashes=seen_hashes,
+            seen_phashes=seen_phashes,
+            disk=disk,
+            stats=stats,
+            open_images=open_images,
+            limit_images=limit_images,
+            per_concept_cap=FULL_ACQUISITION_CAPS[0],
+        )
+
+    write_metadata_index(index_path, cached_records, disk=disk)
+    print(
+        f"Raw acquisition complete: {len(acquired)} records; "
+        f"exact dupes={stats.get('exact_duplicates', 0)}; "
+        f"near dupes={stats.get('near_duplicates', 0)}."
+    )
+    if not acquired:
+        raise RuntimeError("no images acquired")
+
+    processed, crop_stats = process_acquired_records(
+        acquired=acquired,
+        concept_map=concept_map,
+    )
+    if not processed:
+        raise RuntimeError("no images survived crop/image processing")
+
+    resolved_device = resolve_device(device)
+    processor = AutoProcessor.from_pretrained(
+        SIGLIP_MODEL_ID,
+        revision=SIGLIP_REVISION,
+        use_fast=False,
+        cache_dir=cache_dir,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        SIGLIP_MODEL_ID,
+        revision=SIGLIP_REVISION,
+        cache_dir=cache_dir,
+    )
+    model = AutoModel.from_pretrained(
+        SIGLIP_MODEL_ID,
+        revision=SIGLIP_REVISION,
+        cache_dir=cache_dir,
+    ).to(resolved_device).eval()
+
+    calibration_path = (
+        Path("ml/palettebrain/reports")
+        / "candidate-11-siglip-calibration.json"
+    )
+    disk.track_artifact(calibration_path)
+    if smoke:
+        threshold = calibrate_siglip_from_verified_openimages(
+            model=model,
+            processor=processor,
+            tokenizer=tokenizer,
+            processed_records=processed,
+            concept_map=concept_map,
+            device=resolved_device,
+            report_path=calibration_path,
+            disk=disk,
+        )
+    else:
+        threshold = load_frozen_calibration(calibration_path)
+
+    valid, relevance_rejected = score_and_filter_relevance(
+        processed=processed,
+        concept_map=concept_map,
+        model=model,
+        processor=processor,
+        tokenizer=tokenizer,
+        device=resolved_device,
+        threshold=threshold,
+    )
+
+    if smoke:
+        valid = choose_balanced_smoke(valid, SMOKE_VALID_IMAGES)
+    else:
+        desired_valid = (
+            min(limit_images, FULL_TARGET_UNIQUE_IMAGES)
+            if limit_images is not None
+            else FULL_TARGET_UNIQUE_IMAGES
+        )
+        for cap in FULL_ACQUISITION_CAPS[1:]:
+            if len(valid) >= desired_valid:
+                break
+            if limit_images is not None and len(acquired) >= limit_images:
+                break
+            if not disk.before_download():
+                break
+
+            print(
+                f"Top-up acquisition: {len(valid)} valid < {desired_valid}; "
+                f"raising per-concept cap to {cap}."
+            )
+            acquired = acquire_full_records(
+                concepts=concepts,
+                raw_dir=raw_dir,
+                cached_records=cached_records,
+                seen_hashes=seen_hashes,
+                seen_phashes=seen_phashes,
+                disk=disk,
+                stats=stats,
+                open_images=open_images,
+                limit_images=limit_images,
+                per_concept_cap=cap,
+            )
+            write_metadata_index(index_path, cached_records, disk=disk)
+            processed, crop_stats = process_acquired_records(
+                acquired=acquired,
+                concept_map=concept_map,
+            )
+            valid, relevance_rejected = score_and_filter_relevance(
+                processed=processed,
+                concept_map=concept_map,
+                model=model,
+                processor=processor,
+                tokenizer=tokenizer,
+                device=resolved_device,
+                threshold=threshold,
+            )
+
+        if len(valid) < FULL_MIN_UNIQUE_IMAGES:
+            raise RuntimeError(
+                f"FULL DATASET FAILED: {len(valid)} valid unique images "
+                f"< hard minimum {FULL_MIN_UNIQUE_IMAGES}"
+            )
+        valid = select_balanced_full_records(valid, FULL_MAX_VALID_IMAGES)
+
+    calibration_sha256 = sha256_file(calibration_path)
+
+    visual_audit = audit_visual_coverage(
+        records=valid,
+        concepts=concepts,
+        smoke=smoke,
+    )
+
+    features = np.stack([r["siglip_feature"] for r in valid]).astype(np.float32)
+    teacher_latents, pca_diag = fit_pca(
+        features=features,
+        records=valid,
+        smoke=smoke,
+        output_dir=output_path.parent,
+        disk=disk,
+    )
+
+    rows = build_rows(
+        records=valid,
+        teacher_latents=teacher_latents,
+        concept_map=concept_map,
+        smoke=smoke,
+        seed=seed,
+    )
+    row_audit = audit_rows(rows, smoke=smoke)
+
+    dataset_sha, dataset_bytes = save_dataset(
+        output_path=output_path,
+        rows=rows,
+        relevance_threshold=threshold,
+        pca_diagnostics=pca_diag,
+        cache_dir=cache_dir,
+        disk=disk,
+        concepts_sha256=concepts_sha256,
+        manifest_sha256=manifest_sha256,
+        calibration_sha256=calibration_sha256,
+        builder_sha256=builder_sha256,
+    )
+
+    source_counts = visual_audit["sourceCounts"]
+    source_type_counts = visual_audit["sourceTypeCounts"]
+    crop_required_final = sum(
+        1
+        for r in valid
+        if bool(concept_map[str(r["concept_id"])].get("crop_required", False))
+    )
+    summary = {
+        "mode": "smoke" if smoke else "full",
+        "output": str(output_path).replace("\\", "/"),
+        "sha256": dataset_sha,
+        "bytes": dataset_bytes,
+        "rawAcquired": len(acquired),
+        "processedBeforeRelevance": len(processed),
+        "validUniqueImages": len(valid),
+        "preferredFullTarget": FULL_TARGET_UNIQUE_IMAGES,
+        "hardFullMinimum": FULL_MIN_UNIQUE_IMAGES,
+        "exactDuplicatesRejected": stats.get("exact_duplicates", 0),
+        "nearDuplicatesRejected": stats.get("near_duplicates", 0),
+        "invalidImagesRejected": stats.get("invalid_images", 0),
+        "relevanceRejected": relevance_rejected,
+        "relevanceThreshold": threshold,
+        "sourceCounts": source_counts,
+        "sourceTypeCounts": source_type_counts,
+        "cropRequiredAcceptedBeforeRelevance": crop_stats[
+            "crop_required_accepted_before_relevance"
+        ],
+        "cropRequiredSkippedNoValidCrop": crop_stats[
+            "crop_required_skipped_no_valid_crop"
+        ],
+        "cropRequiredFinalValid": crop_required_final,
+        "realBboxImages": visual_audit["realBboxImages"],
+        "cropRequiredConcepts": visual_audit["cropRequiredConcepts"],
+        "cropRequiredCoveredConcepts": visual_audit["cropRequiredCoveredConcepts"],
+        "cropRequiredConceptCoverage": visual_audit["cropRequiredConceptCoverage"],
+        "cropRequiredImageCounts": visual_audit["cropRequiredImageCounts"],
+        "zeroImageConcepts": visual_audit["zeroImageConcepts"],
+        "categoryCoverage": visual_audit["categoryCoverage"],
+        "rows": len(rows),
+        **row_audit,
+        **pca_diag,
+        "teacherModelId": SIGLIP_MODEL_ID,
+        "teacherRevision": SIGLIP_REVISION,
+        "e5ModelId": E5_MODEL_ID,
+        "e5Revision": E5_REVISION,
+        "transformersVersion": transformers.__version__,
+        "conceptBankSha256": concepts_sha256,
+        "sourceManifestSha256": manifest_sha256,
+        "siglipCalibrationReportSha256": calibration_sha256,
+        "builderSha256": builder_sha256,
+        "diskUsageBytes": disk.usage(),
+    }
+
+    report_path = (
+        Path("ml/palettebrain/reports")
+        / (
+            "candidate-11-source-smoke.json"
+            if smoke
+            else "candidate-11-source-full.json"
+        )
+    )
+    guarded_atomic_write_text(
+        report_path,
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
+        disk=disk,
+    )
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    return summary
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Prepare PaletteBrain Candidate 11 visual source dataset."
+    )
+    parser.add_argument(
+        "--concepts",
+        default="ml/palettebrain/c11_training_concepts.v1.json",
+    )
+    parser.add_argument(
+        "--manifest",
+        default="ml/palettebrain/c11_source_manifest.v1.json",
+    )
+    parser.add_argument(
+        "--raw-dir",
+        default="ml/palettebrain/data/raw_c11",
+    )
+    parser.add_argument(
+        "--output",
+        default="ml/palettebrain/data/palettebrain_c11_recovered_source.npz",
+    )
+    parser.add_argument("--smoke", action="store_true")
+    parser.add_argument("--limit-images", type=int, default=None)
+    parser.add_argument("--seed", type=int, default=20260826)
+    parser.add_argument("--device", default="auto")
+    parser.add_argument("--cache-dir", default="ml/.cache/hub")
+    args = parser.parse_args()
+
+    build_c11_dataset(
+        concepts_path=Path(args.concepts),
+        manifest_path=Path(args.manifest),
+        raw_dir=Path(args.raw_dir),
+        output_path=Path(args.output),
+        smoke=bool(args.smoke),
+        limit_images=args.limit_images,
+        seed=int(args.seed),
+        device=str(args.device),
+        cache_dir=str(args.cache_dir),
+    )
+
+
+if __name__ == "__main__":
+    main()

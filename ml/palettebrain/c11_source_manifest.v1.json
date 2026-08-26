@@ -1,0 +1,60 @@
+{
+  "schema": "palettebrain-c11-source-manifest/v1",
+  "candidate": "candidate-11",
+  "teacher": {
+    "model_id": "google/siglip-base-patch16-224",
+    "revision": "7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed",
+    "feature_dim": 768,
+    "target_latent_dim": 128
+  },
+  "text_encoder": {
+    "model_id": "intfloat/multilingual-e5-small",
+    "revision": "fd1525a9fd15316a2d503bf26ab031a61d056e98",
+    "embedding_dim": 384
+  },
+  "acquisition_policy": {
+    "maximum_disk_budget_bytes": 10737418240,
+    "target_disk_budget_bytes": 9126805504,
+    "max_image_dimension": 843,
+    "min_image_dimension": 224,
+    "allowed_licenses": ["Public Domain", "CC0", "PDM", "CC0 1.0", "CC-BY", "CC BY 2.0", "CC BY 3.0", "CC BY 4.0", "CC-BY-SA"],
+    "allowed_hosts": [
+      "collectionapi.metmuseum.org",
+      "images.metmuseum.org",
+      "api.artic.edu",
+      "www.artic.edu",
+      "api.openverse.org",
+      "live.staticflickr.com",
+      "upload.wikimedia.org"
+    ],
+    "hard_minimum_unique_sources": 1500,
+    "target_unique_sources": 2500,
+    "target_compact_rows_range": [6000, 12000]
+  },
+  "sources": [
+    {
+      "id": "met",
+      "name": "Metropolitan Museum of Art Open Access",
+      "policy": "isPublicDomain=true only",
+      "default_license": "CC0 1.0",
+      "license_status": "VERIFIED_PUBLIC_DOMAIN",
+      "api_base": "https://collectionapi.metmuseum.org/public/collection/v1"
+    },
+    {
+      "id": "artic",
+      "name": "Art Institute of Chicago",
+      "policy": "is_public_domain=true only",
+      "default_license": "CC0 1.0",
+      "license_status": "VERIFIED_PUBLIC_DOMAIN",
+      "api_base": "https://api.artic.edu/api/v1"
+    },
+    {
+      "id": "openverse",
+      "name": "Openverse Creative Commons Search",
+      "policy": "license in (pdm, cc0, by) with verifiable URL",
+      "default_license": "CC-BY / CC0 / PDM",
+      "license_status": "VERIFIED_OPEN_LICENSE",
+      "api_base": "https://api.openverse.org/v1"
+    }
+  ]
+}

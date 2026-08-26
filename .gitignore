@@ -45,6 +45,10 @@ ml/.venv/
 ml/.cache/
 ml/data/
 ml/checkpoints/
+ml/palettebrain/data/raw_c11/
+ml/palettebrain/data/*.npz
+ml/palettebrain/checkpoints/*.pt
+ml/palettebrain/reports/candidate-11-logs/
 __pycache__/
 *.pyc
 

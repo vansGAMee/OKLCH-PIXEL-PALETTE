@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "branch": "codex/candidate11-recovery",
+  "productionReady": false,
+  "codename": null,
+  "phases": {
+    "source_data_preflight": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-preflight.json",
+      "timestamp": "2026-08-26T12:02:42.561753+00:00",
+      "sha256": "b44344829ea3028572026a2757f6a9695cf2b080b4cde71456929d0601a7e99b",
+      "bytes": 135,
+      "metrics": {
+        "protectedCheckpointsPresent": true
+      }
+    }
+  },
+  "command": "ml/.venv/Scripts/python.exe -u ml/palettebrain/run_candidate11_release.py --device auto --resume",
+  "logsDirectory": "ml/palettebrain/reports/candidate-11-logs",
+  "updatedAt": "2026-08-26T12:02:42.562271+00:00",
+  "currentPhase": "source_data_preflight"
+}

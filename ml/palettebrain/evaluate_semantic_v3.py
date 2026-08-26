@@ -138,6 +138,16 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         repeat_a = model(*_inputs(engineering_embedding, 5, 42)).numpy()
         repeat_b = model(*_inputs(engineering_embedding, 5, 42)).numpy()
     parity = json.loads(Path(args.parity_report).read_text(encoding="utf-8")) if Path(args.parity_report).is_file() else {}
+    browser_smoke = (
+        json.loads(Path(args.browser_smoke_report).read_text(encoding="utf-8"))
+        if args.browser_smoke_report and Path(args.browser_smoke_report).is_file()
+        else {}
+    )
+    browser_smoke_pass = (
+        browser_smoke.get("testClassification") == "REAL_BROWSER"
+        and browser_smoke.get("pass") is True
+        and browser_smoke.get("fallbackUsed") is False
+    )
     metrics = {
         "semanticFamilyWin": semantic_family_win,
         "directEn": float(np.mean([row["pass"] for row in direct_rows if not any("а" <= c.lower() <= "я" for c in row["prompt"])])),
@@ -164,11 +174,12 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "determinism": float(np.array_equal(repeat_a, repeat_b)),
         "pytorchOnnxParity": parity.get("pytorchOnnx", {}).get("pass") is True,
         "onnxBrowserParity": parity.get("onnxBrowser", {}).get("pass") is True,
-        "realBrowserSemanticSmoke": False,
+        "realBrowserSemanticSmoke": browser_smoke_pass,
     }
     report = {
         "schemaVersion": 1, "candidate": "candidate-11",
-        "benchmarkId": v3["benchmarkId"], "testClassification": "REAL_PYTORCH_SEMANTIC_STAGE_A",
+        "benchmarkId": v3["benchmarkId"],
+        "testClassification": "REAL_PYTORCH_ONNX_BROWSER_SEMANTIC" if browser_smoke_pass else "REAL_PYTORCH_SEMANTIC_STAGE_A",
         "sources": {"benchmarkId": v3["benchmarkId"], "checkpoint": args.checkpoint},
         "metrics": metrics, "categoryRates": category_rates, "familyRows": family_rows,
         "directRows": direct_rows, "abstractRows": abstract_rows, "longRows": long_rows,
@@ -187,6 +198,7 @@ def main() -> None:
     parser.add_argument("--benchmark-v3", default="ml/palettebrain/benchmark_semantic_v3.json")
     parser.add_argument("--cache-dir", default="ml/.cache/hub")
     parser.add_argument("--parity-report", default="ml/palettebrain/reports/candidate-11-parity.json")
+    parser.add_argument("--browser-smoke-report")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()

@@ -91,7 +91,7 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
         "gates": gates,
         "artifactIntegrity": artifact_ok,
         "productionReady": passed,
-        "codename": None,
+        "codename": "Mikhail Tal" if passed else None,
         "pass": passed,
         "hardFailures": failures,
         "rule": "Every hard gate must pass; no weighted average can hide a failure.",
