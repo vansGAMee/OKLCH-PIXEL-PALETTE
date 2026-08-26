@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -175,6 +176,7 @@ class Runner:
     def command(self, phase: str, command: list[str]) -> None:
         log_path = LOGS / f"{phase}.log"
         print(f"[{phase}] log: {relative(log_path)}", flush=True)
+        tail: deque[str] = deque(maxlen=12)
         with log_path.open("a", encoding="utf-8") as log:
             log.write(f"\n[{now()}] {' '.join(command)}\n")
             process = subprocess.Popen(
@@ -191,9 +193,15 @@ class Runner:
                 print(line, end="", flush=True)
                 log.write(line)
                 log.flush()
+                if line.strip():
+                    tail.append(line.strip())
             code = process.wait()
         if code:
-            raise RuntimeError(f"command exited with code {code}; see {relative(log_path)}")
+            detail = tail[-1] if tail else "no diagnostic output"
+            raise RuntimeError(
+                f"command exited with code {code}: {detail}; "
+                f"see {relative(log_path)}"
+            )
 
     def phase(
         self,

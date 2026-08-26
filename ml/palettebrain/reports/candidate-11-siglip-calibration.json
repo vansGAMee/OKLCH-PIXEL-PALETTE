@@ -1,0 +1,53 @@
+{
+  "schema": "palettebrain-c11-siglip-calibration/v1",
+  "teacherModelId": "google/siglip-base-patch16-224",
+  "teacherRevision": "7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed",
+  "source": "Open Images source-verified bbox crops",
+  "negativeMode": "hardest other verified concept retrieval query",
+  "sampleCount": 12,
+  "conceptCount": 12,
+  "concepts": [
+    "antique_glass_bottle",
+    "antique_leather_volume",
+    "fresh_purple_fig",
+    "hammered_copper_kettle",
+    "harvest_pumpkin_gourd",
+    "raw_wax_honeycomb",
+    "ripe_orchard_apple",
+    "sliced_pomegranate_fruit",
+    "sunflower_head_seeds",
+    "terracotta_earthenware_pot",
+    "vintage_brass_pocketwatch",
+    "wild_chanterelle_mushrooms"
+  ],
+  "threshold": 0.04419170692563057,
+  "metrics": {
+    "balancedAccuracy": 0.625,
+    "truePositiveRate": 0.3333333333333333,
+    "falsePositiveRate": 0.08333333333333333,
+    "positiveMean": 0.011248414404690266,
+    "positiveMedian": 0.00180813018232584,
+    "positiveMin": -0.0757485181093216,
+    "positiveMax": 0.1298695206642151,
+    "negativeMean": -0.0029521563556045294,
+    "negativeMedian": -0.013363795354962349,
+    "negativeMin": -0.046417370438575745,
+    "negativeMax": 0.05069183558225632,
+    "meanSeparation": 0.014200570993125439
+  },
+  "hardNegativeConcepts": [
+    "antique_leather_volume",
+    "antique_glass_bottle",
+    "ripe_orchard_apple",
+    "terracotta_earthenware_pot",
+    "antique_leather_volume",
+    "harvest_pumpkin_gourd",
+    "sliced_pomegranate_fruit",
+    "ripe_orchard_apple",
+    "sliced_pomegranate_fruit",
+    "antique_glass_bottle",
+    "antique_leather_volume",
+    "terracotta_earthenware_pot"
+  ],
+  "passed": false
+}
