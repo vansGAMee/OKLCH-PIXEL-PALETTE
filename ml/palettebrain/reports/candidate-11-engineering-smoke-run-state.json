@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "branch": "codex/candidate11-recovery",
+  "productionReady": false,
+  "codename": null,
+  "phases": {
+    "source_data_preflight": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-engineering-smoke-preflight.json",
+      "timestamp": "2026-08-27T09:34:38.581115+00:00",
+      "sha256": "9c6be39a102c07d439d5a2eb961a70686e0874894c37d441aa4dda2dda4ddec5",
+      "bytes": 135,
+      "metrics": {
+        "protectedCheckpointsPresent": true
+      }
+    },
+    "smoke_48_images": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/data/palettebrain_c11_smoke_recovered_source.npz",
+      "timestamp": "2026-08-27T09:34:38.588072+00:00",
+      "sha256": "c75e1ae8e39b0ba8ed5bc9ecc92a3a0ccf1368cb36bdad36f89334d4a654fffa",
+      "bytes": 3372588,
+      "metrics": {
+        "validUniqueImages": 48,
+        "minimum": 48
+      }
+    },
+    "full_visual_source": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/data/palettebrain_c11_smoke_recovered_source.npz",
+      "timestamp": "2026-08-27T09:34:38.594981+00:00",
+      "sha256": "c75e1ae8e39b0ba8ed5bc9ecc92a3a0ccf1368cb36bdad36f89334d4a654fffa",
+      "bytes": 3372588,
+      "metrics": {
+        "validUniqueImages": 48,
+        "minimum": 48
+      }
+    },
+    "repaired_training_dataset": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/data/palettebrain_c11_engineering_smoke.npz",
+      "timestamp": "2026-08-27T09:34:38.610287+00:00",
+      "sha256": "fd05537b3d152b0be5ce31e491058a6aaf5ba3a8a9ef7129c34f24e59f01c2a6",
+      "bytes": 499533,
+      "metrics": {
+        "recordCount": 384,
+        "pass": true
+      }
+    },
+    "stage_a": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/checkpoints/candidate-11-smoke-stage-a-last.pt",
+      "timestamp": "2026-08-27T09:34:40.655367+00:00",
+      "sha256": "147674625c5035ef00190a10028a0c44c1b6d07cc889392a053cc346c4b54383",
+      "bytes": 7906886,
+      "metrics": {
+        "completedEpoch": 0,
+        "candidateCount": 1
+      }
+    },
+    "stage_a_dev_selection": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-stage-a-selection.json",
+      "timestamp": "2026-08-27T09:34:54.600382+00:00",
+      "sha256": "1c672e6a5d0f36d85ffbb6e788528e488043ce042cf8bcc129be09f528953c60",
+      "bytes": 3700,
+      "metrics": {
+        "candidateCount": 2,
+        "selected": "ml/palettebrain/checkpoints/candidate-11-smoke-stage-a-dev-epoch-000.pt"
+      }
+    },
+    "stage_a_semantic_evaluation": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-stage-a-dev.json",
+      "timestamp": "2026-08-27T09:35:05.133872+00:00",
+      "sha256": "4fed6eca86b673174f0f3043a5149104fea9330ea6ff15c789739e324ba1b60c",
+      "bytes": 30554,
+      "metrics": {
+        "semanticFamilyWin": 0.04,
+        "gate": null
+      }
+    },
+    "stage_b": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/checkpoints/candidate-11-smoke-stage-b-last.pt",
+      "timestamp": "2026-08-27T09:35:05.182307+00:00",
+      "sha256": "f6f176ba49c9215f9d2d395c0bfa32c67e7b96842a3e6ab21dc2c0f8ea380230",
+      "bytes": 8700787,
+      "metrics": {
+        "completedEpoch": 0,
+        "candidateCount": 1
+      }
+    },
+    "stage_b_dev_selection": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-stage-b-selection.json",
+      "timestamp": "2026-08-27T09:35:18.868535+00:00",
+      "sha256": "707820392c0f0688c655c0d325ef86f7ff36671b19435064130765006d712264",
+      "bytes": 3674,
+      "metrics": {
+        "candidateCount": 2,
+        "selected": "ml/palettebrain/checkpoints/candidate-11-smoke-stage-b-dev-epoch-000.pt"
+      }
+    },
+    "frozen_pytorch_evaluation": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-stage-b-dev.json",
+      "timestamp": "2026-08-27T09:35:29.579567+00:00",
+      "sha256": "b2b403eee3f40b3b1abcc3176c1d87efd6d5187b40bc3d2b6e4d3c819816ffbe",
+      "bytes": 30485,
+      "metrics": {
+        "semanticFamilyWin": 0.02,
+        "gate": null
+      }
+    },
+    "visual_report": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-visual-report.html",
+      "timestamp": "2026-08-27T09:35:29.583570+00:00",
+      "sha256": "29d143b10e9ed3a0b5c3a9a646c18c296bbb280284f6f1ea0e175df0c3bf8bb4",
+      "bytes": 201655,
+      "metrics": {
+        "bytes": 201655
+      }
+    },
+    "onnx_export": {
+      "status": "passed",
+      "artifact": "public/models/palettebrain-v4-candidate11-engineering-smoke.onnx",
+      "timestamp": "2026-08-27T09:35:32.514163+00:00",
+      "sha256": "9129c00e794742b9a07044d63c6653480281764d3277e63b6f991d89325decb8",
+      "bytes": 2908706,
+      "metrics": {
+        "modelVersion": "palettebrain-v4-candidate11-9129c00e",
+        "productionReady": false
+      }
+    },
+    "pytorch_ort_parity": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-parity.json",
+      "timestamp": "2026-08-27T09:35:42.093763+00:00",
+      "sha256": "8d3039748489af761911890d1d2d9d1521b0aaf5d20e2d166293460d4a12cef7",
+      "bytes": 78362,
+      "metrics": {
+        "maxAbsDelta": 2.1457672119140625e-06
+      }
+    },
+    "ort_browser_parity": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-parity.json",
+      "timestamp": "2026-08-27T09:35:58.484553+00:00",
+      "sha256": "d4044c58193df39eb4f9967f75a901a70dbde57ed31816443fda8f5d85010044",
+      "bytes": 78576,
+      "metrics": {
+        "maxAbsDelta": 1.3113021850585938e-06,
+        "rawPromptCount": 12
+      }
+    },
+    "browser_semantic_smoke": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-browser-evidence.json",
+      "timestamp": "2026-08-27T09:35:58.491246+00:00",
+      "sha256": "8800d0310d79208c0aca14675183786754396291f845524a471c2d8dcb7d1390",
+      "bytes": 69811,
+      "metrics": {
+        "promptCount": 35,
+        "modelVersion": "palettebrain-v4-candidate11-9129c00e",
+        "fallbackUsed": false
+      }
+    },
+    "canonical_qualification": {
+      "status": "passed",
+      "artifact": "ml/palettebrain/reports/candidate-11-smoke-qualification.json",
+      "timestamp": "2026-08-27T09:35:58.505479+00:00",
+      "sha256": "7672b78c803d227da9bfbc2bf1c0e8be124b99738aed709247240e7212353792",
+      "bytes": 5204,
+      "metrics": {
+        "hardFailures": [
+          "evidence classification is absent, mocked, or engineering-only",
+          "directRu: 0.5 does not satisfy >= 0.95",
+          "directEn: 0.42857142857142855 does not satisfy >= 0.95",
+          "exclusion: 0.5 does not satisfy >= 1.0",
+          "cleanMultiColor: 0.5909090909090908 does not satisfy >= 0.7",
+          "nearDuplicateRate: 0.4090909090909091 does not satisfy <= 0.05",
+          "basicConcepts: 0.0 does not satisfy >= 0.8",
+          "nature: 0.3333333333333333 does not satisfy >= 0.8",
+          "weatherScenes: 0.0 does not satisfy >= 0.8",
+          "materials: 0.0 does not satisfy >= 0.8",
+          "stylesMedia: 0.0 does not satisfy >= 0.8",
+          "compositions: 0.0 does not satisfy >= 0.75",
+          "oodParaphrases: 0.5 does not satisfy >= 0.75",
+          "ruEnSemanticAgreement: 0.8333333333333334 does not satisfy >= 0.85",
+          "paletteStructureWinRate: 0.5 does not satisfy >= 0.6",
+          "abstractConceptGate: missing or false",
+          "longPromptGate: missing or false",
+          "adversarialCompositionGate: missing or false",
+          "realBrowserSemanticSmoke: missing or false"
+        ],
+        "productionReady": false
+      }
+    }
+  },
+  "command": "ml/.venv/Scripts/python.exe -u ml/palettebrain/run_candidate11_release.py --device cpu --resume --engineering-smoke",
+  "logsDirectory": "ml/palettebrain/reports/candidate-11-engineering-smoke-logs",
+  "updatedAt": "2026-08-27T09:35:58.510324+00:00",
+  "currentPhase": "complete",
+  "testClassification": "ENGINEERING_SMOKE_ONLY"
+}

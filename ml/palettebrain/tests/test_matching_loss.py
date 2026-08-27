@@ -210,6 +210,59 @@ class DecoderMatchingLossTests(unittest.TestCase):
         self.assertEqual(float(second_components["importanceWeight"]), 0.0)
         self.assertAlmostEqual(float(first_loss), float(second_loss), places=7)
 
+    def test_palette_structure_prefers_correct_geometry_and_has_gradients(self) -> None:
+        target, count_mask = _palette(
+            _color(0.18, 0.65, 20.0),
+            _color(0.52, 0.50, 145.0),
+            _color(0.86, 0.70, 270.0),
+        )
+        correct = target.clone().requires_grad_(True)
+        collapsed = target.clone()
+        collapsed[0, :3] = target[0, 1]
+        collapsed[0, 0, 0] += 0.01
+        collapsed.requires_grad_(True)
+        locked_mask = torch.zeros_like(count_mask)
+
+        _, correct_components = decoder_loss(correct, target, count_mask, locked_mask)
+        _, collapsed_components = decoder_loss(collapsed, target, count_mask, locked_mask)
+
+        self.assertLess(
+            float(correct_components["paletteStructure"]),
+            float(collapsed_components["paletteStructure"]),
+        )
+        collapsed_components["paletteStructure"].backward()
+        self.assertTrue(torch.isfinite(collapsed.grad).all())
+        self.assertGreater(float(collapsed.grad.abs().sum()), 0.0)
+
+    def test_palette_structure_ignores_inactive_and_locked_to_locked_pairs(self) -> None:
+        target, count_mask = _palette(
+            _color(0.22, 0.55, 10.0),
+            _color(0.58, 0.50, 130.0),
+            _color(0.82, 0.65, 260.0),
+        )
+        output = target.clone()
+        output[0, 3:] = 100.0
+        locked_mask = torch.zeros_like(count_mask)
+        locked_mask[0, :2] = 1.0
+        locked_colors = target.clone()
+        output[0, :2] = -100.0
+
+        _, components = decoder_loss(
+            output, target, count_mask, locked_mask, locked_colors
+        )
+        self.assertAlmostEqual(float(components["paletteStructure"]), 0.0, places=7)
+
+    def test_palette_structure_is_finite_for_every_supported_count(self) -> None:
+        colors = [_color(0.12 + index * 0.09, 0.45, index * 41.0) for index in range(9)]
+        for count in range(2, 10):
+            target, count_mask = _palette(*colors[:count])
+            output = (target + 0.01).requires_grad_(True)
+            loss, components = decoder_loss(
+                output, target, count_mask, torch.zeros_like(count_mask)
+            )
+            self.assertTrue(torch.isfinite(loss))
+            self.assertTrue(torch.isfinite(components["paletteStructure"]))
+
 
 if __name__ == "__main__":
     unittest.main()

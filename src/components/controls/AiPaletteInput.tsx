@@ -98,7 +98,7 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
 
   const runGeneration = useCallback(async (
     explicitPrompt?: string,
-    options?: { seed?: number; count?: number },
+    options?: { seed?: number; count?: number; lockedColors?: AiLockedColor[] },
   ): Promise<boolean> => {
     const trimmed = (explicitPrompt ?? inputRef.current?.value ?? prompt).trim();
     if (!trimmed) {
@@ -129,7 +129,7 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
         prompt: trimmed,
         count: requestedCount,
         seed: options?.seed ?? seed,
-        lockedColors: lockedColors
+        lockedColors: (options?.lockedColors ?? lockedColors)
           .filter((locked) => locked.index >= 0 && locked.index < requestedCount)
           .map((locked) => ({ index: locked.index, oklch: { ...locked.oklch } })),
       });
@@ -210,13 +210,13 @@ export const AiPaletteInput = React.forwardRef<AiPaletteInputHandle, AiPaletteIn
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const testWindow = window as unknown as {
-        __generateAiPalette?: (text: string) => Promise<boolean>;
+        __generateAiPalette?: (text: string, options?: { seed?: number; count?: number; lockedColors?: AiLockedColor[] }) => Promise<boolean>;
         __paletteBrainLastResult?: unknown;
       };
-      testWindow.__generateAiPalette = async (text: string) => {
+      testWindow.__generateAiPalette = async (text, options) => {
         setPrompt(text);
         if (inputRef.current) inputRef.current.value = text;
-        return await runGeneration(text);
+        return await runGeneration(text, options);
       };
       return () => {
         delete testWindow.__generateAiPalette;

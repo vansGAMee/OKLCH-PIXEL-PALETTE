@@ -18,12 +18,14 @@ THRESHOLDS = {
     "directRu": (">=", 0.95), "directEn": (">=", 0.95), "exclusion": (">=", 1.0),
     "cleanMultiColor": (">=", 0.70), "nearDuplicateRate": ("<=", 0.05),
     "count": (">=", 1.0), "inactive": (">=", 1.0), "locks": (">=", 1.0),
+    "seedDiversity": (">=", 1.0), "seedStability": (">=", 1.0),
     "gamut": (">=", 1.0), "determinism": (">=", 1.0),
     "basicConcepts": (">=", 0.80), "nature": (">=", 0.80),
     "weatherScenes": (">=", 0.80), "materials": (">=", 0.80),
     "stylesMedia": (">=", 0.80), "compositions": (">=", 0.75),
     "oodParaphrases": (">=", 0.75), "heldOutRelated": (">=", 0.70),
     "ruEnSemanticAgreement": (">=", 0.85),
+    "paletteStructureWinRate": (">=", 0.60),
 }
 BOOLEAN_GATES = [
     "abstractConceptGate", "longPromptGate", "adversarialCompositionGate",
@@ -90,6 +92,9 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
         "testClassification": evidence.get("testClassification"),
         "gates": gates,
         "artifactIntegrity": artifact_ok,
+        "manifestDecoderSha256": manifest.get("decoder", {}).get("sha256"),
+        "checkpointSha256": sources.get("checkpointSha256"),
+        "datasetSha256": sources.get("datasetSha256"),
         "productionReady": passed,
         "codename": "Mikhail Tal" if passed else None,
         "pass": passed,
@@ -112,10 +117,11 @@ def main() -> None:
     parser.add_argument("--parity-report", default="ml/palettebrain/reports/candidate-11-parity.json")
     parser.add_argument("--manifest", default="public/models/palettebrain-v2.manifest.json")
     parser.add_argument("--output", default="ml/palettebrain/reports/candidate-11-qualification.json")
+    parser.add_argument("--no-fail-exit", action="store_true")
     args = parser.parse_args()
     report = qualify(args)
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    if not report["pass"]:
+    if not report["pass"] and not args.no_fail_exit:
         raise SystemExit(1)
 
 

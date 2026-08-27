@@ -26,6 +26,10 @@ PROVENANCE_FIELDS = {
     "prompt", "source_id", "source_group_id", "image_id", "crop_coordinates",
     "mask_area_fraction", "license", "split",
 }
+NEGATIVE_SELECTION_VERSION = "c11-safe-ranking-negative-v1"
+NEGATIVE_POOL_SIZE = 256
+MIN_COLOR_PRIOR_COSINE_DISTANCE = 0.08
+MIN_TEACHER_DISTANCE = 0.25
 
 
 def sha256_file(path: Path) -> str:
@@ -36,7 +40,85 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def audit(path: Path) -> dict[str, Any]:
+def build_safe_ranking_negatives(arrays: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """Precompute bounded deterministic TRAIN-only semantic negatives.
+
+    Identity evidence is checked before perceptual separation. A row with no
+    trustworthy candidate is explicitly marked invalid instead of receiving a
+    fabricated within-batch negative.
+    """
+
+    required = {
+        "split", "source_group_id", "concept_id", "image_id", "content_sha256",
+        "target", "color_prior", "teacher_latent",
+    }
+    missing = sorted(required - arrays.keys())
+    if missing:
+        raise RuntimeError(f"safe negative construction missing fields: {missing}")
+    rows = len(arrays["split"])
+    split = np.asarray(arrays["split"]).astype(str)
+    groups = np.asarray(arrays["source_group_id"]).astype(str)
+    concepts = np.asarray(arrays["concept_id"]).astype(str)
+    images = np.asarray(arrays["image_id"]).astype(str)
+    contents = np.asarray(arrays["content_sha256"]).astype(str)
+    targets = np.asarray(arrays["target"], dtype=np.float32)
+    priors = np.asarray(arrays["color_prior"], dtype=np.float32)
+    teachers = np.asarray(arrays["teacher_latent"], dtype=np.float32)
+    target_hashes = np.asarray([
+        hashlib.sha256(np.ascontiguousarray(row).tobytes()).hexdigest()
+        for row in targets
+    ])
+    prior_norms = np.maximum(np.linalg.norm(priors, axis=1), 1e-12)
+    negatives = np.zeros_like(priors)
+    negative_groups = np.full(rows, "", dtype=f"<U{max(1, max(map(len, groups), default=1))}")
+    valid = np.zeros(rows, dtype=np.float32)
+    train_indices = np.flatnonzero(split == "train")
+
+    for row_index in train_indices:
+        eligible = train_indices[
+            (groups[train_indices] != groups[row_index])
+            & (concepts[train_indices] != concepts[row_index])
+            & (images[train_indices] != images[row_index])
+            & (contents[train_indices] != contents[row_index])
+            & (target_hashes[train_indices] != target_hashes[row_index])
+        ]
+        if not len(eligible):
+            continue
+        ranked = sorted(
+            eligible.tolist(),
+            key=lambda candidate: hashlib.sha256(
+                f"{NEGATIVE_SELECTION_VERSION}|{groups[row_index]}|{groups[candidate]}|{candidate}".encode()
+            ).digest(),
+        )[:NEGATIVE_POOL_SIZE]
+        candidates = np.asarray(ranked, dtype=np.int64)
+        cosine = (priors[candidates] @ priors[row_index]) / (
+            prior_norms[candidates] * prior_norms[row_index]
+        )
+        prior_distance = 1.0 - cosine
+        teacher_distance = np.linalg.norm(
+            teachers[candidates] - teachers[row_index], axis=1
+        )
+        separated = (prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE) | (
+            teacher_distance >= MIN_TEACHER_DISTANCE
+        )
+        if not separated.any():
+            continue
+        candidates = candidates[separated]
+        scores = prior_distance[separated] + teacher_distance[separated]
+        selected = int(candidates[int(np.argmax(scores))])
+        negatives[row_index] = priors[selected]
+        negative_groups[row_index] = groups[selected]
+        valid[row_index] = 1.0
+
+    return {
+        "ranking_negative_color_prior": negatives,
+        "ranking_negative_source_group_id": negative_groups,
+        "ranking_negative_valid": valid,
+        "negative_selection_version": np.asarray(NEGATIVE_SELECTION_VERSION),
+    }
+
+
+def audit(path: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
     archive = np.load(path, allow_pickle=False)
     names = set(archive.files)
     errors: list[str] = []
@@ -86,16 +168,29 @@ def audit(path: Path) -> dict[str, Any]:
             group for group in set(groups.tolist())
             if len(set(splits[groups == group].tolist())) > 1
         })
+        content_hashes = np.asarray(archive["content_sha256"]).astype(str)
+        leaking_content = sorted({
+            value for value in set(content_hashes.tolist())
+            if len(set(splits[content_hashes == value].tolist())) > 1
+        })
+        leaking_images = sorted({
+            value for value in set(image_ids.tolist())
+            if len(set(splits[image_ids == value].tolist())) > 1
+        })
         suspicious_background = int(np.sum(mask_area < 0.20))
         if leaking_groups:
             errors.append(f"source-group split leakage: {len(leaking_groups)} groups")
+        if leaking_content:
+            errors.append(f"content-hash split leakage: {len(leaking_content)} identities")
+        if leaking_images:
+            errors.append(f"image split leakage: {len(leaking_images)} identities")
         if np.any(np.char.str_len(licenses) == 0):
             errors.append("license metadata contains empty values")
         if crops.shape != (record_count, 4) or not np.isfinite(crops).all():
             errors.append("crop_coordinates must be finite [N,4]")
         if not np.isfinite(mask_area).all() or np.any((mask_area <= 0) | (mask_area > 1)):
             errors.append("mask_area_fraction must be finite in (0,1]")
-        if suspicious_background / max(record_count, 1) > 0.10:
+        if suspicious_background / max(record_count, 1) > 0.10 and not engineering_smoke:
             errors.append("more than 10% of object targets occupy under 20% of the crop")
         provenance = {
             "uniquePromptCount": len(set(prompts.tolist())),
@@ -103,6 +198,8 @@ def audit(path: Path) -> dict[str, Any]:
             "uniqueImageCount": len(set(image_ids.tolist())),
             "duplicateImageRecordCount": record_count - len(set(image_ids.tolist())),
             "sourceGroupLeakCount": len(leaking_groups),
+            "contentHashLeakCount": len(leaking_content),
+            "imageIdentityLeakCount": len(leaking_images),
             "licenses": sorted(set(licenses.tolist())),
             "russianPromptFraction": float(np.mean([
                 any("а" <= character.lower() <= "я" or character.lower() == "ё" for character in prompt)
@@ -134,7 +231,7 @@ def audit(path: Path) -> dict[str, Any]:
     }
 
 
-def build(source: Path, output: Path) -> dict[str, Any]:
+def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
     source_archive = np.load(source, allow_pickle=False)
     missing = sorted((set(CORE_FIELDS) | PROVENANCE_FIELDS) - set(source_archive.files))
     if missing:
@@ -142,11 +239,16 @@ def build(source: Path, output: Path) -> dict[str, Any]:
             "refusing to invent a C11 dataset; metadata-rich source is missing: "
             + ", ".join(missing)
         )
+    arrays = {name: np.asarray(source_archive[name]) for name in source_archive.files}
+    arrays.update(build_safe_ranking_negatives(arrays))
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp.npz")
-    np.savez_compressed(temporary, **{name: source_archive[name] for name in source_archive.files})
+    np.savez_compressed(temporary, **arrays)
     temporary.replace(output)
-    report = audit(output)
+    report = audit(output, engineering_smoke=engineering_smoke)
+    if engineering_smoke:
+        report["testClassification"] = "ENGINEERING_SMOKE_ONLY"
+        report["productionReady"] = False
     if not report["pass"]:
         output.unlink(missing_ok=True)
         raise RuntimeError(f"built dataset failed audit: {report['errors']}")
@@ -158,8 +260,9 @@ def main() -> None:
     parser.add_argument("--input", default="ml/palettebrain/data/palettebrain_c11_v1.npz")
     parser.add_argument("--output")
     parser.add_argument("--report", default="ml/palettebrain/reports/candidate-11-dataset-audit.json")
+    parser.add_argument("--engineering-smoke", action="store_true")
     args = parser.parse_args()
-    report = build(Path(args.input), Path(args.output)) if args.output else audit(Path(args.input))
+    report = build(Path(args.input), Path(args.output), engineering_smoke=args.engineering_smoke) if args.output else audit(Path(args.input), engineering_smoke=args.engineering_smoke)
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

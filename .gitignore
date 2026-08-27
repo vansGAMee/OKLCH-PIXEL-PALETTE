@@ -49,6 +49,9 @@ ml/palettebrain/data/raw_c11/
 ml/palettebrain/data/*.npz
 ml/palettebrain/checkpoints/*.pt
 ml/palettebrain/reports/candidate-11-logs/
+ml/palettebrain/reports/candidate-11-engineering-smoke-logs/
+ml/palettebrain/reports/candidate-11-smoke-browser-*-input.json
+ml/palettebrain/reports/candidate-11-smoke-*
 __pycache__/
 *.pyc
 

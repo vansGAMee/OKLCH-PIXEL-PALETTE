@@ -187,6 +187,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     report = {
         "schemaVersion": 1,
         "candidate": "candidate-11",
+        "testClassification": "ENGINEERING_SMOKE_ONLY" if args.engineering_smoke else "REAL_RUNTIME_PARITY",
+        "productionReady": False,
         "case": {"count": args.count, "seed": args.seed, "locks": []},
         "artifacts": {
             "checkpoint": str(checkpoint_path).replace("\\", "/"),
@@ -224,6 +226,7 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--count", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--engineering-smoke", action="store_true")
     parser.add_argument("--tolerance", type=float, default=1e-4)
     parser.add_argument("--prompt", action="append")
     args = parser.parse_args()

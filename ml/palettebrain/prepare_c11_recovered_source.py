@@ -323,6 +323,18 @@ _MET_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 _ARTIC_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 
 
+def normalize_http_url(url: str) -> str:
+    cleaned = "".join(character for character in url.strip() if ord(character) >= 32)
+    parsed = urllib.parse.urlsplit(cleaned)
+    return urllib.parse.urlunsplit((
+        parsed.scheme,
+        parsed.netloc,
+        urllib.parse.quote(parsed.path, safe="/%:@"),
+        urllib.parse.quote(parsed.query, safe="=&%+;,:@/?"),
+        urllib.parse.quote(parsed.fragment, safe="%+;,:@/?"),
+    ))
+
+
 def safe_http_get(
     url: str,
     *,
@@ -335,6 +347,10 @@ def safe_http_get(
     global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_UNAVAILABLE
     if not url.startswith(("https://", "http://")):
         return None
+    # Museum and Open Images metadata occasionally contains literal spaces or
+    # control characters in otherwise valid URLs. urllib rejects these before
+    # any request is made, so normalize components without double-encoding `%`.
+    url = normalize_http_url(url)
     request_headers = {
         "User-Agent": "PaletteBrain-C11-DataBuilder/1.0",
         "Accept": "*/*",
@@ -1964,8 +1980,11 @@ def split_by_group(
             f"c11-split:{seed}:{group_id}".encode("utf-8")
         ).hexdigest()
         bucket = int(digest[:8], 16) % 10000
+        train_cutoff = int(train_ratio * 10000)
+        dev_cutoff = train_cutoff + int((1.0 - train_ratio) * 5000)
         assignments[group_id] = (
-            "train" if bucket < int(train_ratio * 10000) else "val"
+            "train" if bucket < train_cutoff
+            else ("val" if bucket < dev_cutoff else "test")
         )
     return assignments
 
@@ -3111,6 +3130,8 @@ def build_c11_dataset(
     )
     summary = {
         "mode": "smoke" if smoke else "full",
+        "testClassification": "ENGINEERING_SMOKE_ONLY" if smoke else "REAL_TRAINING_DATA",
+        "productionReady": False,
         "output": str(output_path).replace("\\", "/"),
         "sha256": dataset_sha,
         "bytes": dataset_bytes,

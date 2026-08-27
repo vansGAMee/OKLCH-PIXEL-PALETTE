@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+  "testClassification": "ENGINEERING_SMOKE_ONLY",
+  "gates": {
+    "directRu": {
+      "value": 0.5,
+      "operator": ">=",
+      "threshold": 0.95,
+      "pass": false
+    },
+    "directEn": {
+      "value": 0.42857142857142855,
+      "operator": ">=",
+      "threshold": 0.95,
+      "pass": false
+    },
+    "exclusion": {
+      "value": 0.5,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": false
+    },
+    "cleanMultiColor": {
+      "value": 0.5909090909090908,
+      "operator": ">=",
+      "threshold": 0.7,
+      "pass": false
+    },
+    "nearDuplicateRate": {
+      "value": 0.4090909090909091,
+      "operator": "<=",
+      "threshold": 0.05,
+      "pass": false
+    },
+    "count": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "inactive": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "locks": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "seedDiversity": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "seedStability": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "gamut": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "determinism": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 1.0,
+      "pass": true
+    },
+    "basicConcepts": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "nature": {
+      "value": 0.3333333333333333,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "weatherScenes": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "materials": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "stylesMedia": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.8,
+      "pass": false
+    },
+    "compositions": {
+      "value": 0.0,
+      "operator": ">=",
+      "threshold": 0.75,
+      "pass": false
+    },
+    "oodParaphrases": {
+      "value": 0.5,
+      "operator": ">=",
+      "threshold": 0.75,
+      "pass": false
+    },
+    "heldOutRelated": {
+      "value": 1.0,
+      "operator": ">=",
+      "threshold": 0.7,
+      "pass": true
+    },
+    "ruEnSemanticAgreement": {
+      "value": 0.8333333333333334,
+      "operator": ">=",
+      "threshold": 0.85,
+      "pass": false
+    },
+    "paletteStructureWinRate": {
+      "value": 0.5,
+      "operator": ">=",
+      "threshold": 0.6,
+      "pass": false
+    },
+    "abstractConceptGate": {
+      "value": false,
+      "required": true,
+      "pass": false
+    },
+    "longPromptGate": {
+      "value": false,
+      "required": true,
+      "pass": false
+    },
+    "adversarialCompositionGate": {
+      "value": false,
+      "required": true,
+      "pass": false
+    },
+    "pytorchOnnxParity": {
+      "value": true,
+      "required": true,
+      "pass": true
+    },
+    "onnxBrowserParity": {
+      "value": true,
+      "required": true,
+      "pass": true
+    },
+    "realBrowserSemanticSmoke": {
+      "value": false,
+      "required": true,
+      "pass": false
+    }
+  },
+  "artifactIntegrity": true,
+  "manifestDecoderSha256": "9129c00e794742b9a07044d63c6653480281764d3277e63b6f991d89325decb8",
+  "checkpointSha256": "989e563907c068e8f4d7cb84b35e34946c3256cb0c5c1d436c0deedec70266be",
+  "datasetSha256": "fd05537b3d152b0be5ce31e491058a6aaf5ba3a8a9ef7129c34f24e59f01c2a6",
+  "productionReady": false,
+  "codename": null,
+  "pass": false,
+  "hardFailures": [
+    "evidence classification is absent, mocked, or engineering-only",
+    "directRu: 0.5 does not satisfy >= 0.95",
+    "directEn: 0.42857142857142855 does not satisfy >= 0.95",
+    "exclusion: 0.5 does not satisfy >= 1.0",
+    "cleanMultiColor: 0.5909090909090908 does not satisfy >= 0.7",
+    "nearDuplicateRate: 0.4090909090909091 does not satisfy <= 0.05",
+    "basicConcepts: 0.0 does not satisfy >= 0.8",
+    "nature: 0.3333333333333333 does not satisfy >= 0.8",
+    "weatherScenes: 0.0 does not satisfy >= 0.8",
+    "materials: 0.0 does not satisfy >= 0.8",
+    "stylesMedia: 0.0 does not satisfy >= 0.8",
+    "compositions: 0.0 does not satisfy >= 0.75",
+    "oodParaphrases: 0.5 does not satisfy >= 0.75",
+    "ruEnSemanticAgreement: 0.8333333333333334 does not satisfy >= 0.85",
+    "paletteStructureWinRate: 0.5 does not satisfy >= 0.6",
+    "abstractConceptGate: missing or false",
+    "longPromptGate: missing or false",
+    "adversarialCompositionGate: missing or false",
+    "realBrowserSemanticSmoke: missing or false"
+  ],
+  "rule": "Every hard gate must pass; no weighted average can hide a failure.",
+  "sealedConsumed": false,
+  "sealedReport": null
+}

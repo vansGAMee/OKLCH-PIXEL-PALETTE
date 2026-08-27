@@ -191,7 +191,9 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
                 variant = model(*_inputs(embeddings[index], count, 42)).numpy()[0]
             count_families.append(_family_distance(representation_to_oklab_numpy(variant[None, :count])[0], references)[0][0])
         flags: list[str] = []
-        attention = model.visual_attention_weights(embeddings[index:index + 1])
+        attention = model.visual_attention_weights(
+            torch.as_tensor(embeddings[index:index + 1], dtype=torch.float32)
+        )
         if attention is None:
             flags.append("ALL_SLOTS_SAME_VISUAL_CONTEXT")
         if prior_entropy > math.log(390) * 0.9:

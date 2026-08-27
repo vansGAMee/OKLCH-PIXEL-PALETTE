@@ -5,11 +5,16 @@ from pathlib import Path
 import torch
 import numpy as np
 import onnxruntime as ort
+import pytest
 
 from ml.palettebrain.model import (
     PaletteDecoder,
     PaletteDecoderConfig,
     load_inherited_state,
+)
+from ml.palettebrain.train_candidate11 import (
+    configure_stage_parameters,
+    stage_b_mixture_weights,
 )
 
 
@@ -51,6 +56,29 @@ def test_legacy_checkpoint_remains_loadable_without_mutation() -> None:
     model = PaletteDecoder(PaletteDecoderConfig(**checkpoint["model_config"]))
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     assert model.visual_cross_attention is None
+
+
+def test_stage_a_freezes_inherited_and_stage_b_unfreezes_it() -> None:
+    checkpoint = torch.load(
+        PACKAGE_DIR / "checkpoints" / "candidate-11-best.pt",
+        map_location="cpu",
+        weights_only=True,
+    )
+    model = PaletteDecoder(PaletteDecoderConfig(**checkpoint["model_config"]))
+    stage_a = configure_stage_parameters(model, "a")
+    assert stage_a["trainable"]
+    assert stage_a["frozen"]
+    assert all(name.startswith(("bridge.", "visual_cross_attention.")) for name in stage_a["trainable"])
+    stage_b = configure_stage_parameters(model, "b")
+    assert stage_b["trainable"]
+    assert not stage_b["frozen"]
+
+
+def test_stage_b_mixture_is_explicit_eighty_twenty() -> None:
+    weights, mixture = stage_b_mixture_weights([80, 20])
+    assert mixture == {"realVisualSemantic": 0.8, "replayTotal": 0.2}
+    assert float(weights[:80].sum()) == pytest.approx(0.8)
+    assert float(weights[80:].sum()) == pytest.approx(0.2)
 
 
 def test_candidate8_inheritance_keeps_every_compatible_decoder_block() -> None:

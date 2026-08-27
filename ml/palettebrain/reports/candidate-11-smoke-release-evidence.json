@@ -1,0 +1,1129 @@
+{
+  "schemaVersion": 1,
+  "candidate": "candidate-11",
+  "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+  "testClassification": "ENGINEERING_SMOKE_ONLY",
+  "sources": {
+    "benchmarkId": "palettebrain-candidate11-semantic-v3-frozen-2026-08-26",
+    "checkpoint": "ml/palettebrain/checkpoints/candidate-11-smoke-stage-b-best.pt",
+    "checkpointSha256": "989e563907c068e8f4d7cb84b35e34946c3256cb0c5c1d436c0deedec70266be",
+    "dataset": "ml/palettebrain/data/palettebrain_c11_engineering_smoke.npz",
+    "datasetSha256": "fd05537b3d152b0be5ce31e491058a6aaf5ba3a8a9ef7129c34f24e59f01c2a6",
+    "evaluationSplit": "val"
+  },
+  "metrics": {
+    "semanticFamilyWin": 0.02,
+    "directEn": 0.42857142857142855,
+    "directRu": 0.5,
+    "exclusion": 0.5,
+    "cleanMultiColor": 0.5909090909090908,
+    "nearDuplicateRate": 0.4090909090909091,
+    "paletteStructureWinRate": 0.5,
+    "basicConcepts": 0.0,
+    "nature": 0.3333333333333333,
+    "weatherScenes": 0.0,
+    "materials": 0.0,
+    "stylesMedia": 0.0,
+    "compositions": 0.0,
+    "oodParaphrases": 0.5,
+    "heldOutRelated": 1.0,
+    "ruEnSemanticAgreement": 0.8333333333333334,
+    "abstractConceptGate": false,
+    "longPromptGate": false,
+    "adversarialCompositionGate": false,
+    "count": 1.0,
+    "inactive": 1.0,
+    "locks": 1.0,
+    "seedDiversity": 1.0,
+    "seedStability": 1.0,
+    "gamut": 1.0,
+    "determinism": 1.0,
+    "pytorchOnnxParity": true,
+    "onnxBrowserParity": true,
+    "realBrowserSemanticSmoke": false
+  },
+  "categoryRates": {
+    "basic_objects": 0.0,
+    "places": 0.0,
+    "weather": 0.0,
+    "light": 0.0,
+    "styles": 0.0,
+    "compositions": 0.0,
+    "ood_paraphrases": 0.0,
+    "nature": 0.3333333333333333
+  },
+  "familyRows": [
+    {
+      "prompt": "grass",
+      "expected": "grass",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "трава",
+      "expected": "grass",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "leaf",
+      "expected": "leaf",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "лист",
+      "expected": "leaf",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "apple",
+      "expected": "apple",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "яблоко",
+      "expected": "apple",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "blood",
+      "expected": "blood",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "кровь",
+      "expected": "blood",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "rust",
+      "expected": "rust",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "ржавчина",
+      "expected": "rust",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "rusty iron",
+      "expected": "rust",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "ржавый металл",
+      "expected": "rust",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "gold",
+      "expected": "gold",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "золото",
+      "expected": "gold",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "shimmering gold",
+      "expected": "gold",
+      "closest": "art_deco",
+      "pass": false
+    },
+    {
+      "prompt": "золотой слиток",
+      "expected": "gold",
+      "closest": "art_deco",
+      "pass": false
+    },
+    {
+      "prompt": "ice",
+      "expected": "ice",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "лёд",
+      "expected": "ice",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "glacial ice",
+      "expected": "ice",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "прозрачный лёд",
+      "expected": "ice",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "hospital",
+      "expected": "hospital",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "больница",
+      "expected": "hospital",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "hospital interior",
+      "expected": "hospital",
+      "closest": "clinical_waiting_room",
+      "pass": false
+    },
+    {
+      "prompt": "больничный коридор",
+      "expected": "hospital",
+      "closest": "art_deco",
+      "pass": false
+    },
+    {
+      "prompt": "forest",
+      "expected": "forest",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "лес",
+      "expected": "forest",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "pine forest",
+      "expected": "forest",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "хвойный лес",
+      "expected": "forest",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "kitchen",
+      "expected": "kitchen",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "кухня",
+      "expected": "kitchen",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "warm rustic kitchen",
+      "expected": "kitchen",
+      "closest": "autumn_leaves",
+      "pass": false
+    },
+    {
+      "prompt": "уютная кухня",
+      "expected": "kitchen",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "nightclub",
+      "expected": "nightclub",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "ночной клуб",
+      "expected": "nightclub",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "neon nightclub",
+      "expected": "nightclub",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "клуб",
+      "expected": "nightclub",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "greenhouse",
+      "expected": "greenhouse",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "теплица",
+      "expected": "greenhouse",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "botanical greenhouse",
+      "expected": "greenhouse",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "оранжерея",
+      "expected": "greenhouse",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "rain",
+      "expected": "rain",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "дождь",
+      "expected": "rain",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "rainy street",
+      "expected": "rain",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "мокрый асфальт во время дождя",
+      "expected": "rain",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "fog",
+      "expected": "fog",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "туман",
+      "expected": "fog",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "morning mist",
+      "expected": "fog",
+      "closest": "toxic_cyberpunk_greenhouse",
+      "pass": false
+    },
+    {
+      "prompt": "утренний туман",
+      "expected": "fog",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "snow",
+      "expected": "snow",
+      "closest": "hospital",
+      "pass": false
+    },
+    {
+      "prompt": "снег",
+      "expected": "snow",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "fresh winter snow",
+      "expected": "snow",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "морозный снег",
+      "expected": "snow",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "storm",
+      "expected": "storm",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "гроза",
+      "expected": "storm",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "thunderstorm",
+      "expected": "storm",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "ночная гроза",
+      "expected": "storm",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "moonlight",
+      "expected": "moonlight",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "лунный свет",
+      "expected": "moonlight",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "silver moonlight",
+      "expected": "moonlight",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "серебряный лунный свет",
+      "expected": "moonlight",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "sunset",
+      "expected": "sunset",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "закат",
+      "expected": "sunset",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "candlelight",
+      "expected": "candlelight",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "свет свечи",
+      "expected": "candlelight",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "warm candle glow",
+      "expected": "candlelight",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "пламя свечи",
+      "expected": "candlelight",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "watercolor",
+      "expected": "watercolor",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "акварель",
+      "expected": "watercolor",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "botanical watercolor wash",
+      "expected": "watercolor",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "прозрачная акварель",
+      "expected": "watercolor",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "film noir",
+      "expected": "film_noir",
+      "closest": "autumn_leaves",
+      "pass": false
+    },
+    {
+      "prompt": "фильм нуар",
+      "expected": "film_noir",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "high contrast monochrome noir",
+      "expected": "film_noir",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "нуар",
+      "expected": "film_noir",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "art deco",
+      "expected": "art_deco",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "арт деко",
+      "expected": "art_deco",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "gold and emerald art deco",
+      "expected": "art_deco",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "роскошный арт-деко",
+      "expected": "art_deco",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "cyberpunk",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "киберпанк",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "neon cyberpunk alley",
+      "expected": "cyberpunk",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "неоновый киберпанк",
+      "expected": "cyberpunk",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "winter forest at night",
+      "expected": "winter_forest_at_night",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "зимний лес ночью",
+      "expected": "winter_forest_at_night",
+      "closest": "kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "abandoned hospital in winter at night",
+      "expected": "abandoned_hospital_in_winter_at_night",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "заброшенная больница зимой ночью",
+      "expected": "abandoned_hospital_in_winter_at_night",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "warm peaceful childhood kitchen",
+      "expected": "warm_childhood_kitchen",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "уютная кухня из детства",
+      "expected": "warm_childhood_kitchen",
+      "closest": "autumn_leaves",
+      "pass": false
+    },
+    {
+      "prompt": "toxic cyberpunk greenhouse",
+      "expected": "toxic_cyberpunk_greenhouse",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "ядовитая теплица",
+      "expected": "toxic_cyberpunk_greenhouse",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "drizzle on pavement",
+      "expected": "drizzle_on_pavement",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "морось на асфальте",
+      "expected": "drizzle_on_pavement",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "clinical waiting room",
+      "expected": "clinical_waiting_room",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "клинический кабинет",
+      "expected": "clinical_waiting_room",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "desert",
+      "expected": "desert",
+      "closest": "desert",
+      "pass": true
+    },
+    {
+      "prompt": "пустыня",
+      "expected": "desert",
+      "closest": "desert",
+      "pass": true
+    },
+    {
+      "prompt": "fire",
+      "expected": "fire",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "огонь",
+      "expected": "fire",
+      "closest": "desert",
+      "pass": false
+    },
+    {
+      "prompt": "autumn leaves",
+      "expected": "autumn_leaves",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    },
+    {
+      "prompt": "осенние листья",
+      "expected": "autumn_leaves",
+      "closest": "warm_childhood_kitchen",
+      "pass": false
+    }
+  ],
+  "directRows": [
+    {
+      "prompt": "red",
+      "pass": true
+    },
+    {
+      "prompt": "красный",
+      "pass": true
+    },
+    {
+      "prompt": "blue",
+      "pass": false
+    },
+    {
+      "prompt": "синий",
+      "pass": false
+    },
+    {
+      "prompt": "muted orange",
+      "pass": true
+    },
+    {
+      "prompt": "navy blue",
+      "pass": false
+    },
+    {
+      "prompt": "not red",
+      "pass": true
+    },
+    {
+      "prompt": "red and blue",
+      "pass": false
+    },
+    {
+      "prompt": "without green",
+      "pass": false
+    }
+  ],
+  "abstractRows": [
+    {
+      "concept": "painful nostalgia",
+      "ruEnDistance": 0.08903110027313232,
+      "referenceDistance": 0.06343535333871841,
+      "hardNegativeDistance": 0.02928142063319683,
+      "pass": false
+    },
+    {
+      "concept": "quiet dread",
+      "ruEnDistance": 0.022715020924806595,
+      "referenceDistance": 0.07057610899209976,
+      "hardNegativeDistance": 0.0636029988527298,
+      "pass": false
+    },
+    {
+      "concept": "warm childhood memory",
+      "ruEnDistance": 0.028289830312132835,
+      "referenceDistance": 0.035217661410570145,
+      "hardNegativeDistance": 0.04301236569881439,
+      "pass": true
+    },
+    {
+      "concept": "sterile loneliness",
+      "ruEnDistance": 0.03709707409143448,
+      "referenceDistance": 0.040096357464790344,
+      "hardNegativeDistance": 0.02459319680929184,
+      "pass": false
+    },
+    {
+      "concept": "gentle melancholy",
+      "ruEnDistance": 0.05476955324411392,
+      "referenceDistance": 0.10867621004581451,
+      "hardNegativeDistance": 0.08235572278499603,
+      "pass": false
+    },
+    {
+      "concept": "exhausted hope",
+      "ruEnDistance": 0.15592175722122192,
+      "referenceDistance": 0.19231131672859192,
+      "hardNegativeDistance": 0.1018245592713356,
+      "pass": false
+    },
+    {
+      "concept": "cold authority",
+      "ruEnDistance": 0.03553543984889984,
+      "referenceDistance": 0.02076728455722332,
+      "hardNegativeDistance": 0.037571363151073456,
+      "pass": true
+    },
+    {
+      "concept": "fragile optimism",
+      "ruEnDistance": 0.12391294538974762,
+      "referenceDistance": 0.04069962725043297,
+      "hardNegativeDistance": 0.011448788456618786,
+      "pass": false
+    },
+    {
+      "concept": "quiet celebration after surviving something difficult",
+      "ruEnDistance": 0.035358283668756485,
+      "referenceDistance": 0.04727704077959061,
+      "hardNegativeDistance": 0.08757884055376053,
+      "pass": true
+    }
+  ],
+  "longRows": [
+    {
+      "en": "a lonely bus stop after rain just before sunrise, with weak street lamps fading into cold morning fog",
+      "distance": 0.045502569526433945
+    },
+    {
+      "en": "an abandoned hospital corridor in winter at night, lit only by moonlight through dirty windows",
+      "distance": 0.0229629073292017
+    },
+    {
+      "en": "a warm childhood kitchen remembered years later, comforting but slightly sad",
+      "distance": 0.05391915515065193
+    },
+    {
+      "en": "a watercolor city after heavy rain, pale morning light reflecting from wet stone streets",
+      "distance": 0.029685216024518013
+    },
+    {
+      "en": "a toxic greenhouse inside a cyberpunk nightclub after midnight",
+      "distance": 0.1199563667178154
+    },
+    {
+      "en": "a silent railway platform under amber lamps while blue winter dawn reaches the tracks",
+      "distance": 0.02135317586362362
+    }
+  ],
+  "compositionRows": [
+    {
+      "pair": [
+        "hospital at sunset",
+        "hospital under moonlight"
+      ],
+      "distance": 0.08235808461904526
+    },
+    {
+      "pair": [
+        "forest in rain",
+        "forest by firelight"
+      ],
+      "distance": 0.04155820235610008
+    },
+    {
+      "pair": [
+        "watercolor city",
+        "film-noir city"
+      ],
+      "distance": 0.12847034633159637
+    }
+  ],
+  "oodRows": [
+    {
+      "group": [
+        "rain",
+        "drizzle on pavement",
+        "wet weather over the city",
+        "streets after a long shower"
+      ],
+      "maximumDistance": 0.12576691806316376
+    },
+    {
+      "group": [
+        "дождь",
+        "морось на асфальте",
+        "мокрая погода над городом",
+        "улицы после долгого ливня"
+      ],
+      "maximumDistance": 0.20920386910438538
+    },
+    {
+      "group": [
+        "hospital",
+        "clinic",
+        "ward",
+        "clinical waiting room"
+      ],
+      "maximumDistance": 0.09567216783761978
+    },
+    {
+      "group": [
+        "grass",
+        "meadow",
+        "moss",
+        "field vegetation"
+      ],
+      "maximumDistance": 0.07084555923938751
+    }
+  ],
+  "adversarialRows": [
+    {
+      "prompt": "red grass",
+      "base": "grass",
+      "distance": 0.02725609764456749
+    },
+    {
+      "prompt": "green blood",
+      "base": "blood",
+      "distance": 0.08218301832675934
+    },
+    {
+      "prompt": "warm moonlight",
+      "base": "moonlight",
+      "distance": 0.031954631209373474
+    },
+    {
+      "prompt": "cold candlelight",
+      "base": "candlelight",
+      "distance": 0.02192697301506996
+    },
+    {
+      "prompt": "blue rust",
+      "base": "rust",
+      "distance": 0.03135128691792488
+    },
+    {
+      "prompt": "black snow",
+      "base": "snow",
+      "distance": 0.31022801995277405
+    },
+    {
+      "prompt": "hospital at sunset",
+      "base": "hospital",
+      "distance": 0.034048039466142654
+    },
+    {
+      "prompt": "snow under red emergency lights",
+      "base": "snow",
+      "distance": 0.07818972319364548
+    },
+    {
+      "prompt": "green glass in a dark nightclub",
+      "base": "glass",
+      "distance": 0.04331279173493385
+    }
+  ],
+  "paletteStructureRows": [
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 2,
+      "pairedStructureError": 0.3770408034324646,
+      "medianUnrelatedStructureError": 0.2545396685600281,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 3,
+      "pairedStructureError": 0.13311761617660522,
+      "medianUnrelatedStructureError": 0.07671899348497391,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 4,
+      "pairedStructureError": 0.09349111467599869,
+      "medianUnrelatedStructureError": 0.1605450063943863,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 5,
+      "pairedStructureError": 0.11315864324569702,
+      "medianUnrelatedStructureError": 0.16057352721691132,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 6,
+      "pairedStructureError": 0.07450982183218002,
+      "medianUnrelatedStructureError": 0.137848362326622,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 7,
+      "pairedStructureError": 0.05517519265413284,
+      "medianUnrelatedStructureError": 0.13498853147029877,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 8,
+      "pairedStructureError": 0.07950560003519058,
+      "medianUnrelatedStructureError": 0.09011654555797577,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_0a59806a25b1ab580ff54a7d23ccc1992a32ede4aa098bc27cdb8e1b33af048e",
+      "count": 9,
+      "pairedStructureError": 0.09733057022094727,
+      "medianUnrelatedStructureError": 0.10660228133201599,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 2,
+      "pairedStructureError": 0.39539259672164917,
+      "medianUnrelatedStructureError": 0.20150117576122284,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 3,
+      "pairedStructureError": 0.2360209971666336,
+      "medianUnrelatedStructureError": 0.1199677586555481,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 4,
+      "pairedStructureError": 0.19451268017292023,
+      "medianUnrelatedStructureError": 0.10955517739057541,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 5,
+      "pairedStructureError": 0.15005071461200714,
+      "medianUnrelatedStructureError": 0.1073538288474083,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 6,
+      "pairedStructureError": 0.14982081949710846,
+      "medianUnrelatedStructureError": 0.09426643699407578,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 7,
+      "pairedStructureError": 0.1761912703514099,
+      "medianUnrelatedStructureError": 0.0789383053779602,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 8,
+      "pairedStructureError": 0.1500852406024933,
+      "medianUnrelatedStructureError": 0.11740369349718094,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_3d8f29a5afc60018ace74882e02ff34fcfce73472067e0d5bb726389363b47e8",
+      "count": 9,
+      "pairedStructureError": 0.1698501706123352,
+      "medianUnrelatedStructureError": 0.1101805791258812,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 2,
+      "pairedStructureError": 0.2852073311805725,
+      "medianUnrelatedStructureError": 0.40770846605300903,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 3,
+      "pairedStructureError": 0.04943087697029114,
+      "medianUnrelatedStructureError": 0.1647108942270279,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 4,
+      "pairedStructureError": 0.07269962131977081,
+      "medianUnrelatedStructureError": 0.2105976790189743,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 5,
+      "pairedStructureError": 0.16650794446468353,
+      "medianUnrelatedStructureError": 0.1225423589348793,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 6,
+      "pairedStructureError": 0.10945869237184525,
+      "medianUnrelatedStructureError": 0.13043901324272156,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 7,
+      "pairedStructureError": 0.06861835718154907,
+      "medianUnrelatedStructureError": 0.1759282350540161,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 8,
+      "pairedStructureError": 0.0676184743642807,
+      "medianUnrelatedStructureError": 0.1156006008386612,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_71d2a3ba944c35d7c0f8ca958b51dfc2fd11080ba8f683591be57018a596ebae",
+      "count": 9,
+      "pairedStructureError": 0.06913065165281296,
+      "medianUnrelatedStructureError": 0.13204698264598846,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 2,
+      "pairedStructureError": 0.09147432446479797,
+      "medianUnrelatedStructureError": 0.3969229757785797,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 3,
+      "pairedStructureError": 0.07276584208011627,
+      "medianUnrelatedStructureError": 0.24856872856616974,
+      "pass": true
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 4,
+      "pairedStructureError": 0.2220383733510971,
+      "medianUnrelatedStructureError": 0.1050349771976471,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 5,
+      "pairedStructureError": 0.2709936797618866,
+      "medianUnrelatedStructureError": 0.09985922276973724,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 6,
+      "pairedStructureError": 0.16442663967609406,
+      "medianUnrelatedStructureError": 0.0898173376917839,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 7,
+      "pairedStructureError": 0.16544239223003387,
+      "medianUnrelatedStructureError": 0.0734233409166336,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 8,
+      "pairedStructureError": 0.1726197749376297,
+      "medianUnrelatedStructureError": 0.10961481183767319,
+      "pass": false
+    },
+    {
+      "sourceGroupId": "content_2c514c9910969fa00acee3f8c8327284e70262e0ead89f5ffdd4c00af2ce1302",
+      "count": 9,
+      "pairedStructureError": 0.1277846395969391,
+      "medianUnrelatedStructureError": 0.1517549604177475,
+      "pass": true
+    }
+  ],
+  "engineeringRows": {
+    "seedMeanOklabDistances": [
+      0.012397042475640774,
+      0.009679757989943027,
+      0.0028552673757076263
+    ],
+    "lockRestorationExact": true,
+    "lockConditioningReachedModel": true
+  }
+}

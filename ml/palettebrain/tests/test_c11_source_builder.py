@@ -16,10 +16,17 @@ from ml.palettebrain.prepare_c11_recovered_source import (
     choose_balanced_smoke,
     choose_calibration_threshold,
     extract_deterministic_palette,
+    normalize_http_url,
     rgb_to_oklab_array,
     siglip_relevance_prompt,
     split_by_group,
 )
+
+
+def test_http_url_normalization_quotes_spaces_and_removes_controls() -> None:
+    assert normalize_http_url(
+        "https://example.test/CRDImages/TR 112 1.jpg\n?q=a b"
+    ) == "https://example.test/CRDImages/TR%20112%201.jpg?q=a%20b"
 
 
 def _normalize(text: str) -> str:
@@ -129,8 +136,10 @@ def test_color_prior_histogram() -> None:
 def test_split_by_group_no_leakage() -> None:
     groups = [f"group_{i}" for i in range(100)]
     splits = split_by_group(groups, train_ratio=0.85, seed=20260826)
+    many = split_by_group([f"group-{index}" for index in range(1000)], train_ratio=0.85, seed=20260826)
+    assert {"train", "val", "test"} <= set(many.values())
     assert len(splits) == 100
-    assert set(splits.values()) <= {"train", "val"}
+    assert set(splits.values()) <= {"train", "val", "test"}
     train_count = sum(1 for s in splits.values() if s == "train")
     assert 75 <= train_count <= 95
 

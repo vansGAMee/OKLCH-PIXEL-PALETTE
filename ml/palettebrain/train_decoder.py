@@ -41,6 +41,7 @@ except ImportError:
 METRICS_VERSION = 1
 DUPLICATE_OKLAB_THRESHOLD = 0.025
 DUPLICATE_LOSS_WEIGHT = 0.10
+PALETTE_STRUCTURE_LOSS_WEIGHT = 0.20
 IMPORTANCE_LOSS_WEIGHT = 0.0
 
 
@@ -78,6 +79,7 @@ def decoder_loss(
     target: Tensor,
     count_mask: Tensor,
     locked_mask: Tensor,
+    locked_colors: Tensor | None = None,
 ) -> tuple[Tensor, dict[str, Tensor]]:
     active = count_mask.clamp(0.0, 1.0)
     locked = active * locked_mask.clamp(0.0, 1.0)
@@ -93,6 +95,43 @@ def decoder_loss(
             count_mask,
             locked_mask,
         )
+
+    # Production restores physical locks after inference. Use that same
+    # effective palette here, and only score pairs containing a trainable slot.
+    effective_output = output
+    effective_target = matched_target
+    if locked_colors is not None:
+        lock_selector = locked.bool().unsqueeze(-1)
+        physical_locks = locked_colors[..., :4]
+        effective_output = torch.cat((
+            torch.where(lock_selector, physical_locks, output[..., :4]),
+            output[..., 4:],
+        ), dim=-1)
+        effective_target = torch.cat((
+            torch.where(lock_selector, physical_locks, matched_target[..., :4]),
+            matched_target[..., 4:],
+        ), dim=-1)
+    effective_predicted_oklab = representation_to_oklab(effective_output)
+    effective_target_oklab = representation_to_oklab(effective_target)
+    predicted_pair_distances = torch.cdist(
+        effective_predicted_oklab, effective_predicted_oklab
+    )
+    target_pair_distances = torch.cdist(
+        effective_target_oklab, effective_target_oklab
+    )
+    active_pairs = active.unsqueeze(1) * active.unsqueeze(2)
+    both_locked = locked.unsqueeze(1) * locked.unsqueeze(2)
+    relation_pair_mask = active_pairs * (1.0 - both_locked) * torch.triu(
+        torch.ones_like(active_pairs), diagonal=1
+    )
+    palette_structure = masked_mean(
+        F.smooth_l1_loss(
+            predicted_pair_distances,
+            target_pair_distances,
+            reduction="none",
+        ),
+        relation_pair_mask,
+    )
 
     lightness = masked_mean(
         F.smooth_l1_loss(
@@ -151,6 +190,7 @@ def decoder_loss(
         + 1.5 * hue
         + IMPORTANCE_LOSS_WEIGHT * importance
         + DUPLICATE_LOSS_WEIGHT * duplicate_penalty
+        + PALETTE_STRUCTURE_LOSS_WEIGHT * palette_structure
         + 0.25 * (locked_lightness + locked_chroma + locked_hue)
     )
     return total, {
@@ -160,6 +200,8 @@ def decoder_loss(
         "importance": importance,
         "importanceWeight": importance_weight,
         "duplicatePenalty": duplicate_penalty,
+        "paletteStructure": palette_structure,
+        "paletteStructureWeight": output.new_tensor(PALETTE_STRUCTURE_LOSS_WEIGHT),
         "lockedLightness": locked_lightness,
         "lockedChroma": locked_chroma,
         "lockedHue": locked_hue,
@@ -191,7 +233,11 @@ def run_epoch(
         with torch.set_grad_enabled(training):
             output = model(**inputs)
             loss, components = decoder_loss(
-                output, target, inputs["count_mask"], inputs["locked_mask"]
+                output,
+                target,
+                inputs["count_mask"],
+                inputs["locked_mask"],
+                inputs["locked_colors"],
             )
         if not torch.isfinite(loss):
             raise RuntimeError("non-finite training loss")

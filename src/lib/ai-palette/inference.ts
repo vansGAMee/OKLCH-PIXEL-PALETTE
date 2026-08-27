@@ -47,6 +47,7 @@ export interface GenerateAiPaletteResult {
   }>;
   seed: number;
   modelVersion: string;
+  decoderSha256?: string;
   inference?: {
     encoderMs?: number;
     decoderMs?: number;
@@ -65,6 +66,7 @@ export type PaletteDecoderFeeds = Record<string, PaletteDecoderInputTensor>;
 
 export interface PaletteDecoderSession {
   modelVersion: string;
+  decoderSha256?: string;
   run(feeds: PaletteDecoderFeeds): Promise<PaletteDecoderTensor>;
 }
 
@@ -391,6 +393,7 @@ async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
 
   return {
     modelVersion: manifest.modelVersion,
+    decoderSha256: manifest.decoderSha256,
     async run(feeds) {
       const ortFeeds: Record<string, import('onnxruntime-web/webgpu').Tensor> = {};
       for (const [name, tensor] of Object.entries(feeds)) {
@@ -755,6 +758,7 @@ export async function generateAiPalette(
     colors,
     seed: request.seed,
     modelVersion: decoder.modelVersion,
+    decoderSha256: decoder.decoderSha256,
     inference: {
       encoderMs,
       decoderMs,

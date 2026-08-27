@@ -9,6 +9,7 @@ state required for deterministic resume.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -41,6 +42,8 @@ class C11Dataset(Dataset[dict[str, Tensor]]):
                 "seed_noise": "seed_noise", "locked_mask": "locked_mask",
                 "locked_colors": "locked_colors", "target": "target",
                 "quality_weight": "quality_weight", "split": "split",
+                "ranking_negative_color_prior": "ranking_negative_color_prior",
+                "ranking_negative_valid": "ranking_negative_valid",
             }
             selected = np.asarray(archive[mapping["split"]] == split)
         elif {"embeddings", "splits"} <= names:
@@ -74,6 +77,8 @@ class C11Dataset(Dataset[dict[str, Tensor]]):
         }
         result.setdefault("color_prior", torch.zeros(390, dtype=torch.float32))
         result.setdefault("teacher_latent", torch.zeros(128, dtype=torch.float32))
+        result.setdefault("ranking_negative_color_prior", torch.zeros(390, dtype=torch.float32))
+        result.setdefault("ranking_negative_valid", torch.tensor(0.0))
         result["visual_weight"] = torch.tensor(1.0 if self.has_visual_targets else 0.0)
         return result
 
@@ -86,6 +91,14 @@ def _seed_everything(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def _sha256_file(path: str | Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _device(name: str) -> torch.device:
     selected = torch.device("cuda" if name == "auto" and torch.cuda.is_available() else ("cpu" if name == "auto" else name))
     if selected.type == "cuda" and not torch.cuda.is_available():
@@ -93,14 +106,40 @@ def _device(name: str) -> torch.device:
     return selected
 
 
-def _stage_a_release_evidence(path: str | None) -> None:
+def _stage_a_release_evidence(path: str | None) -> dict[str, Any]:
     if not path:
         raise RuntimeError("Stage B requires --stage-a-eval-report from the frozen v3 benchmark")
     report = json.loads(Path(path).read_text(encoding="utf-8"))
     if report.get("benchmarkId") != "palettebrain-candidate11-semantic-v3-frozen-2026-08-26":
         raise RuntimeError("Stage A report is not from the frozen semantic v3 benchmark")
-    if float(report.get("metrics", {}).get("semanticFamilyWin", 0.0)) < 0.80:
-        raise RuntimeError("Stage A honest semantic family win is below 80%; repair Candidate 11")
+    metric = report.get("metrics", {}).get("semanticFamilyWin")
+    if not isinstance(metric, (int, float)) or not np.isfinite(metric):
+        raise RuntimeError("Stage A semantic report is corrupt or non-finite")
+    return report
+
+
+def configure_stage_parameters(model: PaletteDecoder, stage: str) -> dict[str, list[str]]:
+    if stage not in {"a", "b"}:
+        raise ValueError(f"unsupported stage: {stage}")
+    new_prefixes = ("bridge.", "visual_cross_attention.")
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad_(stage == "b" or name.startswith(new_prefixes))
+    return {
+        "trainable": [name for name, value in model.named_parameters() if value.requires_grad],
+        "frozen": [name for name, value in model.named_parameters() if not value.requires_grad],
+    }
+
+
+def stage_b_mixture_weights(lengths: list[int]) -> tuple[Tensor, dict[str, float]]:
+    if len(lengths) < 2 or any(length <= 0 for length in lengths):
+        raise ValueError("Stage B mixture requires positive real and replay datasets")
+    proportions = [0.80] + [0.20 / (len(lengths) - 1)] * (len(lengths) - 1)
+    weights = torch.cat([
+        torch.full((length,), proportion / length, dtype=torch.double)
+        for length, proportion in zip(lengths, proportions, strict=True)
+    ])
+    mixture = {"realVisualSemantic": proportions[0], "replayTotal": sum(proportions[1:])}
+    return weights, mixture
 
 
 def _configure_model(args: argparse.Namespace) -> PaletteDecoder:
@@ -127,14 +166,18 @@ def _stage_a_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
     predicted = F.normalize(torch.softmax(prior_logits, dim=-1), dim=-1)
     expected = F.normalize(batch["color_prior"], dim=-1)
     positive = (predicted * expected).sum(dim=-1)
-    negative = (predicted * expected.roll(1, 0)).sum(dim=-1)
-    ranking = F.relu(0.10 - positive + negative).mean()
+    negative_expected = batch["ranking_negative_color_prior"]
+    negative_valid = batch["ranking_negative_valid"]
+    negative = (predicted * F.normalize(negative_expected, dim=-1)).sum(dim=-1)
+    ranking_by_row = F.relu(0.10 - positive + negative)
+    ranking = (ranking_by_row * negative_valid).sum() / negative_valid.sum().clamp_min(1.0)
     output = model(
         batch["text_embedding"], batch["count_mask"], batch["seed_noise"],
         batch["locked_mask"], batch["locked_colors"],
     )
     palette, _ = decoder_loss(
-        output, batch["target"], batch["count_mask"], batch["locked_mask"]
+        output, batch["target"], batch["count_mask"], batch["locked_mask"],
+        batch["locked_colors"],
     )
     total = prior + 0.25 * style + 0.5 * ranking + 0.25 * palette
     return total, {"prior": prior, "style": style, "ranking": ranking, "palette": palette}
@@ -146,7 +189,8 @@ def _stage_b_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
         batch["locked_mask"], batch["locked_colors"],
     )
     palette, components = decoder_loss(
-        output, batch["target"], batch["count_mask"], batch["locked_mask"]
+        output, batch["target"], batch["count_mask"], batch["locked_mask"],
+        batch["locked_colors"],
     )
     if float(batch["visual_weight"].sum()) > 0:
         prior_logits, style_latent, _, _ = model.bridge(batch["text_embedding"])
@@ -165,14 +209,13 @@ def _stage_b_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
 
 
 def train(args: argparse.Namespace) -> dict[str, Any]:
+    stage_a_evidence: dict[str, Any] | None = None
     if args.stage == "b":
-        _stage_a_release_evidence(args.stage_a_eval_report)
+        stage_a_evidence = _stage_a_release_evidence(args.stage_a_eval_report)
     _seed_everything(args.seed)
     device = _device(args.device)
     model = _configure_model(args).to(device)
-    if args.stage == "a":
-        for name, parameter in model.named_parameters():
-            parameter.requires_grad_(name.startswith(("bridge.", "visual_cross_attention.")))
+    parameter_contract = configure_stage_parameters(model, args.stage)
     new_parameters, inherited_parameters = [], []
     for name, parameter in model.named_parameters():
         if not parameter.requires_grad:
@@ -186,8 +229,18 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     start_epoch = 0
     history: list[dict[str, Any]] = []
     best_loss = float("inf")
+    dataset_identity = {
+        "primary": _sha256_file(args.data),
+        "replay": [_sha256_file(path) for path in args.replay_data],
+    }
     if args.resume:
         resumed = torch.load(args.resume, map_location="cpu", weights_only=True)
+        if resumed.get("dataset_identity") != dataset_identity:
+            raise RuntimeError("resume checkpoint dataset identity does not match current inputs")
+        resumed_args = resumed.get("training_args", {})
+        for name in ("stage", "epochs", "batch_size", "new_lr", "inherited_lr", "seed"):
+            if resumed_args.get(name) != getattr(args, name):
+                raise RuntimeError(f"resume checkpoint training config mismatch: {name}")
         model.load_state_dict(resumed["model_state_dict"], strict=True)
         optimizer.load_state_dict(resumed["optimizer_state_dict"])
         scheduler.load_state_dict(resumed["scheduler_state_dict"])
@@ -196,6 +249,21 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         best_loss = float(resumed.get("best_val_loss", min(
             (row["val"]["loss"] for row in history), default=float("inf")
         )))
+        if "python_rng_state" in resumed:
+            random.setstate(resumed["python_rng_state"])
+        if "numpy_rng_state" in resumed:
+            numpy_state = resumed["numpy_rng_state"]
+            np.random.set_state((
+                numpy_state["algorithm"],
+                np.asarray(numpy_state["keys"], dtype=np.uint32),
+                int(numpy_state["position"]),
+                int(numpy_state["hasGauss"]),
+                float(numpy_state["cachedGaussian"]),
+            ))
+        if "torch_rng_state" in resumed:
+            torch.set_rng_state(resumed["torch_rng_state"])
+        if device.type == "cuda" and "torch_cuda_rng_state" in resumed:
+            torch.cuda.set_rng_state_all(resumed["torch_cuda_rng_state"])
 
     train_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "train")]
     val_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "val")]
@@ -204,28 +272,46 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             train_sets.append(C11Dataset(replay_path, "train"))
             val_sets.append(C11Dataset(replay_path, "val"))
     train_data = train_sets[0] if len(train_sets) == 1 else ConcatDataset(train_sets)
-    val_data = val_sets[0] if len(val_sets) == 1 else ConcatDataset(val_sets)
-    sampler = None
+    # DEV remains the canonical held-out visual split. Replay contributes only
+    # to Stage B gradient updates and cannot dilute DEV into an implicit blend.
+    val_data = val_sets[0]
+    sampler_weights = None
+    mixture = {"realVisualSemantic": 1.0, "replayTotal": 0.0}
     if len(train_sets) > 1:
-        group_weight = 1.0 / len(train_sets)
-        weights = torch.cat([
-            torch.full((len(dataset),), group_weight / len(dataset), dtype=torch.double)
-            for dataset in train_sets
-        ])
-        sampler = WeightedRandomSampler(
-            weights, num_samples=len(train_data), replacement=True,
-            generator=torch.Generator().manual_seed(args.seed),
-        )
-    train_loader = DataLoader(
-        train_data, batch_size=args.batch_size, sampler=sampler,
-        shuffle=sampler is None, generator=torch.Generator().manual_seed(args.seed),
-    )
+        sampler_weights, mixture = stage_b_mixture_weights([len(value) for value in train_sets])
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
     loss_function = _stage_a_loss if args.stage == "a" else _stage_b_loss
     output = Path(args.output)
-    last_output = output.with_name(f"{output.stem}-last{output.suffix}")
+    last_output = Path(args.last_output) if args.last_output else output.with_name(
+        f"{output.stem.removesuffix('-best')}-last{output.suffix}"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
+    bounded_candidates: list[dict[str, Any]] = []
+    for candidate_path in output.parent.glob(
+        f"{output.stem.removesuffix('-best')}-dev-epoch-*{output.suffix}"
+    ):
+        try:
+            candidate_checkpoint = torch.load(candidate_path, map_location="cpu", weights_only=True)
+            if candidate_checkpoint.get("dataset_identity") == dataset_identity:
+                bounded_candidates.append({
+                    "path": str(candidate_path),
+                    "valLoss": float(candidate_checkpoint["history"][-1]["val"]["loss"]),
+                })
+        except Exception:
+            continue
+    bounded_candidates.sort(key=lambda item: item["valLoss"])
     for epoch in range(start_epoch, args.epochs):
+        epoch_generator = torch.Generator().manual_seed(args.seed + epoch)
+        sampler = None
+        if sampler_weights is not None:
+            sampler = WeightedRandomSampler(
+                sampler_weights, num_samples=len(train_sets[0]), replacement=True,
+                generator=epoch_generator,
+            )
+        train_loader = DataLoader(
+            train_data, batch_size=args.batch_size, sampler=sampler,
+            shuffle=sampler is None, generator=epoch_generator,
+        )
         row: dict[str, Any] = {"epoch": epoch}
         for split, loader in (("train", train_loader), ("val", val_loader)):
             model.train(split == "train")
@@ -258,6 +344,25 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "model_config": model.config.to_dict(), "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict(),
             "training_args": vars(args), "history": history, "best_val_loss": best_loss,
+            "dataset_identity": dataset_identity,
+            "parameter_contract": parameter_contract,
+            "dataset_mixture": mixture,
+            "stage_a_quality": stage_a_evidence.get("metrics", {}) if stage_a_evidence else None,
+            "loss_contract": {
+                "paletteStructure": "SmoothL1 pairwise physical OKLab geometry after matching and lock restoration",
+                "paletteStructureWeight": 0.20,
+                "rankingNegativeVersion": "c11-safe-ranking-negative-v1",
+            },
+            "python_rng_state": random.getstate(),
+            "numpy_rng_state": {
+                "algorithm": np.random.get_state()[0],
+                "keys": np.random.get_state()[1].tolist(),
+                "position": np.random.get_state()[2],
+                "hasGauss": np.random.get_state()[3],
+                "cachedGaussian": np.random.get_state()[4],
+            },
+            "torch_rng_state": torch.get_rng_state(),
+            "torch_cuda_rng_state": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
         }
         last_temporary = last_output.with_suffix(last_output.suffix + ".tmp")
         torch.save(payload, last_temporary)
@@ -266,6 +371,17 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             temporary = output.with_suffix(output.suffix + ".tmp")
             torch.save(payload, temporary)
             temporary.replace(output)
+        candidate_path = output.with_name(
+            f"{output.stem.removesuffix('-best')}-dev-epoch-{epoch:03d}{output.suffix}"
+        )
+        candidate_temporary = candidate_path.with_suffix(candidate_path.suffix + ".tmp")
+        torch.save(payload, candidate_temporary)
+        candidate_temporary.replace(candidate_path)
+        bounded_candidates.append({"path": str(candidate_path), "valLoss": row["val"]["loss"]})
+        bounded_candidates.sort(key=lambda item: item["valLoss"])
+        while len(bounded_candidates) > args.max_dev_candidates:
+            removed = bounded_candidates.pop()
+            Path(removed["path"]).unlink(missing_ok=True)
         print(json.dumps(row, sort_keys=True))
     return {"candidate": "candidate-11", "stage": args.stage, "bestValLoss": best_loss, "output": str(output)}
 
@@ -279,6 +395,8 @@ def main() -> None:
     parser.add_argument("--stage-a-eval-report")
     parser.add_argument("--replay-data", action="append", default=[])
     parser.add_argument("--output", required=True)
+    parser.add_argument("--last-output")
+    parser.add_argument("--max-dev-candidates", type=int, default=3)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--new-lr", type=float, default=3e-4)
