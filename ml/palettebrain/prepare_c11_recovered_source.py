@@ -7,7 +7,9 @@ import io
 import json
 import math
 import re
+import shutil
 import sys
+import threading
 import time
 import unicodedata
 import urllib.error
@@ -43,6 +45,8 @@ SIGLIP_REVISION = "7fd15f0689c79d79e38b1c2e2e2370a7bf2761ed"
 
 METADATA_INDEX_SCHEMA = "palettebrain-c11-metadata-index/v3"
 CALIBRATION_SCHEMA = "palettebrain-c11-siglip-calibration/v1"
+ACQUISITION_STATE_SCHEMA = "palettebrain-c11-acquisition-state/v1"
+RELEVANCE_CACHE_SCHEMA = "palettebrain-c11-relevance-cache/v1"
 
 OPEN_IMAGES_RELEASE = "Open Images V7"
 OPEN_IMAGES_CLASS_URL = (
@@ -195,16 +199,37 @@ class DiskBudget:
         cache_dir: Path,
         target_bytes: int,
         hard_bytes: int,
+        minimum_free_bytes: int = 2 * 1024**3,
     ) -> None:
         self.raw_dir = raw_dir
         self.cache_dir = cache_dir
         self.target_bytes = int(target_bytes)
         self.hard_bytes = int(hard_bytes)
+        self.minimum_free_bytes = int(minimum_free_bytes)
         if self.target_bytes <= 0 or self.hard_bytes <= 0:
             raise ValueError("disk budgets must be positive")
         if self.target_bytes >= self.hard_bytes:
             raise ValueError("target disk budget must be below hard disk budget")
         self._tracked_artifacts: set[Path] = set()
+
+    def free_bytes(self) -> int:
+        anchor = self.raw_dir if self.raw_dir.exists() else self.raw_dir.parent
+        anchor.mkdir(parents=True, exist_ok=True)
+        return int(shutil.disk_usage(anchor).free)
+
+    def summary(self) -> str:
+        return (
+            f"DISK used={self.usage() / 1024**3:.2f} GiB "
+            f"free={self.free_bytes() / 1024**3:.2f} GiB"
+        )
+
+    def _check_free_space(self, additional_bytes: int = 0) -> None:
+        remaining = self.free_bytes() - int(additional_bytes)
+        if remaining < self.minimum_free_bytes:
+            raise HardDiskLimitError(
+                "FREE DISK RESERVE WOULD BE VIOLATED: "
+                f"remaining={remaining} reserve={self.minimum_free_bytes}"
+            )
 
     def _covered_by_primary_tree(self, path: Path) -> bool:
         resolved = path.resolve()
@@ -227,6 +252,7 @@ class DiskBudget:
         )
 
     def before_download(self) -> bool:
+        self._check_free_space()
         usage = self.usage()
         if usage >= self.hard_bytes:
             raise HardDiskLimitError(
@@ -235,6 +261,7 @@ class DiskBudget:
         return usage < self.target_bytes
 
     def max_download_bytes(self, cap: int = MAX_SINGLE_IMAGE_BYTES) -> int:
+        self._check_free_space()
         usage = self.usage()
         remaining = self.hard_bytes - usage - 1
         if remaining <= 0:
@@ -242,6 +269,7 @@ class DiskBudget:
         return max(1, min(int(cap), remaining))
 
     def before_write(self, byte_count: int) -> None:
+        self._check_free_space(byte_count)
         usage = self.usage()
         projected = usage + int(byte_count)
         if projected >= self.hard_bytes:
@@ -263,6 +291,7 @@ class DiskBudget:
                 f"HARD DISK LIMIT EXCEEDED BEFORE ARTIFACT COMMIT: "
                 f"{projected} >= {self.hard_bytes}"
             )
+        self._check_free_space()
 
 
 def estimate_npz_bytes(arrays: dict[str, Any]) -> int:
@@ -321,6 +350,75 @@ _OPENVERSE_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 _OPENVERSE_UNAVAILABLE: bool = False
 _MET_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
 _ARTIC_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+_DOWNLOAD_WORKERS = 6
+_METADATA_WORKERS = 8
+_ACQUISITION_STATE_PATH: Path | None = None
+_ACQUISITION_STATE: dict[str, Any] = {
+    "schema": ACQUISITION_STATE_SCHEMA,
+    "fingerprint": "",
+    "permanentFailedUrls": {},
+    "disabledProviders": {},
+}
+_ACQUISITION_STATE_LOCK = threading.RLock()
+
+
+def configure_acquisition_runtime(
+    *,
+    state_path: Path,
+    fingerprint: str,
+    download_workers: int,
+    metadata_workers: int,
+) -> None:
+    global _ACQUISITION_STATE_PATH, _ACQUISITION_STATE
+    global _DOWNLOAD_WORKERS, _METADATA_WORKERS, _OPENVERSE_UNAVAILABLE
+    if not 1 <= download_workers <= 16 or not 1 <= metadata_workers <= 16:
+        raise ValueError("acquisition worker counts must be in 1..16")
+    _DOWNLOAD_WORKERS = int(download_workers)
+    _METADATA_WORKERS = int(metadata_workers)
+    _ACQUISITION_STATE_PATH = state_path
+    loaded: dict[str, Any] = {}
+    if state_path.is_file():
+        try:
+            candidate = json.loads(state_path.read_text(encoding="utf-8"))
+            if (
+                candidate.get("schema") == ACQUISITION_STATE_SCHEMA
+                and candidate.get("fingerprint") == fingerprint
+            ):
+                loaded = candidate
+        except (OSError, json.JSONDecodeError):
+            loaded = {}
+    _ACQUISITION_STATE = loaded or {
+        "schema": ACQUISITION_STATE_SCHEMA,
+        "fingerprint": fingerprint,
+        "permanentFailedUrls": {},
+        "disabledProviders": {},
+    }
+    _OPENVERSE_UNAVAILABLE = "openverse" in _ACQUISITION_STATE["disabledProviders"]
+    persist_acquisition_state()
+
+
+def persist_acquisition_state() -> None:
+    if _ACQUISITION_STATE_PATH is None:
+        return
+    with _ACQUISITION_STATE_LOCK:
+        atomic_write_text(
+            _ACQUISITION_STATE_PATH,
+            json.dumps(_ACQUISITION_STATE, ensure_ascii=False, indent=2) + "\n",
+        )
+
+
+def _mark_permanent_url_failure(url: str, reason: str) -> None:
+    with _ACQUISITION_STATE_LOCK:
+        failures = _ACQUISITION_STATE.setdefault("permanentFailedUrls", {})
+        failures[url] = {"reason": reason, "timestamp": time.time()}
+    persist_acquisition_state()
+
+
+def _disable_provider(provider: str, reason: str) -> None:
+    with _ACQUISITION_STATE_LOCK:
+        disabled = _ACQUISITION_STATE.setdefault("disabledProviders", {})
+        disabled[provider] = {"reason": reason, "timestamp": time.time()}
+    persist_acquisition_state()
 
 
 def normalize_http_url(url: str) -> str:
@@ -346,11 +444,18 @@ def safe_http_get(
 ) -> bytes | None:
     global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_UNAVAILABLE
     if not url.startswith(("https://", "http://")):
+        _mark_permanent_url_failure(str(url), "unsupported_url_scheme")
         return None
     # Museum and Open Images metadata occasionally contains literal spaces or
     # control characters in otherwise valid URLs. urllib rejects these before
     # any request is made, so normalize components without double-encoding `%`.
-    url = normalize_http_url(url)
+    try:
+        url = normalize_http_url(url)
+    except (TypeError, ValueError, UnicodeError):
+        _mark_permanent_url_failure(str(url), "malformed_url")
+        return None
+    if url in _ACQUISITION_STATE.get("permanentFailedUrls", {}):
+        return None
     request_headers = {
         "User-Agent": "PaletteBrain-C11-DataBuilder/1.0",
         "Accept": "*/*",
@@ -404,6 +509,10 @@ def safe_http_get(
                         "disabled for this run without retry."
                     )
                 _OPENVERSE_UNAVAILABLE = True
+                _disable_provider("openverse", "cloudflare_challenge")
+                return None
+            if exc.code in (400, 401, 403, 404, 405, 410, 422):
+                _mark_permanent_url_failure(url, f"http_{exc.code}")
                 return None
             if exc.code == 429:
                 retry_after = exc.headers.get("Retry-After")
@@ -1280,7 +1389,9 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
 
     # The Met search API returns IDs only. Fetch independent public-domain
     # metadata concurrently, preserving search order through executor.map.
-    with ThreadPoolExecutor(max_workers=min(8, max(1, len(object_ids)))) as executor:
+    with ThreadPoolExecutor(
+        max_workers=min(_METADATA_WORKERS, max(1, len(object_ids)))
+    ) as executor:
         objects = list(executor.map(load_object, object_ids))
 
     out: list[dict[str, Any]] = []
@@ -1526,6 +1637,37 @@ def download_candidate(
     )
 
 
+def fetch_candidate_image(
+    candidate: dict[str, Any],
+    disk: DiskBudget,
+) -> tuple[dict[str, Any], bytes, str] | None:
+    """Fetch one candidate without mutating shared deduplication state."""
+    if not disk.before_download():
+        return None
+    urls = [str(candidate["source_url"])]
+    fallback = str(candidate.get("source_url_fallback") or "")
+    if fallback:
+        urls.append(fallback)
+    headers = None
+    if str(candidate.get("source_id")) == "artic":
+        headers = {
+            "User-Agent": "Mozilla/5.0 PaletteBrain-C11/1.0",
+            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+            "Referer": "https://www.artic.edu/",
+        }
+    for url in urls:
+        data = safe_http_get(
+            url,
+            timeout=15,
+            max_retries=1,
+            max_bytes=disk.max_download_bytes(MAX_SINGLE_IMAGE_BYTES),
+            headers=headers,
+        )
+        if data:
+            return candidate, data, url
+    return None
+
+
 def acquire_for_concept(
     *,
     concept: dict[str, Any],
@@ -1571,35 +1713,50 @@ def acquire_for_concept(
             source for source in allowed_sources if source in ("met", "artic", "openverse")
         ]
 
-    pointers = {source: 0 for source in ordered_sources}
+    candidates: list[dict[str, Any]] = []
+    source_buckets = [_get_candidates(source) for source in ordered_sources]
+    for offset in range(max((len(bucket) for bucket in source_buckets), default=0)):
+        for bucket in source_buckets:
+            if offset < len(bucket):
+                candidates.append(bucket[offset])
     results: list[dict[str, Any]] = []
-
-    while len(results) < max_count:
-        made_progress = False
-        for source in ordered_sources:
-            candidates = _get_candidates(source)
-            pointer = pointers[source]
-            while pointer < len(candidates):
-                candidate = candidates[pointer]
-                pointer += 1
-                pointers[source] = pointer
-                record = download_candidate(
-                    candidate=candidate,
-                    concept=concept,
+    batch_width = max(_DOWNLOAD_WORKERS, max_count * 2)
+    with ThreadPoolExecutor(max_workers=_DOWNLOAD_WORKERS) as executor:
+        for start in range(0, len(candidates), batch_width):
+            fetched = executor.map(
+                lambda item: fetch_candidate_image(item, disk),
+                candidates[start : start + batch_width],
+            )
+            for payload in fetched:
+                if payload is None:
+                    continue
+                candidate, data, downloaded_url = payload
+                record = dict(candidate)
+                record.update(
+                    {
+                        "concept_id": concept["concept_id"],
+                        "category": concept["category"],
+                        "downloaded_url": downloaded_url,
+                    }
+                )
+                prefix = {
+                    "met": "met", "artic": "artic", "openverse": "ov",
+                    "open_images": "oi",
+                }.get(str(candidate["source_id"]), "src")
+                stored = store_image_record(
                     raw_dir=raw_dir,
+                    prefix=prefix,
+                    image_bytes=data,
+                    record=record,
                     seen_hashes=seen_hashes,
                     seen_phashes=seen_phashes,
                     disk=disk,
                     stats=stats,
                 )
-                if record is not None:
-                    results.append(record)
-                    made_progress = True
-                    break
-            if len(results) >= max_count:
-                break
-        if not made_progress:
-            break
+                if stored is not None:
+                    results.append(stored)
+                    if len(results) >= max_count:
+                        return results
     return results
 
 
@@ -2115,6 +2272,8 @@ def acquire_full_records(
     open_images: OpenImagesBboxIndex,
     limit_images: int | None,
     per_concept_cap: int,
+    only_concept_ids: set[str] | None = None,
+    checkpoint_every: int = 10,
 ) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     if per_concept_cap < 1 or per_concept_cap > FULL_MAX_PER_CONCEPT:
@@ -2137,7 +2296,8 @@ def acquire_full_records(
         result.extend(cached)
         needed = per_concept - len(cached)
 
-        if needed > 0:
+        should_acquire = only_concept_ids is None or cid in only_concept_ids
+        if needed > 0 and should_acquire:
             allowed = (
                 ("open_images",)
                 if bool(concept.get("crop_required", False))
@@ -2161,7 +2321,7 @@ def acquire_full_records(
         if limit_images and len(result) >= limit_images:
             result = result[:limit_images]
             break
-        if (index + 1) % 20 == 0 or index + 1 == len(concepts):
+        if (index + 1) % checkpoint_every == 0 or index + 1 == len(concepts):
             write_metadata_index(
                 raw_dir / "metadata_index.json",
                 cached_records,
@@ -2169,13 +2329,47 @@ def acquire_full_records(
             )
             print(
                 f"Acquisition [{index + 1}/{len(concepts)}]: "
-                f"{len(result)} raw unique records"
+                f"RAW={len(result)} cache={len(cached_records)} "
+                f"selected={len(only_concept_ids) if only_concept_ids is not None else len(concepts)}"
             )
 
     unique: dict[str, dict[str, Any]] = {}
     for record in result:
         unique[str(record["content_sha256"])] = record
     return list(unique.values())
+
+
+def underfilled_concept_ids(
+    *,
+    records: list[dict[str, Any]],
+    valid_records: list[dict[str, Any]],
+    concepts: list[dict[str, Any]],
+    desired_valid: int,
+    next_cap: int,
+) -> set[str]:
+    """Select only families that still need valid coverage for a top-up."""
+    raw_counts: dict[str, int] = {}
+    valid_counts: dict[str, int] = {}
+    for record in records:
+        cid = str(record["concept_id"])
+        raw_counts[cid] = raw_counts.get(cid, 0) + 1
+    for record in valid_records:
+        cid = str(record["concept_id"])
+        valid_counts[cid] = valid_counts.get(cid, 0) + 1
+    target = max(1, math.ceil(desired_valid / max(1, len(concepts))))
+    selected = {
+        str(concept["concept_id"])
+        for concept in concepts
+        if valid_counts.get(str(concept["concept_id"]), 0) < target
+        and raw_counts.get(str(concept["concept_id"]), 0) < next_cap
+    }
+    if not selected:
+        selected = {
+            str(concept["concept_id"])
+            for concept in concepts
+            if raw_counts.get(str(concept["concept_id"]), 0) < next_cap
+        }
+    return selected
 
 
 def select_balanced_full_records(
@@ -2275,6 +2469,115 @@ def score_and_filter_relevance(
         out["siglip_feature"] = image_features[index]
         valid.append(out)
     return valid, rejected
+
+
+def load_relevance_cache(
+    path: Path,
+    fingerprint: str,
+) -> dict[str, tuple[float, np.ndarray]]:
+    if not path.is_file():
+        return {}
+    try:
+        with np.load(path, allow_pickle=False) as payload:
+            if str(payload["schema"].item()) != RELEVANCE_CACHE_SCHEMA:
+                return {}
+            if str(payload["fingerprint"].item()) != fingerprint:
+                return {}
+            hashes = payload["content_sha256"].astype(str)
+            scores = payload["score"].astype(np.float32)
+            features = payload["feature"].astype(np.float32)
+        if features.ndim != 2 or len(hashes) != len(scores) or len(scores) != len(features):
+            return {}
+        return {
+            sha: (float(scores[index]), features[index])
+            for index, sha in enumerate(hashes.tolist())
+        }
+    except (OSError, KeyError, ValueError):
+        return {}
+
+
+def save_relevance_cache(
+    path: Path,
+    fingerprint: str,
+    cache: dict[str, tuple[float, np.ndarray]],
+    disk: DiskBudget,
+) -> None:
+    hashes = sorted(cache)
+    feature_width = next((len(cache[sha][1]) for sha in hashes), 768)
+    arrays = {
+        "schema": np.asarray(RELEVANCE_CACHE_SCHEMA, dtype=str),
+        "fingerprint": np.asarray(fingerprint, dtype=str),
+        "content_sha256": np.asarray(hashes, dtype=str),
+        "score": np.asarray([cache[sha][0] for sha in hashes], dtype=np.float32),
+        "feature": np.stack([cache[sha][1] for sha in hashes]).astype(np.float32)
+        if hashes else np.empty((0, feature_width), dtype=np.float32),
+    }
+    guarded_atomic_savez(path, disk=disk, arrays=arrays)
+
+
+def score_records_with_cache(
+    *,
+    acquired: list[dict[str, Any]],
+    concept_map: dict[str, dict[str, Any]],
+    model: Any,
+    processor: Any,
+    tokenizer: Any,
+    device: torch.device,
+    threshold: float,
+    cache: dict[str, tuple[float, np.ndarray]],
+    cache_path: Path,
+    cache_fingerprint: str,
+    disk: DiskBudget,
+    chunk_size: int = 64,
+) -> tuple[list[dict[str, Any]], int, int, dict[str, int]]:
+    missing = [r for r in acquired if str(r["content_sha256"]) not in cache]
+    crop_totals = {
+        "crop_required_accepted_before_relevance": 0,
+        "crop_required_skipped_no_valid_crop": 0,
+    }
+    for start in range(0, len(missing), chunk_size):
+        chunk = missing[start : start + chunk_size]
+        processed, crop_stats = process_acquired_records(
+            acquired=chunk,
+            concept_map=concept_map,
+        )
+        for key, value in crop_stats.items():
+            crop_totals[key] += value
+        processed_by_hash = {str(r["content_sha256"]): r for r in processed}
+        scored, _ = score_and_filter_relevance(
+            processed=processed,
+            concept_map=concept_map,
+            model=model,
+            processor=processor,
+            tokenizer=tokenizer,
+            device=device,
+            threshold=-float("inf"),
+        )
+        for record in scored:
+            sha = str(record["content_sha256"])
+            cache[sha] = (
+                float(record["relevance_score"]),
+                np.asarray(record["siglip_feature"], dtype=np.float32),
+            )
+        feature_width = next((len(value[1]) for value in cache.values()), 768)
+        for record in chunk:
+            sha = str(record["content_sha256"])
+            if sha not in processed_by_hash:
+                cache[sha] = (float("-inf"), np.zeros(feature_width, dtype=np.float32))
+        save_relevance_cache(cache_path, cache_fingerprint, cache, disk)
+
+    valid: list[dict[str, Any]] = []
+    rejected = 0
+    for record in acquired:
+        cached = cache.get(str(record["content_sha256"]))
+        if cached is None or cached[0] < threshold:
+            rejected += 1
+            continue
+        out = dict(record)
+        out["relevance_score"] = cached[0]
+        out["siglip_feature"] = cached[1]
+        valid.append(out)
+    return valid, rejected, len(acquired) - len(missing), crop_totals
 
 
 def choose_balanced_smoke(
@@ -2862,6 +3165,9 @@ def build_c11_dataset(
     calibration_min_tpr: float = 0.85,
     calibration_min_balanced_accuracy: float = 0.80,
     calibration_max_fpr: float = 0.35,
+    download_workers: int = 6,
+    metadata_workers: int = 8,
+    checkpoint_every: int = 10,
 ) -> dict[str, Any]:
     manifest = load_and_validate_manifest(manifest_path)
     policy = manifest.get("acquisition_policy", {})
@@ -2895,6 +3201,16 @@ def build_c11_dataset(
         target_bytes=target_disk,
         hard_bytes=hard_disk,
     )
+    acquisition_fingerprint = hashlib.sha256(
+        (concepts_sha256 + manifest_sha256 + ACQUISITION_STATE_SCHEMA).encode("ascii")
+    ).hexdigest()
+    configure_acquisition_runtime(
+        state_path=raw_dir / "acquisition_state.json",
+        fingerprint=acquisition_fingerprint,
+        download_workers=download_workers,
+        metadata_workers=metadata_workers,
+    )
+    print(disk.summary())
 
     index_path = raw_dir / "metadata_index.json"
     cached_records, seen_phashes, invalid_cache = load_metadata_index(
@@ -2959,6 +3275,7 @@ def build_c11_dataset(
             open_images=open_images,
             limit_images=limit_images,
             per_concept_cap=FULL_ACQUISITION_CAPS[0],
+            checkpoint_every=checkpoint_every,
         )
 
     write_metadata_index(index_path, cached_records, disk=disk)
@@ -2970,12 +3287,18 @@ def build_c11_dataset(
     if not acquired:
         raise RuntimeError("no images acquired")
 
-    processed, crop_stats = process_acquired_records(
-        acquired=acquired,
-        concept_map=concept_map,
-    )
-    if not processed:
-        raise RuntimeError("no images survived crop/image processing")
+    processed: list[dict[str, Any]] = []
+    crop_stats = {
+        "crop_required_accepted_before_relevance": 0,
+        "crop_required_skipped_no_valid_crop": 0,
+    }
+    if smoke:
+        processed, crop_stats = process_acquired_records(
+            acquired=acquired,
+            concept_map=concept_map,
+        )
+        if not processed:
+            raise RuntimeError("no images survived crop/image processing")
 
     resolved_device = resolve_device(device)
     processor = AutoProcessor.from_pretrained(
@@ -3018,19 +3341,44 @@ def build_c11_dataset(
     else:
         threshold = load_frozen_calibration(calibration_path)
 
-    valid, relevance_rejected = score_and_filter_relevance(
-        processed=processed,
-        concept_map=concept_map,
-        model=model,
-        processor=processor,
-        tokenizer=tokenizer,
-        device=resolved_device,
-        threshold=threshold,
-    )
-
     if smoke:
+        valid, relevance_rejected = score_and_filter_relevance(
+            processed=processed,
+            concept_map=concept_map,
+            model=model,
+            processor=processor,
+            tokenizer=tokenizer,
+            device=resolved_device,
+            threshold=threshold,
+        )
         valid = choose_balanced_smoke(valid, SMOKE_VALID_IMAGES)
     else:
+        relevance_fingerprint = hashlib.sha256(
+            (
+                SIGLIP_MODEL_ID + SIGLIP_REVISION + concepts_sha256
+                + sha256_file(calibration_path) + RELEVANCE_CACHE_SCHEMA
+            ).encode("utf-8")
+        ).hexdigest()
+        relevance_cache_path = raw_dir / "relevance_cache.npz"
+        disk.track_artifact(relevance_cache_path)
+        relevance_cache = load_relevance_cache(
+            relevance_cache_path,
+            relevance_fingerprint,
+        )
+        valid, relevance_rejected, cache_hits, crop_stats = score_records_with_cache(
+            acquired=acquired,
+            concept_map=concept_map,
+            model=model,
+            processor=processor,
+            tokenizer=tokenizer,
+            device=resolved_device,
+            threshold=threshold,
+            cache=relevance_cache,
+            cache_path=relevance_cache_path,
+            cache_fingerprint=relevance_fingerprint,
+            disk=disk,
+        )
+        print(f"Relevance: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits}")
         desired_valid = (
             min(limit_images, FULL_TARGET_UNIQUE_IMAGES)
             if limit_images is not None
@@ -3048,6 +3396,15 @@ def build_c11_dataset(
                 f"Top-up acquisition: {len(valid)} valid < {desired_valid}; "
                 f"raising per-concept cap to {cap}."
             )
+            selected_concepts = underfilled_concept_ids(
+                records=acquired,
+                valid_records=valid,
+                concepts=concepts,
+                desired_valid=desired_valid,
+                next_cap=cap,
+            )
+            if not selected_concepts:
+                break
             acquired = acquire_full_records(
                 concepts=concepts,
                 raw_dir=raw_dir,
@@ -3059,20 +3416,28 @@ def build_c11_dataset(
                 open_images=open_images,
                 limit_images=limit_images,
                 per_concept_cap=cap,
+                only_concept_ids=selected_concepts,
+                checkpoint_every=checkpoint_every,
             )
             write_metadata_index(index_path, cached_records, disk=disk)
-            processed, crop_stats = process_acquired_records(
+            valid, relevance_rejected, cache_hits, pass_crop_stats = score_records_with_cache(
                 acquired=acquired,
-                concept_map=concept_map,
-            )
-            valid, relevance_rejected = score_and_filter_relevance(
-                processed=processed,
                 concept_map=concept_map,
                 model=model,
                 processor=processor,
                 tokenizer=tokenizer,
                 device=resolved_device,
                 threshold=threshold,
+                cache=relevance_cache,
+                cache_path=relevance_cache_path,
+                cache_fingerprint=relevance_fingerprint,
+                disk=disk,
+            )
+            for key, value in pass_crop_stats.items():
+                crop_stats[key] += value
+            print(
+                f"Top-up result: VALID={len(valid)} RAW={len(acquired)} "
+                f"cache_hits={cache_hits} concepts={len(selected_concepts)}"
             )
 
         if len(valid) < FULL_MIN_UNIQUE_IMAGES:
@@ -3081,6 +3446,13 @@ def build_c11_dataset(
                 f"< hard minimum {FULL_MIN_UNIQUE_IMAGES}"
             )
         valid = select_balanced_full_records(valid, FULL_MAX_VALID_IMAGES)
+        valid, final_crop_stats = process_acquired_records(
+            acquired=valid,
+            concept_map=concept_map,
+        )
+        if not valid:
+            raise RuntimeError("no qualified images survived final image processing")
+        crop_stats = final_crop_stats
 
     calibration_sha256 = sha256_file(calibration_path)
 
@@ -3222,6 +3594,9 @@ def main() -> None:
     parser.add_argument("--calibration-min-tpr", type=float, default=0.85)
     parser.add_argument("--calibration-min-balanced-accuracy", type=float, default=0.80)
     parser.add_argument("--calibration-max-fpr", type=float, default=0.35)
+    parser.add_argument("--download-workers", type=int, default=6)
+    parser.add_argument("--metadata-workers", type=int, default=8)
+    parser.add_argument("--checkpoint-every", type=int, default=10)
     args = parser.parse_args()
 
     build_c11_dataset(
@@ -3237,6 +3612,9 @@ def main() -> None:
         calibration_min_tpr=float(args.calibration_min_tpr),
         calibration_min_balanced_accuracy=float(args.calibration_min_balanced_accuracy),
         calibration_max_fpr=float(args.calibration_max_fpr),
+        download_workers=int(args.download_workers),
+        metadata_workers=int(args.metadata_workers),
+        checkpoint_every=int(args.checkpoint_every),
     )
 
 

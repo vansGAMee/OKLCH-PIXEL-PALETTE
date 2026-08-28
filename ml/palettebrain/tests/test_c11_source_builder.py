@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import re
+import threading
+import time
 import unicodedata
 from pathlib import Path
 
@@ -12,6 +14,7 @@ import pytest
 
 from ml.palettebrain.color_distribution import palette_or_pixels_to_oklch_histogram
 from ml.palettebrain.prepare_c11_recovered_source import (
+    DiskBudget,
     SIGLIP_REVISION,
     choose_balanced_smoke,
     choose_calibration_threshold,
@@ -20,6 +23,7 @@ from ml.palettebrain.prepare_c11_recovered_source import (
     rgb_to_oklab_array,
     siglip_relevance_prompt,
     split_by_group,
+    underfilled_concept_ids,
 )
 
 
@@ -27,6 +31,134 @@ def test_http_url_normalization_quotes_spaces_and_removes_controls() -> None:
     assert normalize_http_url(
         "https://example.test/CRDImages/TR 112 1.jpg\n?q=a b"
     ) == "https://example.test/CRDImages/TR%20112%201.jpg?q=a%20b"
+
+
+def test_malformed_url_is_a_durable_skip(tmp_path: Path) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source.configure_acquisition_runtime(
+        state_path=tmp_path / "state.json",
+        fingerprint="test",
+        download_workers=2,
+        metadata_workers=2,
+    )
+    assert source.safe_http_get("not-an-http-url", max_retries=0) is None
+    state = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
+    assert "not-an-http-url" in state["permanentFailedUrls"]
+
+
+def test_underfilled_topup_excludes_satisfied_families() -> None:
+    concepts = [{"concept_id": key} for key in ("a", "b", "c")]
+    raw = ([{"concept_id": "a"}] * 4) + ([{"concept_id": "b"}] * 2)
+    valid = ([{"concept_id": "a"}] * 3) + [{"concept_id": "b"}]
+    assert underfilled_concept_ids(
+        records=raw,
+        valid_records=valid,
+        concepts=concepts,
+        desired_valid=9,
+        next_cap=5,
+    ) == {"b", "c"}
+
+
+def test_disk_budget_reserves_free_space(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    raw = tmp_path / "raw"
+    cache = tmp_path / "cache"
+    raw.mkdir()
+    cache.mkdir()
+    disk = DiskBudget(
+        raw_dir=raw,
+        cache_dir=cache,
+        target_bytes=1000,
+        hard_bytes=2000,
+        minimum_free_bytes=500,
+    )
+    usage = type("Usage", (), {"free": 400})()
+    monkeypatch.setattr(source.shutil, "disk_usage", lambda _path: usage)
+    with pytest.raises(source.HardDiskLimitError, match="FREE DISK RESERVE"):
+        disk.before_download()
+
+
+def test_acquisition_downloads_with_bounded_concurrency(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source._DOWNLOAD_WORKERS = 2
+    active = 0
+    peak = 0
+    lock = threading.Lock()
+
+    def fake_fetch(candidate: dict, _disk: object):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        time.sleep(0.02)
+        with lock:
+            active -= 1
+        return candidate, b"image", candidate["source_url"]
+
+    def fake_store(**kwargs):
+        candidate = kwargs["record"]
+        return {**candidate, "content_sha256": candidate["image_id"]}
+
+    class OpenImages:
+        def get_records(self, _concept_id: str, max_count: int):
+            return [
+                {
+                    "source_id": "open_images",
+                    "source_url": f"https://example.test/{index}.jpg",
+                    "image_id": f"image-{index}",
+                }
+                for index in range(min(6, max_count))
+            ]
+
+    monkeypatch.setattr(source, "fetch_candidate_image", fake_fetch)
+    monkeypatch.setattr(source, "store_image_record", fake_store)
+    rows = source.acquire_for_concept(
+        concept={
+            "concept_id": "apple",
+            "category": "object",
+            "crop_required": True,
+            "retrieval_query": "apple",
+        },
+        raw_dir=tmp_path,
+        max_count=3,
+        allowed_sources=("open_images",),
+        seen_hashes=set(),
+        seen_phashes=[],
+        disk=object(),
+        stats={},
+        open_images=OpenImages(),
+    )
+    assert len(rows) == 3
+    assert peak == 2
+
+
+def test_relevance_cache_roundtrip_reuses_verified_feature(tmp_path: Path) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    raw = tmp_path / "raw"
+    cache_dir = tmp_path / "cache"
+    raw.mkdir()
+    cache_dir.mkdir()
+    disk = DiskBudget(
+        raw_dir=raw,
+        cache_dir=cache_dir,
+        target_bytes=10_000_000,
+        hard_bytes=20_000_000,
+        minimum_free_bytes=1,
+    )
+    path = raw / "relevance_cache.npz"
+    feature = np.linspace(0.0, 1.0, 8, dtype=np.float32)
+    source.save_relevance_cache(path, "fingerprint", {"sha": (0.42, feature)}, disk)
+    loaded = source.load_relevance_cache(path, "fingerprint")
+    assert loaded["sha"][0] == pytest.approx(0.42)
+    assert np.array_equal(loaded["sha"][1], feature)
+    assert source.load_relevance_cache(path, "changed") == {}
 
 
 def _normalize(text: str) -> str:
