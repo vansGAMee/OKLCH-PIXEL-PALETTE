@@ -61,6 +61,25 @@ BROWSER_SMOKE = REPORTS / "real-browser-semantic-smoke.json"
 QUALIFICATION = REPORTS / "candidate-11-stage-b-qualification.json"
 DEV_QUALIFICATION = REPORTS / "candidate-11-dev-qualification.json"
 
+PHASE_DEPENDENCIES: dict[str, tuple[str, ...]] = {
+    "source_data_preflight": ("validate_benchmarks.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "smoke_48_images": ("prepare_c11_recovered_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
+    "full_visual_source": ("prepare_c11_recovered_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
+    "repaired_training_dataset": ("build_c11_dataset.py",),
+    "stage_a": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
+    "stage_b": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
+    "stage_a_dev_selection": ("select_candidate11_checkpoint.py", "evaluate_semantic_v3.py", "benchmark_semantic_v3.json"),
+    "stage_b_dev_selection": ("select_candidate11_checkpoint.py", "evaluate_semantic_v3.py", "benchmark_semantic_v3.json"),
+    "stage_a_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "frozen_pytorch_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "visual_report": ("inspect_semantics.py",),
+    "onnx_export": ("export_c11_onnx.py", "model.py"),
+    "pytorch_ort_parity": ("parity_harness.py", "model.py", "color_math.py"),
+    "ort_browser_parity": ("parity_harness.py", "browser_runtime_harness.mjs", "model.py"),
+    "browser_semantic_smoke": ("../../scripts/test-real-browser.mjs", "../../src/lib/ai-palette/inference.ts", "../../src/lib/ai-palette/paletteAdapter.ts"),
+    "canonical_qualification": ("evaluate_semantic_v3.py", "qualify_candidate.py", "benchmark_semantic_v3.json"),
+}
+
 
 def configure_engineering_smoke_paths() -> None:
     global STATE_PATH, PREFLIGHT_REPORT, LOGS, TRAIN_DATA, STAGE_A, STAGE_B, STAGE_A_EVAL
@@ -106,6 +125,19 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def phase_dependency_fingerprint(name: str) -> str:
+    digest = hashlib.sha256()
+    for relative_name in PHASE_DEPENDENCIES.get(name, ("run_candidate11_release.py",)):
+        path = (ML / relative_name).resolve()
+        digest.update(relative_name.encode("utf-8"))
+        digest.update(sha256_file(path).encode("ascii"))
+    return digest.hexdigest()
+
+
+def training_dependency_fingerprint() -> str:
+    return phase_dependency_fingerprint("stage_a")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -173,6 +205,7 @@ def checkpoint_valid(path: Path, stage: str, final_epoch: int) -> tuple[bool, di
             and last_checkpoint.get("candidate") == "candidate-11"
             and last_checkpoint.get("stage") == stage
             and epoch >= final_epoch
+            and checkpoint.get("epoch_complete", True) is True
         )
         return valid, {"completedEpoch": epoch, "bestEpoch": checkpoint.get("epoch"), "stage": checkpoint.get("stage")}
     except Exception as error:
@@ -194,7 +227,9 @@ def training_valid(path: Path, stage: str, final_epoch: int) -> tuple[bool, dict
             checkpoint.get("candidate") == "candidate-11"
             and checkpoint.get("stage") == stage
             and epoch >= final_epoch
+            and checkpoint.get("epoch_complete", True) is True
             and checkpoint.get("dataset_identity", {}).get("primary") == sha256_file(TRAIN_DATA)
+            and checkpoint.get("dependency_fingerprint") == training_dependency_fingerprint()
         )
         return valid, {"completedEpoch": epoch, "candidateCount": len(candidates)}
     except Exception as error:
@@ -264,7 +299,11 @@ class Runner:
 
     def record(self, name: str, status: str, details: dict[str, Any]) -> None:
         self.state["currentPhase"] = name
-        self.state.setdefault("phases", {})[name] = {"status": status, **details}
+        self.state.setdefault("phases", {})[name] = {
+            "status": status,
+            "dependencyFingerprint": phase_dependency_fingerprint(name),
+            **details,
+        }
         self.save()
 
     def command(
@@ -312,6 +351,10 @@ class Runner:
     ) -> None:
         print(f"\n=== Candidate 11 phase: {name} ===", flush=True)
         valid, metrics = validator()
+        recorded = self.state.get("phases", {}).get(name, {})
+        current_fingerprint = phase_dependency_fingerprint(name)
+        valid = valid and recorded.get("dependencyFingerprint") == current_fingerprint
+        metrics = {**metrics, "dependencyFingerprint": current_fingerprint}
         if valid:
             print(f"PASS (verified existing artifact): {relative(output)}", flush=True)
             self.record(name, "passed", artifact(output, metrics))
@@ -443,6 +486,7 @@ class Runner:
                     resume_checkpoint.get("candidate") == "candidate-11"
                     and resume_checkpoint.get("stage") == stage
                     and resume_checkpoint.get("dataset_identity", {}).get("primary") == sha256_file(TRAIN_DATA)
+                    and resume_checkpoint.get("dependency_fingerprint") == training_dependency_fingerprint()
                 )
             except Exception:
                 compatible = False
@@ -467,7 +511,7 @@ class Runner:
         self.phase("stage_a_dev_selection", lambda: selection_valid(STAGE_A_SELECTION, STAGE_A, "a"), lambda: self.command("stage_a_dev_selection", self.smoke_flag([str(PYTHON), str(ML / "select_candidate11_checkpoint.py"), "--stage", "a", "--output", relative(STAGE_A), "--report", relative(STAGE_A_SELECTION), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_A_SELECTION)
 
     def stage_a_evaluation(self) -> None:
-        self.phase("stage_a_semantic_evaluation", lambda: semantic_valid(STAGE_A_EVAL, False, STAGE_A), lambda: self.command("stage_a_semantic_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_A), "--output", relative(STAGE_A_EVAL), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_A_EVAL)
+        self.phase("stage_a_semantic_evaluation", lambda: semantic_valid(STAGE_A_EVAL, not self.args.engineering_smoke, STAGE_A), lambda: self.command("stage_a_semantic_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_A), "--output", relative(STAGE_A_EVAL), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_A_EVAL)
 
     def stage_b(self) -> None:
         final_epoch = 0 if self.args.engineering_smoke else 19

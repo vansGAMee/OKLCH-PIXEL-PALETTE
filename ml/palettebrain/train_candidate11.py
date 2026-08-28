@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import random
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -99,6 +100,15 @@ def _sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def training_dependency_fingerprint() -> str:
+    digest = hashlib.sha256()
+    directory = Path(__file__).resolve().parent
+    for name in ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"):
+        digest.update(name.encode("utf-8"))
+        digest.update(_sha256_file(directory / name).encode("ascii"))
+    return digest.hexdigest()
+
+
 def _device(name: str) -> torch.device:
     selected = torch.device("cuda" if name == "auto" and torch.cuda.is_available() else ("cpu" if name == "auto" else name))
     if selected.type == "cuda" and not torch.cuda.is_available():
@@ -115,6 +125,9 @@ def _stage_a_release_evidence(path: str | None) -> dict[str, Any]:
     metric = report.get("metrics", {}).get("semanticFamilyWin")
     if not isinstance(metric, (int, float)) or not np.isfinite(metric):
         raise RuntimeError("Stage A semantic report is corrupt or non-finite")
+    classification = report.get("testClassification")
+    if classification != "ENGINEERING_SMOKE_ONLY" and metric < 0.80:
+        raise RuntimeError(f"Stage A semantic gate failed: {metric} < 0.80")
     return report
 
 
@@ -209,6 +222,13 @@ def _stage_b_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
 
 
 def train(args: argparse.Namespace) -> dict[str, Any]:
+    if args.checkpoint_every_steps < 1:
+        raise ValueError("checkpoint_every_steps must be positive")
+    data_path = Path(args.data)
+    used = data_path.stat().st_size if data_path.is_file() else 0
+    output_parent = Path(args.output).parent
+    free = shutil.disk_usage(output_parent if output_parent.exists() else Path.cwd()).free
+    print(f"DISK used={used / 1024**3:.2f} GiB free={free / 1024**3:.2f} GiB")
     stage_a_evidence: dict[str, Any] | None = None
     if args.stage == "b":
         stage_a_evidence = _stage_a_release_evidence(args.stage_a_eval_report)
@@ -227,8 +247,11 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     optimizer = torch.optim.AdamW(parameter_groups, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     start_epoch = 0
+    resume_batch = 0
     history: list[dict[str, Any]] = []
     best_loss = float("inf")
+    global_step = 0
+    dependency_fingerprint = training_dependency_fingerprint()
     dataset_identity = {
         "primary": _sha256_file(args.data),
         "replay": [_sha256_file(path) for path in args.replay_data],
@@ -237,6 +260,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         resumed = torch.load(args.resume, map_location="cpu", weights_only=True)
         if resumed.get("dataset_identity") != dataset_identity:
             raise RuntimeError("resume checkpoint dataset identity does not match current inputs")
+        if resumed.get("dependency_fingerprint") != dependency_fingerprint:
+            raise RuntimeError("resume checkpoint trainer/model dependency fingerprint is stale")
         resumed_args = resumed.get("training_args", {})
         for name in ("stage", "epochs", "batch_size", "new_lr", "inherited_lr", "seed"):
             if resumed_args.get(name) != getattr(args, name):
@@ -244,11 +269,16 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         model.load_state_dict(resumed["model_state_dict"], strict=True)
         optimizer.load_state_dict(resumed["optimizer_state_dict"])
         scheduler.load_state_dict(resumed["scheduler_state_dict"])
-        start_epoch = int(resumed["epoch"]) + 1
+        if resumed.get("epoch_complete", True):
+            start_epoch = int(resumed["epoch"]) + 1
+        else:
+            start_epoch = int(resumed["epoch"])
+            resume_batch = int(resumed.get("batch_in_epoch", 0))
         history = list(resumed.get("history", []))
         best_loss = float(resumed.get("best_val_loss", min(
             (row["val"]["loss"] for row in history), default=float("inf")
         )))
+        global_step = int(resumed.get("global_step", 0))
         if "python_rng_state" in resumed:
             random.setstate(resumed["python_rng_state"])
         if "numpy_rng_state" in resumed:
@@ -300,53 +330,30 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         except Exception:
             continue
     bounded_candidates.sort(key=lambda item: item["valLoss"])
-    for epoch in range(start_epoch, args.epochs):
-        epoch_generator = torch.Generator().manual_seed(args.seed + epoch)
-        sampler = None
-        if sampler_weights is not None:
-            sampler = WeightedRandomSampler(
-                sampler_weights, num_samples=len(train_sets[0]), replacement=True,
-                generator=epoch_generator,
-            )
-        train_loader = DataLoader(
-            train_data, batch_size=args.batch_size, sampler=sampler,
-            shuffle=sampler is None, generator=epoch_generator,
-        )
-        row: dict[str, Any] = {"epoch": epoch}
-        for split, loader in (("train", train_loader), ("val", val_loader)):
-            model.train(split == "train")
-            totals: dict[str, float] = {}
-            batches = 0
-            for source_batch in loader:
-                batch = {name: value.to(device) for name, value in source_batch.items()}
-                if split == "train":
-                    optimizer.zero_grad(set_to_none=True)
-                with torch.set_grad_enabled(split == "train"):
-                    loss, components = loss_function(model, batch)
-                if not torch.isfinite(loss):
-                    raise RuntimeError("non-finite training loss")
-                if split == "train":
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                    optimizer.step()
-                totals["loss"] = totals.get("loss", 0.0) + float(loss.detach())
-                for name, value in components.items():
-                    totals[name] = totals.get(name, 0.0) + float(value.detach())
-                batches += 1
-            row[split] = {name: value / batches for name, value in totals.items()}
-        scheduler.step()
-        history.append(row)
-        improved = row["val"]["loss"] < best_loss
-        if improved:
-            best_loss = row["val"]["loss"]
-        payload = {
+
+    def checkpoint_payload(
+        *,
+        epoch: int,
+        epoch_complete: bool,
+        batch_in_epoch: int,
+        actual_visual_fraction: float,
+    ) -> dict[str, Any]:
+        return {
             "candidate": "candidate-11", "stage": args.stage, "epoch": epoch,
+            "epoch_complete": epoch_complete, "batch_in_epoch": batch_in_epoch,
             "model_config": model.config.to_dict(), "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict(),
             "training_args": vars(args), "history": history, "best_val_loss": best_loss,
             "dataset_identity": dataset_identity,
+            "dependency_fingerprint": dependency_fingerprint,
+            "global_step": global_step,
             "parameter_contract": parameter_contract,
             "dataset_mixture": mixture,
+            "sampler_state": {
+                "epochSeed": args.seed + epoch,
+                "configuredMixture": mixture,
+                "actualVisualSampleFraction": actual_visual_fraction,
+            },
             "stage_a_quality": stage_a_evidence.get("metrics", {}) if stage_a_evidence else None,
             "loss_contract": {
                 "paletteStructure": "SmoothL1 pairwise physical OKLab geometry after matching and lock restoration",
@@ -364,9 +371,76 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "torch_rng_state": torch.get_rng_state(),
             "torch_cuda_rng_state": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else [],
         }
+
+    def save_last(payload: dict[str, Any]) -> None:
         last_temporary = last_output.with_suffix(last_output.suffix + ".tmp")
         torch.save(payload, last_temporary)
         last_temporary.replace(last_output)
+
+    for epoch in range(start_epoch, args.epochs):
+        epoch_generator = torch.Generator().manual_seed(args.seed + epoch)
+        sampler = None
+        if sampler_weights is not None:
+            sampler = WeightedRandomSampler(
+                sampler_weights, num_samples=len(train_sets[0]), replacement=True,
+                generator=epoch_generator,
+            )
+        train_loader = DataLoader(
+            train_data, batch_size=args.batch_size, sampler=sampler,
+            shuffle=sampler is None, generator=epoch_generator,
+        )
+        row: dict[str, Any] = {"epoch": epoch}
+        for split, loader in (("train", train_loader), ("val", val_loader)):
+            model.train(split == "train")
+            totals: dict[str, float] = {}
+            batches = 0
+            visual_samples = 0
+            total_samples = 0
+            for batch_index, source_batch in enumerate(loader):
+                if split == "train" and epoch == start_epoch and batch_index < resume_batch:
+                    continue
+                batch = {name: value.to(device) for name, value in source_batch.items()}
+                if split == "train":
+                    optimizer.zero_grad(set_to_none=True)
+                with torch.set_grad_enabled(split == "train"):
+                    loss, components = loss_function(model, batch)
+                if not torch.isfinite(loss):
+                    raise RuntimeError("non-finite training loss")
+                if split == "train":
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimizer.step()
+                    global_step += 1
+                    visual_samples += int((batch["visual_weight"] > 0).sum().item())
+                    total_samples += int(batch["visual_weight"].numel())
+                    if global_step % args.checkpoint_every_steps == 0:
+                        save_last(checkpoint_payload(
+                            epoch=epoch,
+                            epoch_complete=False,
+                            batch_in_epoch=batch_index + 1,
+                            actual_visual_fraction=visual_samples / max(1, total_samples),
+                        ))
+                totals["loss"] = totals.get("loss", 0.0) + float(loss.detach())
+                for name, value in components.items():
+                    totals[name] = totals.get(name, 0.0) + float(value.detach())
+                batches += 1
+            row[split] = {name: value / batches for name, value in totals.items()}
+            if split == "train":
+                row[split]["actualVisualSampleFraction"] = (
+                    visual_samples / max(1, total_samples)
+                )
+        scheduler.step()
+        history.append(row)
+        improved = row["val"]["loss"] < best_loss
+        if improved:
+            best_loss = row["val"]["loss"]
+        payload = checkpoint_payload(
+            epoch=epoch,
+            epoch_complete=True,
+            batch_in_epoch=0,
+            actual_visual_fraction=row["train"]["actualVisualSampleFraction"],
+        )
+        save_last(payload)
         if improved:
             temporary = output.with_suffix(output.suffix + ".tmp")
             torch.save(payload, temporary)
@@ -397,6 +471,7 @@ def main() -> None:
     parser.add_argument("--output", required=True)
     parser.add_argument("--last-output")
     parser.add_argument("--max-dev-candidates", type=int, default=3)
+    parser.add_argument("--checkpoint-every-steps", type=int, default=100)
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--new-lr", type=float, default=3e-4)

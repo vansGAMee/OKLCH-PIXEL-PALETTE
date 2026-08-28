@@ -2,7 +2,7 @@
  * Tests for math/adapter correctness.
  */
 import { describe, it, expect } from 'vitest';
-import { decodeCnnOutput, maxSrgbChromaAt } from '../paletteAdapter';
+import { decodeCnnOutput, decodePaletteOutput, maxSrgbChromaAt } from '../paletteAdapter';
 
 const L_MIN = 0.07;
 const L_MAX = 0.93;
@@ -120,6 +120,21 @@ describe('paletteAdapter - zero-length hue-vector fallback', () => {
     const result = decodeCnnOutput(output);
     expect(result.baseHex).toMatch(/^#[0-9a-f]{6}$/);
     expect(result.harmony).toBeTruthy();
+  });
+});
+
+describe('paletteAdapter - Candidate 11 neutral path', () => {
+  it('preserves achromatic hue semantics and exact locked near-gray', () => {
+    const data = new Float32Array(45);
+    const locked = { l: 0.61, c: 0.001, h: null };
+    const colors = decodePaletteOutput(
+      { data, dims: [1, 9, 5] },
+      2,
+      new Map([[1, locked]]),
+    );
+    expect(colors[0].c).toBe(0);
+    expect(colors[0].h).toBeNull();
+    expect(colors[1]).toEqual(locked);
   });
 });
 

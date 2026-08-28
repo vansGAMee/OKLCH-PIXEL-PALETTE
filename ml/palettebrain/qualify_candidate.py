@@ -15,6 +15,7 @@ from typing import Any
 
 
 THRESHOLDS = {
+    "semanticFamilyWin": (">=", 0.80),
     "directRu": (">=", 0.95), "directEn": (">=", 0.95), "exclusion": (">=", 1.0),
     "cleanMultiColor": (">=", 0.70), "nearDuplicateRate": ("<=", 0.05),
     "count": (">=", 1.0), "inactive": (">=", 1.0), "locks": (">=", 1.0),
@@ -22,6 +23,7 @@ THRESHOLDS = {
     "gamut": (">=", 1.0), "determinism": (">=", 1.0),
     "basicConcepts": (">=", 0.80), "nature": (">=", 0.80),
     "weatherScenes": (">=", 0.80), "materials": (">=", 0.80),
+    "placesInteriors": (">=", 0.80), "lighting": (">=", 0.80),
     "stylesMedia": (">=", 0.80), "compositions": (">=", 0.75),
     "oodParaphrases": (">=", 0.75), "heldOutRelated": (">=", 0.70),
     "ruEnSemanticAgreement": (">=", 0.85),

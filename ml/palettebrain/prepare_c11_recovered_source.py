@@ -360,6 +360,8 @@ _ACQUISITION_STATE: dict[str, Any] = {
     "disabledProviders": {},
 }
 _ACQUISITION_STATE_LOCK = threading.RLock()
+_ACQUISITION_STATE_DIRTY = 0
+_ACQUISITION_STATE_LAST_FLUSH = 0.0
 
 
 def configure_acquisition_runtime(
@@ -398,6 +400,7 @@ def configure_acquisition_runtime(
 
 
 def persist_acquisition_state() -> None:
+    global _ACQUISITION_STATE_DIRTY, _ACQUISITION_STATE_LAST_FLUSH
     if _ACQUISITION_STATE_PATH is None:
         return
     with _ACQUISITION_STATE_LOCK:
@@ -405,13 +408,22 @@ def persist_acquisition_state() -> None:
             _ACQUISITION_STATE_PATH,
             json.dumps(_ACQUISITION_STATE, ensure_ascii=False, indent=2) + "\n",
         )
+        _ACQUISITION_STATE_DIRTY = 0
+        _ACQUISITION_STATE_LAST_FLUSH = time.time()
 
 
 def _mark_permanent_url_failure(url: str, reason: str) -> None:
+    global _ACQUISITION_STATE_DIRTY
     with _ACQUISITION_STATE_LOCK:
         failures = _ACQUISITION_STATE.setdefault("permanentFailedUrls", {})
         failures[url] = {"reason": reason, "timestamp": time.time()}
-    persist_acquisition_state()
+        _ACQUISITION_STATE_DIRTY += 1
+        flush = (
+            _ACQUISITION_STATE_DIRTY >= 25
+            or time.time() - _ACQUISITION_STATE_LAST_FLUSH >= 10.0
+        )
+    if flush:
+        persist_acquisition_state()
 
 
 def _disable_provider(provider: str, reason: str) -> None:
@@ -445,6 +457,7 @@ def safe_http_get(
     global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_UNAVAILABLE
     if not url.startswith(("https://", "http://")):
         _mark_permanent_url_failure(str(url), "unsupported_url_scheme")
+        persist_acquisition_state()
         return None
     # Museum and Open Images metadata occasionally contains literal spaces or
     # control characters in otherwise valid URLs. urllib rejects these before
@@ -453,6 +466,7 @@ def safe_http_get(
         url = normalize_http_url(url)
     except (TypeError, ValueError, UnicodeError):
         _mark_permanent_url_failure(str(url), "malformed_url")
+        persist_acquisition_state()
         return None
     if url in _ACQUISITION_STATE.get("permanentFailedUrls", {}):
         return None
@@ -2322,6 +2336,7 @@ def acquire_full_records(
             result = result[:limit_images]
             break
         if (index + 1) % checkpoint_every == 0 or index + 1 == len(concepts):
+            persist_acquisition_state()
             write_metadata_index(
                 raw_dir / "metadata_index.json",
                 cached_records,

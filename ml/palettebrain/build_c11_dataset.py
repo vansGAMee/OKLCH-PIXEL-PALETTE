@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -232,6 +233,11 @@ def audit(path: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
 
 
 def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
+    used = (source.stat().st_size if source.is_file() else 0) + (
+        output.stat().st_size if output.is_file() else 0
+    )
+    free = shutil.disk_usage(output.parent if output.parent.exists() else Path.cwd()).free
+    print(f"DISK used={used / 1024**3:.2f} GiB free={free / 1024**3:.2f} GiB")
     source_archive = np.load(source, allow_pickle=False)
     missing = sorted((set(CORE_FIELDS) | PROVENANCE_FIELDS) - set(source_archive.files))
     if missing:

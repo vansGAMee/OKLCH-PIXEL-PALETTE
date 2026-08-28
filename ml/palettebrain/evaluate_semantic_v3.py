@@ -47,6 +47,60 @@ def _relational_signature(palette: np.ndarray) -> np.ndarray:
     return np.sort(distances[np.triu_indices(len(palette), 1)])
 
 
+def _hue_fraction(palette: np.ndarray, low: float, high: float) -> float:
+    hues = _hues(palette)
+    chromatic = np.linalg.norm(palette[:, 1:3], axis=1) > 0.03
+    if low <= high:
+        selected = (hues >= low) & (hues <= high)
+    else:
+        selected = (hues >= low) | (hues <= high)
+    return float(np.mean(selected & chromatic))
+
+
+def clean_multicolor_rate(palettes: list[np.ndarray]) -> float:
+    """Behavioral palette cleanliness, independent of cross-prompt duplication."""
+    if not palettes:
+        return 0.0
+    return float(np.mean([
+        _pairwise_min(palette) >= 0.04
+        and len({tuple(np.round(color, 3)) for color in palette}) == len(palette)
+        for palette in palettes
+    ]))
+
+
+def adversarial_semantics_pass(prompt: str, palette: np.ndarray, base: np.ndarray) -> bool:
+    changed = float(np.linalg.norm(palette.mean(0) - base.mean(0))) >= 0.025
+    rules = {
+        "red grass": _hue_fraction(palette, 345, 50) >= 0.2,
+        "green blood": _hue_fraction(palette, 100, 165) >= 0.2,
+        "warm moonlight": _hue_fraction(palette, 20, 100) >= 0.2,
+        "cold candlelight": _hue_fraction(palette, 180, 300) >= 0.2,
+        "blue rust": _hue_fraction(palette, 210, 300) >= 0.2,
+        "black snow": float(palette[:, 0].mean()) < float(base[:, 0].mean()) - 0.05,
+        "hospital at sunset": _hue_fraction(palette, 20, 100) >= 0.2,
+        "snow under red emergency lights": _hue_fraction(palette, 345, 50) >= 0.2,
+        "green glass in a dark nightclub": (
+            _hue_fraction(palette, 100, 165) >= 0.2
+            and float(palette[:, 0].mean()) < 0.65
+        ),
+    }
+    return changed and bool(rules[prompt])
+
+
+def composition_semantics_pass(pair: list[str], left: np.ndarray, right: np.ndarray) -> bool:
+    changed = float(np.linalg.norm(left.mean(0) - right.mean(0))) >= 0.025
+    key = tuple(pair)
+    if key == ("hospital at sunset", "hospital under moonlight"):
+        semantic = _hue_fraction(left, 20, 100) > _hue_fraction(right, 20, 100) and _hue_fraction(right, 180, 300) > 0
+    elif key == ("forest in rain", "forest by firelight"):
+        semantic = _hue_fraction(right, 20, 100) > _hue_fraction(left, 20, 100)
+    elif key == ("watercolor city", "film-noir city"):
+        semantic = float(np.linalg.norm(left[:, 1:3], axis=1).mean()) > float(np.linalg.norm(right[:, 1:3], axis=1).mean())
+    else:
+        raise ValueError(f"unrecognized frozen composition pair: {pair}")
+    return changed and semantic
+
+
 def palette_structure_metric(
     model: PaletteDecoder, dataset_path: str | None, split: str
 ) -> tuple[float | None, list[dict[str, Any]]]:
@@ -123,7 +177,10 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     prompts: list[str] = []
     for concept in v2["concepts"].values():
         prompts.extend(concept["prompts"])
-    prompts.extend(v3["buckets"]["explicit_color_controls"])
+    for bucket in v3["buckets"].values():
+        prompts.extend(bucket)
+    for pair in v3["bilingualPairs"]:
+        prompts.extend(pair)
     for item in v3["abstract"]:
         prompts.extend([item["en"], item["ru"], *item["references"], *item["hardNegatives"]])
     for pair in v3["longText"] + v3["compositionContrasts"]:
@@ -186,7 +243,11 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "pass": float(np.linalg.norm(en - ru)) <= 0.08 and float(np.linalg.norm(en - reference)) < float(np.linalg.norm(en - negative)),
         })
     long_rows = [{"en": pair[0], "distance": float(np.linalg.norm(palettes[pair[0]].mean(0) - palettes[pair[1]].mean(0)))} for pair in v3["longText"]]
-    composition_rows = [{"pair": pair, "distance": float(np.linalg.norm(palettes[pair[0]].mean(0) - palettes[pair[1]].mean(0)))} for pair in v3["compositionContrasts"]]
+    composition_rows = [{
+        "pair": pair,
+        "distance": float(np.linalg.norm(palettes[pair[0]].mean(0) - palettes[pair[1]].mean(0))),
+        "pass": composition_semantics_pass(pair, palettes[pair[0]], palettes[pair[1]]),
+    } for pair in v3["compositionContrasts"]]
     ood_rows = []
     for group in v3["oodParaphraseGroups"]:
         means = np.stack([palettes[prompt].mean(0) for prompt in group])
@@ -198,17 +259,23 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "green glass in a dark nightclub": "glass",
     }
     adversarial_rows = [
-        {"prompt": prompt, "base": adversarial_base[prompt], "distance": float(np.linalg.norm(palettes[prompt].mean(0) - palettes[adversarial_base[prompt]].mean(0)))}
+        {"prompt": prompt, "base": adversarial_base[prompt], "distance": float(np.linalg.norm(palettes[prompt].mean(0) - palettes[adversarial_base[prompt]].mean(0))), "pass": adversarial_semantics_pass(prompt, palettes[prompt], palettes[adversarial_base[prompt]])}
         for prompt in v3["adversarialComposition"]
     ]
     all_palette_values = list(palettes.values())
     near_duplicate_rate = float(np.mean([_pairwise_min(palette) < 0.025 for palette in all_palette_values]))
+    bilingual_rows = [{
+        "pair": pair,
+        "distance": float(np.linalg.norm(palettes[pair[0]].mean(0) - palettes[pair[1]].mean(0))),
+    } for pair in v3["bilingualPairs"]]
     engineering_embedding = embeddings[prompt_index["rain"]]
     count_passes, inactive_passes, gamut_passes = [], [], []
     for count in range(2, 10):
         with torch.no_grad():
             raw = model(*_inputs(engineering_embedding, count, 42)).numpy()[0]
-        count_passes.append(raw[:count].shape[0] == count)
+        decoded = decode_raw(raw, count)
+        distinct = {tuple(round(channel, 4) for channel in color["srgb"]) for color in decoded}
+        count_passes.append(len(decoded) == count and len(distinct) == count)
         inactive_passes.append(bool(np.all(raw[count:] == 0)))
         gamut_passes.append(all(
             all(-1e-4 <= channel <= 1.0001 for channel in color["srgb"])
@@ -252,21 +319,23 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "directEn": float(np.mean([row["pass"] for row in direct_rows if not any("а" <= c.lower() <= "я" for c in row["prompt"])])),
         "directRu": float(np.mean([row["pass"] for row in direct_rows if any("а" <= c.lower() <= "я" for c in row["prompt"])])),
         "exclusion": float(np.mean([row["pass"] for row in direct_rows if row["prompt"] in {"not red", "without green"}])),
-        "cleanMultiColor": 1.0 - near_duplicate_rate,
+        "cleanMultiColor": clean_multicolor_rate(all_palette_values),
         "nearDuplicateRate": near_duplicate_rate,
         "paletteStructureWinRate": structure_rate,
         "basicConcepts": category_rates.get("basic_objects", 0.0),
         "nature": category_rates.get("nature", 0.0),
         "weatherScenes": category_rates.get("weather", 0.0),
-        "materials": category_rates.get("basic_objects", 0.0),
+        "materials": float(np.mean([row["pass"] for row in family_rows if row["expected"] in {"rust", "gold", "ice"}])),
+        "placesInteriors": category_rates.get("places", 0.0),
+        "lighting": category_rates.get("light", 0.0),
         "stylesMedia": category_rates.get("styles", 0.0),
         "compositions": category_rates.get("compositions", 0.0),
         "oodParaphrases": float(np.mean([row["maximumDistance"] <= 0.10 for row in ood_rows])),
         "heldOutRelated": float(np.mean([row["maximumDistance"] <= 0.12 for row in ood_rows[2:]])),
-        "ruEnSemanticAgreement": float(np.mean([row["distance"] <= 0.08 for row in long_rows])),
+        "ruEnSemanticAgreement": float(np.mean([row["distance"] <= 0.08 for row in bilingual_rows])),
         "abstractConceptGate": all(row["pass"] for row in abstract_rows),
-        "longPromptGate": all(row["distance"] <= 0.10 for row in long_rows) and all(row["distance"] >= 0.025 for row in composition_rows),
-        "adversarialCompositionGate": all(row["distance"] >= 0.025 for row in adversarial_rows),
+        "longPromptGate": all(row["distance"] <= 0.10 for row in long_rows) and all(row["pass"] for row in composition_rows),
+        "adversarialCompositionGate": all(row["pass"] for row in adversarial_rows),
         "count": float(np.mean(count_passes)),
         "inactive": float(np.mean(inactive_passes)),
         "locks": float(lock_exact and lock_conditioning),
@@ -296,6 +365,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "metrics": metrics, "categoryRates": category_rates, "familyRows": family_rows,
         "directRows": direct_rows, "abstractRows": abstract_rows, "longRows": long_rows,
         "compositionRows": composition_rows, "oodRows": ood_rows, "adversarialRows": adversarial_rows,
+        "bilingualRows": bilingual_rows,
         "paletteStructureRows": structure_rows,
         "engineeringRows": {
             "seedMeanOklabDistances": seed_distances,
