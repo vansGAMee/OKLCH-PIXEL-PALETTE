@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import math
+import os
 import re
 import shutil
 import sys
@@ -211,6 +212,9 @@ class DiskBudget:
         if self.target_bytes >= self.hard_bytes:
             raise ValueError("target disk budget must be below hard disk budget")
         self._tracked_artifacts: set[Path] = set()
+        self._tracked_bytes: int | None = None
+        self._last_reconcile: float = 0.0
+        self._lock = threading.RLock()
 
     def free_bytes(self) -> int:
         anchor = self.raw_dir if self.raw_dir.exists() else self.raw_dir.parent
@@ -243,13 +247,36 @@ class DiskBudget:
 
     def track_artifact(self, path: Path) -> None:
         resolved = path.resolve()
-        if not self._covered_by_primary_tree(resolved):
-            self._tracked_artifacts.add(resolved)
+        with self._lock:
+            if not self._covered_by_primary_tree(resolved):
+                if resolved not in self._tracked_artifacts:
+                    self._tracked_artifacts.add(resolved)
+                    if self._tracked_bytes is not None and resolved.is_file():
+                        self._tracked_bytes += resolved.stat().st_size
 
-    def usage(self) -> int:
-        return get_disk_usage_bytes(
-            [self.raw_dir, self.cache_dir, *sorted(self._tracked_artifacts)]
-        )
+    def reconcile(self) -> int:
+        with self._lock:
+            self._tracked_bytes = get_disk_usage_bytes(
+                [self.raw_dir, self.cache_dir, *sorted(self._tracked_artifacts)]
+            )
+            self._last_reconcile = time.time()
+            return self._tracked_bytes
+
+    def usage(self, force_scan: bool = False) -> int:
+        with self._lock:
+            now = time.time()
+            if (
+                self._tracked_bytes is None
+                or force_scan
+                or (now - self._last_reconcile > 60.0)
+            ):
+                return self.reconcile()
+            return self._tracked_bytes
+
+    def add_bytes(self, byte_count: int) -> None:
+        with self._lock:
+            if self._tracked_bytes is not None:
+                self._tracked_bytes += int(byte_count)
 
     def before_download(self) -> bool:
         self._check_free_space()
@@ -346,10 +373,12 @@ _OPENVERSE_COOLDOWN_UNTIL: float = 0.0
 _OPENVERSE_CONSECUTIVE_429: int = 0
 _OPENVERSE_LAST_SEARCH_TIME: float = 0.0
 _OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
-_OPENVERSE_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+_OPENVERSE_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _OPENVERSE_UNAVAILABLE: bool = False
-_MET_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
-_ARTIC_QUERY_CACHE: dict[tuple[str, int], list[dict[str, Any]]] = {}
+_MET_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+_MET_SEARCH_CACHE: dict[str, list[Any]] = {}
+_ARTIC_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+_GLOBAL_DEDUP_LOCK = threading.RLock()
 _DOWNLOAD_WORKERS = 6
 _METADATA_WORKERS = 8
 _ACQUISITION_STATE_PATH: Path | None = None
@@ -373,8 +402,8 @@ def configure_acquisition_runtime(
 ) -> None:
     global _ACQUISITION_STATE_PATH, _ACQUISITION_STATE
     global _DOWNLOAD_WORKERS, _METADATA_WORKERS, _OPENVERSE_UNAVAILABLE
-    if not 1 <= download_workers <= 16 or not 1 <= metadata_workers <= 16:
-        raise ValueError("acquisition worker counts must be in 1..16")
+    if not 1 <= download_workers <= 64 or not 1 <= metadata_workers <= 64:
+        raise ValueError("acquisition worker counts must be in 1..64")
     _DOWNLOAD_WORKERS = int(download_workers)
     _METADATA_WORKERS = int(metadata_workers)
     _ACQUISITION_STATE_PATH = state_path
@@ -1047,12 +1076,21 @@ def load_metadata_index(
     records: dict[str, dict[str, Any]] = {}
     phashes: list[str] = []
     invalid = 0
-    for raw in payload.get("records", []):
+    raw_records = payload.get("records", [])
+
+    def _validate_one(raw: Any) -> tuple[bool, dict[str, Any] | None]:
         if not isinstance(raw, dict):
-            invalid += 1
-            continue
-        valid = validate_cached_record(raw, raw_dir)
-        if valid is None:
+            return False, None
+        v = validate_cached_record(raw, raw_dir)
+        return (v is not None), v
+
+    with ThreadPoolExecutor(
+        max_workers=min(16, max(1, os.cpu_count() or 4))
+    ) as executor:
+        results = list(executor.map(_validate_one, raw_records))
+
+    for is_valid, valid in results:
+        if not is_valid or valid is None:
             invalid += 1
             continue
         sha = str(valid["content_sha256"])
@@ -1109,26 +1147,33 @@ def store_image_record(
     seen_phashes: list[str],
     disk: DiskBudget,
     stats: dict[str, int],
+    seen_urls: set[str] | None = None,
+    seen_image_ids: set[str] | None = None,
+    dedup_lock: Any | None = None,
 ) -> dict[str, Any] | None:
+    _lock = dedup_lock or _GLOBAL_DEDUP_LOCK
     disk.before_write(len(image_bytes))
     sha = sha256_bytes(image_bytes)
-    if sha in seen_hashes:
-        stats["exact_duplicates"] = stats.get("exact_duplicates", 0) + 1
-        return None
+    with _lock:
+        if sha in seen_hashes:
+            stats["exact_duplicates"] = stats.get("exact_duplicates", 0) + 1
+            return None
 
     try:
         rgb, extension = decode_image_bytes(image_bytes)
     except Exception:
-        stats["invalid_images"] = stats.get("invalid_images", 0) + 1
+        with _lock:
+            stats["invalid_images"] = stats.get("invalid_images", 0) + 1
         return None
 
     phash = perceptual_hash64(rgb)
-    if any(phash_distance(phash, existing) <= NEAR_DUP_HAMMING for existing in seen_phashes):
-        stats["near_duplicates"] = stats.get("near_duplicates", 0) + 1
-        return None
+    with _lock:
+        if any(phash_distance(phash, existing) <= NEAR_DUP_HAMMING for existing in seen_phashes):
+            stats["near_duplicates"] = stats.get("near_duplicates", 0) + 1
+            return None
 
     dest = raw_dir / f"{prefix}_{sha[:20]}{extension}"
-    tmp = dest.with_name(dest.name + ".tmp")
+    tmp = dest.with_name(f"{dest.name}.{threading.get_ident()}.tmp")
     tmp.write_bytes(image_bytes)
     try:
         with Image.open(tmp) as check:
@@ -1136,12 +1181,21 @@ def store_image_record(
             check.convert("RGB")
     except Exception:
         tmp.unlink(missing_ok=True)
-        stats["invalid_images"] = stats.get("invalid_images", 0) + 1
+        with _lock:
+            stats["invalid_images"] = stats.get("invalid_images", 0) + 1
         return None
     tmp.replace(dest)
 
-    seen_hashes.add(sha)
-    seen_phashes.append(phash)
+    with _lock:
+        seen_hashes.add(sha)
+        seen_phashes.append(phash)
+        if seen_urls is not None:
+            if record.get("source_url"):
+                seen_urls.add(str(record["source_url"]))
+            if record.get("downloaded_url"):
+                seen_urls.add(str(record["downloaded_url"]))
+        if seen_image_ids is not None and record.get("image_id"):
+            seen_image_ids.add(str(record["image_id"]))
 
     out = dict(record)
     out.update(
@@ -1362,7 +1416,9 @@ class OpenImagesBboxIndex:
             f"records across {len(self.records_by_class)} mapped classes."
         )
 
-    def get_records(self, concept_id: str, max_count: int) -> list[dict[str, Any]]:
+    def get_records(
+        self, concept_id: str, max_count: int, offset: int = 0
+    ) -> list[dict[str, Any]]:
         self.load()
         names = CONCEPT_TO_OPENIMAGES_CLASSES.get(concept_id, ())
         found: list[dict[str, Any]] = []
@@ -1376,23 +1432,27 @@ class OpenImagesBboxIndex:
                     continue
                 found.append(dict(record))
                 used_images.add(record["image_id"])
-                if len(found) >= max_count:
-                    return found
-        return found
+        return found[offset : offset + max_count]
 
 
-def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
-    cache_key = (query.strip().lower(), limit)
+def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[str, Any]]:
+    cache_key = (query.strip().lower(), limit, offset)
     if cache_key in _MET_QUERY_CACHE:
         return [dict(record) for record in _MET_QUERY_CACHE[cache_key]]
-    search_url = (
-        "https://collectionapi.metmuseum.org/public/collection/v1/search"
-        f"?q={urllib.parse.quote(query)}&hasImages=true"
-    )
-    search = fetch_json(search_url, timeout=10, max_retries=1)
-    if not search:
+    norm_query = query.strip().lower()
+    if norm_query not in _MET_SEARCH_CACHE:
+        search_url = (
+            "https://collectionapi.metmuseum.org/public/collection/v1/search"
+            f"?q={urllib.parse.quote(query)}&hasImages=true"
+        )
+        search = fetch_json(search_url, timeout=10, max_retries=1)
+        _MET_SEARCH_CACHE[norm_query] = list(search.get("objectIDs") or []) if search else []
+
+    all_ids = _MET_SEARCH_CACHE[norm_query]
+    object_ids = all_ids[offset : offset + limit]
+    if not object_ids:
         return []
-    object_ids = list(search.get("objectIDs") or [])[:limit]
+
     def load_object(object_id: Any) -> tuple[Any, dict[str, Any] | None]:
         return object_id, fetch_json(
             "https://collectionapi.metmuseum.org/public/collection/v1/objects/"
@@ -1443,8 +1503,8 @@ def met_candidates(query: str, limit: int = 36) -> list[dict[str, Any]]:
     return [dict(record) for record in out]
 
 
-def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
-    cache_key = (query.strip().lower(), limit)
+def artic_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[str, Any]]:
+    cache_key = (query.strip().lower(), limit, page)
     if cache_key in _ARTIC_QUERY_CACHE:
         return [dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]]
     url = (
@@ -1453,6 +1513,7 @@ def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
         "&query[term][is_public_domain]=true"
         "&fields=id,title,artist_display,image_id,is_public_domain"
         f"&limit={int(limit)}"
+        f"&page={int(page)}"
     )
     payload = fetch_json(url, timeout=10, max_retries=1)
     if not payload:
@@ -1496,11 +1557,11 @@ def artic_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
     return [dict(record) for record in out]
 
 
-def openverse_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
+def openverse_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[str, Any]]:
     global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME
     if _OPENVERSE_UNAVAILABLE:
         return []
-    cache_key = (query.strip().lower(), limit)
+    cache_key = (query.strip().lower(), limit, page)
     if cache_key in _OPENVERSE_QUERY_CACHE:
         return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
     if time.time() < _OPENVERSE_COOLDOWN_UNTIL:
@@ -1516,6 +1577,7 @@ def openverse_candidates(query: str, limit: int = 24) -> list[dict[str, Any]]:
         f"?q={urllib.parse.quote(query)}"
         "&license=pdm,cc0,by"
         f"&page_size={min(80, int(limit))}"
+        f"&page={int(page)}"
     )
     payload = fetch_json(url, timeout=20)
     if not payload:
@@ -1693,27 +1755,49 @@ def acquire_for_concept(
     disk: DiskBudget,
     stats: dict[str, int],
     open_images: OpenImagesBboxIndex,
+    seen_urls: set[str] | None = None,
+    seen_image_ids: set[str] | None = None,
+    dedup_lock: Any | None = None,
 ) -> list[dict[str, Any]]:
     if max_count <= 0:
         return []
 
     crop_required = bool(concept.get("crop_required", False))
     query = str(concept["retrieval_query"])
+    cid = str(concept["concept_id"])
     source_lists: dict[str, list[dict[str, Any]]] = {}
+
+    with _ACQUISITION_STATE_LOCK:
+        offsets = _ACQUISITION_STATE.setdefault("conceptOffsets", {}).setdefault(
+            cid, {"met": 0, "artic": 1, "openverse": 1, "open_images": 0}
+        )
 
     def _get_candidates(src: str) -> list[dict[str, Any]]:
         if src not in source_lists:
             if src == "open_images":
-                source_lists[src] = open_images.get_records(
-                    str(concept["concept_id"]),
+                cur_off = offsets.get("open_images", 0)
+                records = open_images.get_records(
+                    cid,
                     max_count=max(max_count * 4, 20),
+                    offset=cur_off,
                 )
+                offsets["open_images"] = cur_off + len(records)
+                source_lists[src] = records
             elif src == "met":
-                source_lists[src] = met_candidates(query)
+                cur_off = offsets.get("met", 0)
+                records = met_candidates(query, limit=max(max_count * 3, 36), offset=cur_off)
+                offsets["met"] = cur_off + len(records)
+                source_lists[src] = records
             elif src == "artic":
-                source_lists[src] = artic_candidates(query)
+                cur_page = offsets.get("artic", 1)
+                records = artic_candidates(query, limit=max(max_count * 2, 24), page=cur_page)
+                offsets["artic"] = cur_page + 1
+                source_lists[src] = records
             elif src == "openverse":
-                source_lists[src] = openverse_candidates(query)
+                cur_page = offsets.get("openverse", 1)
+                records = openverse_candidates(query, limit=max(max_count * 2, 24), page=cur_page)
+                offsets["openverse"] = cur_page + 1
+                source_lists[src] = records
             else:
                 source_lists[src] = []
         return source_lists[src]
@@ -1732,7 +1816,18 @@ def acquire_for_concept(
     for offset in range(max((len(bucket) for bucket in source_buckets), default=0)):
         for bucket in source_buckets:
             if offset < len(bucket):
-                candidates.append(bucket[offset])
+                cand = bucket[offset]
+                img_id = str(cand.get("image_id") or "")
+                src_url = str(cand.get("source_url") or "")
+                fb_url = str(cand.get("source_url_fallback") or "")
+                if seen_image_ids is not None and img_id and img_id in seen_image_ids:
+                    continue
+                if seen_urls is not None and src_url and src_url in seen_urls:
+                    continue
+                if seen_urls is not None and fb_url and fb_url in seen_urls:
+                    continue
+                candidates.append(cand)
+
     results: list[dict[str, Any]] = []
     batch_width = max(_DOWNLOAD_WORKERS, max_count * 2)
     with ThreadPoolExecutor(max_workers=_DOWNLOAD_WORKERS) as executor:
@@ -1766,6 +1861,9 @@ def acquire_for_concept(
                     seen_phashes=seen_phashes,
                     disk=disk,
                     stats=stats,
+                    seen_urls=seen_urls,
+                    seen_image_ids=seen_image_ids,
+                    dedup_lock=dedup_lock,
                 )
                 if stored is not None:
                     results.append(stored)
@@ -2302,6 +2400,21 @@ def acquire_full_records(
     )
     per_concept = min(max(per_concept, 1), per_concept_cap)
 
+    seen_urls: set[str] = {
+        str(r.get("downloaded_url"))
+        for r in cached_records.values()
+        if r.get("downloaded_url")
+    } | {
+        str(r.get("source_url"))
+        for r in cached_records.values()
+        if r.get("source_url")
+    }
+    seen_image_ids: set[str] = {
+        str(r.get("image_id"))
+        for r in cached_records.values()
+        if r.get("image_id")
+    }
+
     for index, concept in enumerate(concepts):
         cid = str(concept["concept_id"])
         cached = [
@@ -2327,6 +2440,8 @@ def acquire_full_records(
                 disk=disk,
                 stats=stats,
                 open_images=open_images,
+                seen_urls=seen_urls,
+                seen_image_ids=seen_image_ids,
             )
             for record in records:
                 cached_records[record["content_sha256"]] = record
@@ -3404,128 +3519,208 @@ def build_c11_dataset(
         import threading
         import time
         import math
-        
-        task_queue = queue.Queue()
-        target_per_concept = desired_valid // max(1, len(concepts))
-        
-        concept_state = {}
-        for cid in concepts:
-            count_valid = sum(1 for r in valid if r.get("concept_id") == cid)
-            count_attempted = sum(1 for r in acquired if r.get("concept_id") == cid)
+
+        seen_urls: set[str] = {
+            str(r.get("downloaded_url"))
+            for r in cached_records.values()
+            if r.get("downloaded_url")
+        } | {
+            str(r.get("source_url"))
+            for r in cached_records.values()
+            if r.get("source_url")
+        }
+        seen_image_ids: set[str] = {
+            str(r.get("image_id"))
+            for r in cached_records.values()
+            if r.get("image_id")
+        }
+
+        task_queue: queue.Queue = queue.Queue()
+        result_queue: queue.Queue = queue.Queue()
+        dedup_lock = threading.RLock()
+
+        concept_state: dict[str, dict[str, Any]] = {}
+        for c in concepts:
+            cid = str(c["concept_id"])
+            c_valid = sum(1 for r in valid if str(r.get("concept_id")) == cid)
+            c_attempted = sum(1 for r in acquired if str(r.get("concept_id")) == cid)
             concept_state[cid] = {
-                "valid": count_valid,
-                "attempted": count_attempted,
+                "concept_id": cid,
+                "concept": c,
+                "valid": c_valid,
+                "attempted": c_attempted,
                 "inflight": 0,
-                "exhausted": False
+                "exhausted": False,
+                "consecutive_empty": 0,
             }
-            
-        def fetch_worker():
+
+        num_fetch_workers = 3
+
+        def fetch_worker() -> None:
             while True:
                 task = task_queue.get()
-                if task is None: break
-                state, needed = task
+                if task is None:
+                    task_queue.task_done()
+                    break
+                cid, concept, scheduled_amount = task
                 try:
-                    records, open_images_out = acquire_for_concept(
-                        concept_id=cid,
-                        query=concepts[cid],
+                    allowed = (
+                        ("open_images",)
+                        if bool(concept.get("crop_required", False))
+                        else ("met", "artic", "openverse")
+                    )
+                    records = acquire_for_concept(
+                        concept=concept,
                         raw_dir=raw_dir,
-                        limit=state["attempted"] + needed,
-                        cached_records=cached_records,
+                        max_count=scheduled_amount,
+                        allowed_sources=allowed,
                         seen_hashes=seen_hashes,
                         seen_phashes=seen_phashes,
                         disk=disk,
                         stats=stats,
-                        open_images=open_images
+                        open_images=open_images,
+                        seen_urls=seen_urls,
+                        seen_image_ids=seen_image_ids,
+                        dedup_lock=dedup_lock,
                     )
-                    state["attempted"] = max(state["attempted"], len(records))
-                    if len(records) < state["attempted"] + needed:
-                        state["exhausted"] = True
-                    result_queue.put((cid, records, state))
-                except Exception as e:
-                    print(f"Fetch error for {cid}: {e}")
-                    state["exhausted"] = True
-                    result_queue.put((cid, [], state))
-                task_queue.task_done()
-                
-        result_queue = queue.Queue()
-        fetch_thread = threading.Thread(target=fetch_worker, daemon=True)
-        fetch_thread.start()
-        
-        def schedule_fetches():
-            if task_queue.qsize() > 2: return
-            underfilled = []
-            for cid, state in concept_state.items():
-                if state["exhausted"]: continue
-                deficit = target_per_concept - state["valid"] - state["inflight"]
-                if deficit > 0:
-                    underfilled.append((deficit, cid, state))
-            underfilled.sort(key=lambda x: x[0], reverse=True)
-            for deficit, cid, state in underfilled[:4]:
-                if state["attempted"] == 0:
-                    needed = deficit * 4
+                    result_queue.put((cid, concept, scheduled_amount, records, None))
+                except Exception as exc:
+                    result_queue.put((cid, concept, scheduled_amount, [], exc))
+                finally:
+                    task_queue.task_done()
+
+        threads = []
+        for _ in range(num_fetch_workers):
+            t = threading.Thread(target=fetch_worker, daemon=True)
+            t.start()
+            threads.append(t)
+
+        def schedule_fetches() -> None:
+            if task_queue.qsize() >= 4:
+                return
+            active = [
+                s
+                for s in concept_state.values()
+                if not s["exhausted"] and s["inflight"] == 0
+            ]
+            if not active:
+                return
+            active.sort(key=lambda s: s["valid"])
+
+            global_deficit = desired_valid - len(valid)
+            if global_deficit <= 0:
+                return
+
+            base_target = max(8, math.ceil(desired_valid / max(1, len(concepts))))
+
+            for s in active[:4]:
+                cid = s["concept_id"]
+                c = s["concept"]
+                if s["attempted"] > 0:
+                    acc_rate = max(0.05, min(1.0, s["valid"] / s["attempted"]))
                 else:
-                    acc_rate = state["valid"] / state["attempted"]
-                    safe_rate = max(0.05, acc_rate)
-                    needed = math.ceil(deficit / safe_rate)
-                needed = min(needed, 32)
-                state["inflight"] += needed
-                task_queue.put((state, needed))
-                
+                    acc_rate = 0.25
+
+                concept_deficit = base_target - s["valid"]
+                if concept_deficit <= 0:
+                    concept_deficit = max(
+                        2, min(8, math.ceil(global_deficit / max(1, len(active))))
+                    )
+
+                needed_candidates = math.ceil(concept_deficit / acc_rate)
+                schedule_amount = max(2, min(32, needed_candidates))
+                s["inflight"] += schedule_amount
+                task_queue.put((cid, c, schedule_amount))
+
         schedule_fetches()
-        
+
         start_time = time.time()
         valid_at_start = len(valid)
-        
+
         while len(valid) < desired_valid:
             if limit_images is not None and len(acquired) >= limit_images:
                 break
             if not disk.before_download():
                 break
-            
+            all_exhausted = all(s["exhausted"] for s in concept_state.values())
+            if (
+                all_exhausted
+                and all(s["inflight"] == 0 for s in concept_state.values())
+                and task_queue.empty()
+            ):
+                print("All candidate concepts exhausted.")
+                break
+
             try:
-                cid, records, state = result_queue.get(timeout=2.0)
+                cid, concept, scheduled_amount, records, exc = result_queue.get(
+                    timeout=2.0
+                )
             except queue.Empty:
-                if task_queue.empty() and all(s["inflight"] == 0 for s in concept_state.values()):
+                if task_queue.empty() and all(
+                    s["inflight"] == 0 for s in concept_state.values()
+                ):
                     break
+                schedule_fetches()
                 continue
-                
-            state["inflight"] = max(0, state["inflight"] - len(records))
-            if not records: continue
-            
-            acquired.extend(records)
-            write_metadata_index(index_path, cached_records, disk=disk)
-            
-            new_valid, _, cache_hits, pass_crop_stats = score_records_with_cache(
-                acquired=records,
-                concept_map=concept_map,
-                model=model,
-                processor=processor,
-                tokenizer=tokenizer,
-                device=resolved_device,
-                threshold=threshold,
-                cache=relevance_cache,
-                cache_path=relevance_cache_path,
-                cache_fingerprint=relevance_fingerprint,
-                disk=disk,
-            )
-            for key, value in pass_crop_stats.items():
-                crop_stats[key] += value
-            valid.extend(new_valid)
-            state["valid"] += len(new_valid)
-            
-            elapsed = time.time() - start_time
-            valid_gained = len(valid) - valid_at_start
-            valid_per_sec = valid_gained / elapsed if elapsed > 0 else 0
-            deficit_remaining = desired_valid - len(valid)
-            eta_sec = deficit_remaining / valid_per_sec if valid_per_sec > 0 else 0
-            
-            print(f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} (latest {cid}: fetched {len(records)} -> valid {len(new_valid)})")
-            if valid_per_sec > 0:
-                print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
-            
+
+            state = concept_state[cid]
+            state["inflight"] = max(0, state["inflight"] - scheduled_amount)
+
+            if exc is not None:
+                state["consecutive_empty"] += 1
+                if state["consecutive_empty"] >= 3:
+                    state["exhausted"] = True
+            elif len(records) == 0:
+                state["consecutive_empty"] += 1
+                if state["consecutive_empty"] >= 2:
+                    state["exhausted"] = True
+            else:
+                state["consecutive_empty"] = 0
+                state["attempted"] += len(records)
+                for r in records:
+                    cached_records[str(r["content_sha256"])] = r
+                acquired.extend(records)
+                write_metadata_index(index_path, cached_records, disk=disk)
+
+                new_valid, _, cache_hits, pass_crop_stats = score_records_with_cache(
+                    acquired=records,
+                    concept_map=concept_map,
+                    model=model,
+                    processor=processor,
+                    tokenizer=tokenizer,
+                    device=resolved_device,
+                    threshold=threshold,
+                    cache=relevance_cache,
+                    cache_path=relevance_cache_path,
+                    cache_fingerprint=relevance_fingerprint,
+                    disk=disk,
+                )
+                for key, value in pass_crop_stats.items():
+                    crop_stats[key] += value
+                valid.extend(new_valid)
+                state["valid"] += len(new_valid)
+
+                elapsed = time.time() - start_time
+                valid_gained = len(valid) - valid_at_start
+                valid_per_sec = valid_gained / elapsed if elapsed > 0 else 0
+                deficit_remaining = max(0, desired_valid - len(valid))
+                eta_sec = (
+                    deficit_remaining / valid_per_sec if valid_per_sec > 0 else 0
+                )
+
+                print(
+                    f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} "
+                    f"(latest {cid}: fetched {len(records)} -> valid {len(new_valid)})"
+                )
+                if valid_per_sec > 0:
+                    print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
+
             schedule_fetches()
-            
-        task_queue.put(None)
+
+        for _ in threads:
+            task_queue.put(None)
+        for t in threads:
+            t.join(timeout=2.0)
 
         if limit_images is None and len(valid) < FULL_MIN_UNIQUE_IMAGES:
             raise RuntimeError(
@@ -3681,8 +3876,8 @@ def main() -> None:
     parser.add_argument("--calibration-min-tpr", type=float, default=0.85)
     parser.add_argument("--calibration-min-balanced-accuracy", type=float, default=0.80)
     parser.add_argument("--calibration-max-fpr", type=float, default=0.35)
-    parser.add_argument("--download-workers", type=int, default=6)
-    parser.add_argument("--metadata-workers", type=int, default=8)
+    parser.add_argument("--download-workers", type=int, default=16)
+    parser.add_argument("--metadata-workers", type=int, default=16)
     parser.add_argument("--checkpoint-every", type=int, default=10)
     args = parser.parse_args()
 
