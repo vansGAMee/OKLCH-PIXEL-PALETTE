@@ -31,6 +31,7 @@ THRESHOLDS = {
 }
 BOOLEAN_GATES = [
     "abstractConceptGate", "longPromptGate", "adversarialCompositionGate",
+    "crossPromptCollapseGate", "sealedSemanticTestGate",
     "pytorchOnnxParity", "onnxBrowserParity", "realBrowserSemanticSmoke",
 ]
 
@@ -85,6 +86,8 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
         failures.append("manifest decoder path/hash/size does not match the artifact")
     if sources.get("benchmarkId") not in (None, "palettebrain-candidate11-semantic-v3-frozen-2026-08-26"):
         failures.append("semantic evidence is not from the frozen v3 benchmark")
+    if not sources.get("semanticTestSha256"):
+        failures.append("sealed semantic TEST artifact SHA is missing")
 
     passed = not failures
     report = {

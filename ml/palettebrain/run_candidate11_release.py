@@ -133,6 +133,11 @@ def phase_dependency_fingerprint(name: str) -> str:
         path = (ML / relative_name).resolve()
         digest.update(relative_name.encode("utf-8"))
         digest.update(sha256_file(path).encode("ascii"))
+    if name in {"repaired_training_dataset", "stage_a", "stage_b"}:
+        source = SMOKE_SOURCE if "smoke" in TRAIN_DATA.name else FULL_SOURCE
+        if source.is_file():
+            digest.update(b"visual-source-sha256")
+            digest.update(sha256_file(source).encode("ascii"))
     return digest.hexdigest()
 
 
@@ -146,6 +151,19 @@ def load_json(path: Path) -> dict[str, Any]:
         return value if isinstance(value, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def training_artifact_matches_source(
+    report_path: Path, training_path: Path, source_path: Path
+) -> bool:
+    report = load_json(report_path)
+    return (
+        training_path.is_file()
+        and source_path.is_file()
+        and report.get("pass") is True
+        and report.get("sha256") == sha256_file(training_path)
+        and report.get("sourceSha256") == sha256_file(source_path)
+    )
 
 
 def atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -185,8 +203,15 @@ def source_valid(report_path: Path, output: Path, minimum: int) -> tuple[bool, d
 
 def dataset_valid() -> tuple[bool, dict[str, Any]]:
     report = load_json(REPORTS / "candidate-11-repaired-dataset-audit.json")
-    valid = TRAIN_DATA.is_file() and report.get("pass") is True and report.get("sha256") == sha256_file(TRAIN_DATA)
-    return valid, {"recordCount": report.get("recordCount"), "pass": report.get("pass")}
+    source = FULL_SOURCE
+    valid = training_artifact_matches_source(
+        REPORTS / "candidate-11-repaired-dataset-audit.json", TRAIN_DATA, source
+    )
+    return valid, {
+        "recordCount": report.get("recordCount"),
+        "pass": report.get("pass"),
+        "sourceSha256": report.get("sourceSha256"),
+    }
 
 
 def checkpoint_valid(path: Path, stage: str, final_epoch: int) -> tuple[bool, dict[str, Any]]:
@@ -465,9 +490,20 @@ class Runner:
         command = [str(PYTHON), str(ML / "build_c11_dataset.py"), "--input", relative(SMOKE_SOURCE if self.args.engineering_smoke else FULL_SOURCE), "--output", relative(TRAIN_DATA), "--report", relative(report)]
         if self.args.engineering_smoke:
             command.append("--engineering-smoke")
+        source = SMOKE_SOURCE if self.args.engineering_smoke else FULL_SOURCE
+
+        def validate() -> tuple[bool, dict[str, Any]]:
+            current = load_json(report)
+            valid = training_artifact_matches_source(report, TRAIN_DATA, source)
+            return valid, {
+                "recordCount": current.get("recordCount"),
+                "pass": current.get("pass"),
+                "sourceSha256": current.get("sourceSha256"),
+            }
+
         self.phase(
             "repaired_training_dataset",
-            lambda: (TRAIN_DATA.is_file() and load_json(report).get("pass") is True and load_json(report).get("sha256") == sha256_file(TRAIN_DATA), {"recordCount": load_json(report).get("recordCount"), "pass": load_json(report).get("pass")}),
+            validate,
             lambda: self.command("repaired_training_dataset", command),
             TRAIN_DATA,
         )
@@ -651,7 +687,7 @@ class Runner:
             self.command("dev_qualification", [str(PYTHON), str(ML / "qualify_candidate.py"), "--evidence", relative(RELEASE_EVAL), "--parity-report", relative(PARITY), "--manifest", relative(MANIFEST), "--output", relative(DEV_QUALIFICATION), "--no-fail-exit"])
             dev_qualification = load_json(DEV_QUALIFICATION)
             if dev_qualification.get("pass") is True:
-                self.command("sealed_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_B), "--output", relative(SEALED_EVAL), "--dataset", relative(TRAIN_DATA), "--evaluation-split", "test", "--parity-report", relative(PARITY), "--browser-smoke-report", relative(BROWSER_SMOKE), "--device", self.args.device]))
+                self.command("sealed_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_B), "--output", relative(SEALED_EVAL), "--dataset", relative(TRAIN_DATA), "--evaluation-split", "test", "--semantic-test-benchmark", "ml/palettebrain/benchmark_semantic_release.v1.json", "--parity-report", relative(PARITY), "--browser-smoke-report", relative(BROWSER_SMOKE), "--device", self.args.device]))
                 self.command("canonical_qualification", [str(PYTHON), str(ML / "qualify_candidate.py"), "--evidence", relative(SEALED_EVAL), "--parity-report", relative(PARITY), "--manifest", relative(MANIFEST), "--output", relative(QUALIFICATION), "--no-fail-exit"])
             else:
                 qualification = dict(dev_qualification)

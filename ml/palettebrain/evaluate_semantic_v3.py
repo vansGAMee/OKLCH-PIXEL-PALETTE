@@ -68,6 +68,68 @@ def clean_multicolor_rate(palettes: list[np.ndarray]) -> float:
     ]))
 
 
+def palette_set_distance(left: np.ndarray, right: np.ndarray) -> float:
+    """Symmetric, count-aware perceptual distance between two OKLab palettes."""
+    left = np.asarray(left, dtype=np.float64)
+    right = np.asarray(right, dtype=np.float64)
+    if left.ndim != 2 or right.ndim != 2 or left.shape[1:] != (3,) or right.shape[1:] != (3,):
+        raise ValueError("palettes must have shape [count, 3]")
+    if not len(left) or not len(right):
+        return float("inf")
+    distances = np.linalg.norm(left[:, None, :] - right[None, :, :], axis=-1)
+    matched = 0.5 * (distances.min(axis=1).mean() + distances.min(axis=0).mean())
+    count_penalty = abs(len(left) - len(right)) / max(len(left), len(right))
+    return float(matched + 0.04 * count_penalty)
+
+
+def cross_prompt_collapse_metric(
+    palettes: list[np.ndarray], *, distance_threshold: float = 0.04,
+    maximum_rate: float = 0.20,
+) -> tuple[float, bool]:
+    """Detect reuse of effectively identical palettes across distinct prompts.
+
+    The 0.04 OKLab distance is the evaluator's existing frozen clean-palette
+    separation criterion.  Requiring fewer than 20% collapsed prompt pairs is
+    conservative against a constant-palette model while allowing related
+    semantic prompts to remain close.
+    """
+    if len(palettes) < 2:
+        return 0.0, True
+    collapsed = 0
+    pairs = 0
+    for left in range(len(palettes)):
+        for right in range(left + 1, len(palettes)):
+            pairs += 1
+            collapsed += palette_set_distance(palettes[left], palettes[right]) < distance_threshold
+    rate = collapsed / pairs
+    return float(rate), bool(rate < maximum_rate)
+
+
+def _flatten_sealed_prompts(value: dict[str, Any]) -> list[str]:
+    prompts: list[str] = []
+    for group in value.get("groups", {}).values():
+        prompts.extend(str(prompt) for prompt in group)
+    for field in ("modifierPairs", "translationPairs"):
+        for pair in value.get(field, []):
+            prompts.extend(str(prompt) for prompt in pair)
+    prompts.extend(str(prompt) for prompt in value.get("requiredSanityOutputs", []))
+    return list(dict.fromkeys(prompts))
+
+
+def _assert_sealed_test_not_in_training(
+    sealed_prompts: list[str], concept_bank_path: str | Path
+) -> None:
+    bank = json.loads(Path(concept_bank_path).read_text(encoding="utf-8"))
+    training: set[str] = set()
+    for concept in bank.get("concepts", []):
+        training.add(str(concept.get("retrieval_query", "")).strip().lower())
+        training.update(str(value).strip().lower() for value in concept.get("phrasings_en", []))
+        training.update(str(value).strip().lower() for value in concept.get("phrasings_ru", []))
+    overlap = sorted({prompt.strip().lower() for prompt in sealed_prompts} & training)
+    if overlap:
+        raise RuntimeError(f"sealed semantic TEST leaks into training text: {overlap[:10]}")
+
+
 def adversarial_semantics_pass(prompt: str, palette: np.ndarray, base: np.ndarray) -> bool:
     changed = float(np.linalg.norm(palette.mean(0) - base.mean(0))) >= 0.025
     rules = {
@@ -167,6 +229,20 @@ def palette_structure_metric(
 def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     v2 = json.loads(Path(args.benchmark_v2).read_text(encoding="utf-8"))
     v3 = json.loads(Path(args.benchmark_v3).read_text(encoding="utf-8"))
+    sealed_test: dict[str, Any] | None = None
+    sealed_prompts: list[str] = []
+    semantic_test_path = Path(getattr(
+        args, "semantic_test_benchmark", "ml/palettebrain/benchmark_semantic_release.v1.json"
+    ))
+    if args.evaluation_split == "test":
+        sealed_test = json.loads(semantic_test_path.read_text(encoding="utf-8"))
+        if sealed_test.get("frozenBeforeCandidate1") is not True:
+            raise RuntimeError("semantic TEST artifact is not frozen before Candidate 11")
+        sealed_prompts = _flatten_sealed_prompts(sealed_test)
+        _assert_sealed_test_not_in_training(
+            sealed_prompts,
+            getattr(args, "concept_bank", "ml/palettebrain/c11_training_concepts.v1.json"),
+        )
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     model = PaletteDecoder(PaletteDecoderConfig(**checkpoint["model_config"])).eval()
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
@@ -189,6 +265,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         prompts.extend(group)
     prompts.extend(v3["adversarialComposition"])
     prompts.extend(["grass", "blood", "moonlight", "candlelight", "rust", "snow", "hospital", "glass"])
+    prompts.extend(sealed_prompts)
     prompts = list(dict.fromkeys(prompts))
     encoder = load_encoder(device=args.device, cache_dir=args.cache_dir)
     embeddings = embed_texts(prompts, encoder=encoder, batch_size=64)
@@ -264,6 +341,29 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     ]
     all_palette_values = list(palettes.values())
     near_duplicate_rate = float(np.mean([_pairwise_min(palette) < 0.025 for palette in all_palette_values]))
+    collapse_values = [palettes[prompt] for prompt in sealed_prompts] if sealed_prompts else all_palette_values
+    cross_prompt_collapse_rate, cross_prompt_collapse_pass = cross_prompt_collapse_metric(
+        collapse_values
+    )
+    sealed_translation_rows = []
+    sealed_modifier_rows = []
+    if sealed_test is not None:
+        sealed_translation_rows = [{
+            "pair": pair,
+            "distance": palette_set_distance(palettes[pair[0]], palettes[pair[1]]),
+        } for pair in sealed_test.get("translationPairs", [])]
+        sealed_modifier_rows = [{
+            "pair": pair,
+            "distance": palette_set_distance(palettes[pair[0]], palettes[pair[1]]),
+        } for pair in sealed_test.get("modifierPairs", [])]
+    sealed_semantic_test_gate = bool(
+        sealed_test is not None
+        and sealed_translation_rows
+        and sealed_modifier_rows
+        and all(row["distance"] <= 0.08 for row in sealed_translation_rows)
+        and all(row["distance"] >= 0.025 for row in sealed_modifier_rows)
+        and cross_prompt_collapse_pass
+    ) if args.evaluation_split == "test" else False
     bilingual_rows = [{
         "pair": pair,
         "distance": float(np.linalg.norm(palettes[pair[0]].mean(0) - palettes[pair[1]].mean(0))),
@@ -321,6 +421,9 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "exclusion": float(np.mean([row["pass"] for row in direct_rows if row["prompt"] in {"not red", "without green"}])),
         "cleanMultiColor": clean_multicolor_rate(all_palette_values),
         "nearDuplicateRate": near_duplicate_rate,
+        "crossPromptCollapseRate": cross_prompt_collapse_rate,
+        "crossPromptCollapseGate": cross_prompt_collapse_pass,
+        "sealedSemanticTestGate": sealed_semantic_test_gate,
         "paletteStructureWinRate": structure_rate,
         "basicConcepts": category_rates.get("basic_objects", 0.0),
         "nature": category_rates.get("nature", 0.0),
@@ -361,12 +464,16 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "dataset": args.dataset,
             "datasetSha256": _sha256_file(args.dataset) if args.dataset else None,
             "evaluationSplit": args.evaluation_split,
+            "semanticTestBenchmark": semantic_test_path.as_posix() if sealed_test is not None else None,
+            "semanticTestSha256": _sha256_file(semantic_test_path) if sealed_test is not None else None,
         },
         "metrics": metrics, "categoryRates": category_rates, "familyRows": family_rows,
         "directRows": direct_rows, "abstractRows": abstract_rows, "longRows": long_rows,
         "compositionRows": composition_rows, "oodRows": ood_rows, "adversarialRows": adversarial_rows,
         "bilingualRows": bilingual_rows,
         "paletteStructureRows": structure_rows,
+        "sealedTranslationRows": sealed_translation_rows,
+        "sealedModifierRows": sealed_modifier_rows,
         "engineeringRows": {
             "seedMeanOklabDistances": seed_distances,
             "lockRestorationExact": lock_exact,
@@ -390,6 +497,8 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--dataset")
     parser.add_argument("--evaluation-split", default="val", choices=("val", "test"))
+    parser.add_argument("--semantic-test-benchmark", default="ml/palettebrain/benchmark_semantic_release.v1.json")
+    parser.add_argument("--concept-bank", default="ml/palettebrain/c11_training_concepts.v1.json")
     parser.add_argument("--engineering-smoke", action="store_true")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()

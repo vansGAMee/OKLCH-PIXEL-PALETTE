@@ -7,20 +7,22 @@
   "phases": {
     "source_data_preflight": {
       "status": "passed",
+      "dependencyFingerprint": "85fdf1aafbbc2d67d673e9e6488f16fcca8a4f504d8646341b42effb601e8ef9",
       "artifact": "ml/palettebrain/reports/candidate-11-preflight.json",
-      "timestamp": "2026-08-26T13:06:35.163537+00:00",
-      "sha256": "b44344829ea3028572026a2757f6a9695cf2b080b4cde71456929d0601a7e99b",
-      "bytes": 135,
+      "timestamp": "2026-08-28T11:23:45.375108+00:00",
+      "sha256": "44309d38182e7d33ccc509fe63c16ce3ff050e56f20b7a918806e12acbe4f560",
+      "bytes": 207,
       "metrics": {
         "protectedCheckpointsPresent": true
       }
     },
     "smoke_48_images": {
       "status": "passed",
+      "dependencyFingerprint": "8ea288ffec456e3c0b4df43c0b005552c31a222c98bca4bea2e3247d04dfa55a",
       "artifact": "ml/palettebrain/data/palettebrain_c11_smoke_recovered_source.npz",
-      "timestamp": "2026-08-26T13:06:35.165135+00:00",
-      "sha256": "c75e1ae8e39b0ba8ed5bc9ecc92a3a0ccf1368cb36bdad36f89334d4a654fffa",
-      "bytes": 3372588,
+      "timestamp": "2026-08-28T11:29:37.216242+00:00",
+      "sha256": "d3dc729800aa12836faee7c9ab6954652f5acdb4d15070f71ef60c23262a2630",
+      "bytes": 3427884,
       "metrics": {
         "validUniqueImages": 48,
         "minimum": 48
@@ -28,15 +30,17 @@
     },
     "full_visual_source": {
       "status": "running",
-      "timestamp": "2026-08-26T13:06:35.173928+00:00",
+      "dependencyFingerprint": "8ea288ffec456e3c0b4df43c0b005552c31a222c98bca4bea2e3247d04dfa55a",
+      "timestamp": "2026-08-28T11:29:37.227777+00:00",
       "metrics": {
         "validUniqueImages": 0,
-        "minimum": 1500
+        "minimum": 1500,
+        "dependencyFingerprint": "8ea288ffec456e3c0b4df43c0b005552c31a222c98bca4bea2e3247d04dfa55a"
       }
     }
   },
-  "command": "ml/.venv/Scripts/python.exe -u ml/palettebrain/run_candidate11_release.py --device auto --resume",
+  "command": "ml/.venv/Scripts/python.exe -u ml/palettebrain/run_candidate11_release.py --device cuda --resume",
   "logsDirectory": "ml/palettebrain/reports/candidate-11-logs",
-  "updatedAt": "2026-08-26T13:06:35.174455+00:00",
+  "updatedAt": "2026-08-28T11:29:37.229763+00:00",
   "currentPhase": "full_visual_source"
 }

@@ -13,8 +13,10 @@ import torch
 
 try:
     from .evaluate_semantic_v3 import evaluate
+    from .train_candidate11 import training_dependency_fingerprint
 except ImportError:
     from evaluate_semantic_v3 import evaluate
+    from train_candidate11 import training_dependency_fingerprint
 
 
 def selection_key(report: dict[str, Any], validation_loss: float) -> tuple[Any, ...]:
@@ -61,12 +63,24 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
     if not candidates:
         raise RuntimeError("no bounded DEV checkpoint candidates were retained")
     rows: list[dict[str, Any]] = []
+    expected_training_args = {
+        "stage": args.stage,
+        "epochs": 1 if args.engineering_smoke else (30 if args.stage == "a" else 20),
+        "batch_size": 32,
+        "new_lr": 3e-4 if args.stage == "a" else 1e-4,
+        "inherited_lr": 2e-5,
+        "seed": 20260826,
+    }
+    expected_dependency = training_dependency_fingerprint()
     for candidate in candidates:
         checkpoint = torch.load(candidate, map_location="cpu", weights_only=True)
+        candidate_args = checkpoint.get("training_args", {})
         if (
             checkpoint.get("candidate") != "candidate-11"
             or checkpoint.get("stage") != args.stage
             or checkpoint.get("dataset_identity", {}).get("primary") != sha256_file(Path(args.dataset))
+            or checkpoint.get("dependency_fingerprint") != expected_dependency
+            or any(candidate_args.get(key) != value for key, value in expected_training_args.items())
         ):
             continue
         history = checkpoint.get("history", [])
@@ -87,6 +101,8 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
         }
         row["selectionKey"] = list(selection_key(report, validation_loss))
         rows.append(row)
+    if not rows:
+        raise RuntimeError("no compatible bounded DEV checkpoints remain")
     selected = max(rows, key=lambda row: tuple(row["selectionKey"]))
     if selected["selectionKey"][0] != 1:
         raise RuntimeError("all bounded DEV candidates are catastrophically invalid")

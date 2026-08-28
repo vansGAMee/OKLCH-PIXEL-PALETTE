@@ -6,6 +6,7 @@ from ml.palettebrain.evaluate_semantic_v3 import (
     adversarial_semantics_pass,
     clean_multicolor_rate,
     composition_semantics_pass,
+    cross_prompt_collapse_metric,
 )
 
 
@@ -42,3 +43,12 @@ def test_composition_gate_requires_expected_lighting_relation() -> None:
     pair = ["hospital at sunset", "hospital under moonlight"]
     assert composition_semantics_pass(pair, warm, cold)
     assert not composition_semantics_pass(pair, cold, warm)
+
+
+def test_cross_prompt_collapse_rejects_constant_and_accepts_diverse_palettes() -> None:
+    diverse = [_palette(hue) for hue in (10, 70, 140, 220, 290)]
+    rate, passed = cross_prompt_collapse_metric(diverse)
+    assert passed and rate == 0.0
+    constant = [_palette(40) for _ in range(8)]
+    rate, passed = cross_prompt_collapse_metric(constant)
+    assert not passed and rate == 1.0

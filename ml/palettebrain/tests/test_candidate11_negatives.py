@@ -44,3 +44,28 @@ def test_no_valid_negative_is_explicitly_safe() -> None:
     result = build_safe_ranking_negatives(fixture)
     assert not result["ranking_negative_valid"].any()
     assert not result["ranking_negative_color_prior"].any()
+
+
+def test_teacher_distance_cannot_make_equivalent_prior_eligible() -> None:
+    fixture = _fixture()
+    fixture["source_group_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["concept_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["image_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["content_sha256"] = np.asarray(["a", "b", "c", "d"])
+    fixture["color_prior"][1] = fixture["color_prior"][0]
+    fixture["teacher_latent"][1] = np.asarray([1000.0, 1000.0])
+    fixture["color_prior"][2] = np.asarray([0.8, 0.6, 0.0])
+    result = build_safe_ranking_negatives(fixture)
+    assert result["ranking_negative_source_group_id"][0] == "c"
+
+
+def test_selects_closest_safe_prior_not_farthest() -> None:
+    fixture = _fixture()
+    fixture["source_group_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["concept_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["image_id"] = np.asarray(["a", "b", "c", "d"])
+    fixture["content_sha256"] = np.asarray(["a", "b", "c", "d"])
+    fixture["color_prior"][1] = np.asarray([0.9, 0.43589, 0.0])
+    fixture["color_prior"][2] = np.asarray([0.0, 1.0, 0.0])
+    result = build_safe_ranking_negatives(fixture)
+    assert result["ranking_negative_source_group_id"][0] == "b"

@@ -251,6 +251,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     history: list[dict[str, Any]] = []
     best_loss = float("inf")
     global_step = 0
+    resume_epoch_progress: dict[str, Any] = {}
     dependency_fingerprint = training_dependency_fingerprint()
     dataset_identity = {
         "primary": _sha256_file(args.data),
@@ -279,6 +280,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             (row["val"]["loss"] for row in history), default=float("inf")
         )))
         global_step = int(resumed.get("global_step", 0))
+        if not resumed.get("epoch_complete", True):
+            resume_epoch_progress = dict(resumed.get("epoch_progress", {}))
         if "python_rng_state" in resumed:
             random.setstate(resumed["python_rng_state"])
         if "numpy_rng_state" in resumed:
@@ -322,7 +325,18 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     ):
         try:
             candidate_checkpoint = torch.load(candidate_path, map_location="cpu", weights_only=True)
-            if candidate_checkpoint.get("dataset_identity") == dataset_identity:
+            candidate_args = candidate_checkpoint.get("training_args", {})
+            compatible_args = all(
+                candidate_args.get(name) == getattr(args, name)
+                for name in ("stage", "batch_size", "new_lr", "inherited_lr", "seed")
+            )
+            if (
+                candidate_checkpoint.get("candidate") == "candidate-11"
+                and candidate_checkpoint.get("stage") == args.stage
+                and candidate_checkpoint.get("dataset_identity") == dataset_identity
+                and candidate_checkpoint.get("dependency_fingerprint") == dependency_fingerprint
+                and compatible_args
+            ):
                 bounded_candidates.append({
                     "path": str(candidate_path),
                     "valLoss": float(candidate_checkpoint["history"][-1]["val"]["loss"]),
@@ -337,6 +351,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         epoch_complete: bool,
         batch_in_epoch: int,
         actual_visual_fraction: float,
+        epoch_progress: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         return {
             "candidate": "candidate-11", "stage": args.stage, "epoch": epoch,
@@ -347,6 +362,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "dataset_identity": dataset_identity,
             "dependency_fingerprint": dependency_fingerprint,
             "global_step": global_step,
+            "epoch_progress": epoch_progress or {},
             "parameter_contract": parameter_contract,
             "dataset_mixture": mixture,
             "sampler_state": {
@@ -358,7 +374,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "loss_contract": {
                 "paletteStructure": "SmoothL1 pairwise physical OKLab geometry after matching and lock restoration",
                 "paletteStructureWeight": 0.20,
-                "rankingNegativeVersion": "c11-safe-ranking-negative-v1",
+                "rankingNegativeVersion": "c11-safe-ranking-negative-v2-color-prior-hard",
             },
             "python_rng_state": random.getstate(),
             "numpy_rng_state": {
@@ -392,10 +408,14 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         row: dict[str, Any] = {"epoch": epoch}
         for split, loader in (("train", train_loader), ("val", val_loader)):
             model.train(split == "train")
-            totals: dict[str, float] = {}
-            batches = 0
-            visual_samples = 0
-            total_samples = 0
+            continuing_train = split == "train" and epoch == start_epoch and resume_batch > 0
+            totals: dict[str, float] = (
+                {str(k): float(v) for k, v in resume_epoch_progress.get("totals", {}).items()}
+                if continuing_train else {}
+            )
+            batches = int(resume_epoch_progress.get("batches", 0)) if continuing_train else 0
+            visual_samples = int(resume_epoch_progress.get("visual_samples", 0)) if continuing_train else 0
+            total_samples = int(resume_epoch_progress.get("total_samples", 0)) if continuing_train else 0
             for batch_index, source_batch in enumerate(loader):
                 if split == "train" and epoch == start_epoch and batch_index < resume_batch:
                     continue
@@ -413,17 +433,24 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                     global_step += 1
                     visual_samples += int((batch["visual_weight"] > 0).sum().item())
                     total_samples += int(batch["visual_weight"].numel())
-                    if global_step % args.checkpoint_every_steps == 0:
-                        save_last(checkpoint_payload(
-                            epoch=epoch,
-                            epoch_complete=False,
-                            batch_in_epoch=batch_index + 1,
-                            actual_visual_fraction=visual_samples / max(1, total_samples),
-                        ))
                 totals["loss"] = totals.get("loss", 0.0) + float(loss.detach())
                 for name, value in components.items():
                     totals[name] = totals.get(name, 0.0) + float(value.detach())
                 batches += 1
+                if split == "train" and global_step % args.checkpoint_every_steps == 0:
+                    progress = {
+                        "totals": totals,
+                        "batches": batches,
+                        "visual_samples": visual_samples,
+                        "total_samples": total_samples,
+                    }
+                    save_last(checkpoint_payload(
+                        epoch=epoch,
+                        epoch_complete=False,
+                        batch_in_epoch=batch_index + 1,
+                        actual_visual_fraction=visual_samples / max(1, total_samples),
+                        epoch_progress=progress,
+                    ))
             row[split] = {name: value / batches for name, value in totals.items()}
             if split == "train":
                 row[split]["actualVisualSampleFraction"] = (
@@ -439,6 +466,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             epoch_complete=True,
             batch_in_epoch=0,
             actual_visual_fraction=row["train"]["actualVisualSampleFraction"],
+            epoch_progress={},
         )
         save_last(payload)
         if improved:

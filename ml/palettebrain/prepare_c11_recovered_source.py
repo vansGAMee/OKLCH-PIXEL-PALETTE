@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import http.client
 import io
 import json
 import math
@@ -10,13 +11,19 @@ import os
 import re
 import shutil
 import sys
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
 import threading
 import time
 import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
+from uuid import uuid4
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -308,8 +315,6 @@ class DiskBudget:
     def before_temp_commit(self, temp_path: Path) -> None:
         if not temp_path.is_file():
             raise FileNotFoundError(temp_path)
-        # A temp file inside raw/cache is already included in usage(); an external
-        # temp artifact is not, so count it explicitly.
         projected = self.usage()
         if not self._covered_by_primary_tree(temp_path):
             projected += temp_path.stat().st_size
@@ -319,6 +324,26 @@ class DiskBudget:
                 f"{projected} >= {self.hard_bytes}"
             )
         self._check_free_space()
+
+    def commit_file(self, tmp_path: Path, dest_path: Path) -> None:
+        with self._lock:
+            if not tmp_path.is_file():
+                raise FileNotFoundError(tmp_path)
+            new_size = tmp_path.stat().st_size
+            old_size = dest_path.stat().st_size if dest_path.is_file() else 0
+            delta = new_size - old_size
+            self._check_free_space(max(0, delta))
+            cur_usage = self.usage()
+            if cur_usage + delta >= self.hard_bytes:
+                raise HardDiskLimitError(
+                    f"HARD DISK LIMIT EXCEEDED BEFORE FILE COMMIT: "
+                    f"{cur_usage + delta} >= {self.hard_bytes}"
+                )
+            tmp_path.replace(dest_path)
+            if self._tracked_bytes is not None:
+                self._tracked_bytes += delta
+            if not self._covered_by_primary_tree(dest_path):
+                self._tracked_artifacts.add(dest_path.resolve())
 
 
 def estimate_npz_bytes(arrays: dict[str, Any]) -> int:
@@ -338,13 +363,12 @@ def guarded_atomic_savez(
     path.parent.mkdir(parents=True, exist_ok=True)
     disk.track_artifact(path)
     disk.before_write(estimate_npz_bytes(arrays))
-    tmp = path.with_suffix(".tmp.npz")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.{uuid4().hex}.tmp.npz")
     np.savez(tmp, **arrays)
     try:
         with np.load(tmp, allow_pickle=False):
             pass
-        disk.before_temp_commit(tmp)
-        tmp.replace(path)
+        disk.commit_file(tmp, path)
     except Exception:
         tmp.unlink(missing_ok=True)
         raise
@@ -359,26 +383,138 @@ def guarded_atomic_write_text(
     encoded = text.encode("utf-8")
     disk.track_artifact(path)
     disk.before_write(len(encoded))
-    tmp = path.with_name(path.name + ".tmp")
+    tmp = path.with_name(
+        f"{path.name}.{os.getpid()}.{threading.get_ident()}.{uuid4().hex}.tmp"
+    )
     tmp.write_bytes(encoded)
     try:
-        disk.before_temp_commit(tmp)
-        tmp.replace(path)
+        disk.commit_file(tmp, path)
     except Exception:
         tmp.unlink(missing_ok=True)
         raise
 
 
+def guarded_atomic_write_bytes(path: Path, data: bytes, *, disk: DiskBudget) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    disk.track_artifact(path)
+    disk.before_write(len(data))
+    tmp = path.with_name(
+        f"{path.name}.{os.getpid()}.{threading.get_ident()}.{uuid4().hex}.tmp"
+    )
+    tmp.write_bytes(data)
+    try:
+        disk.commit_file(tmp, path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+class AcquisitionFunnel:
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self.start_time = time.time()
+        self.last_report_time = time.time()
+        self.siglip_seconds = 0.0
+        self.providers = ("open_images", "met", "artic", "openverse")
+        self.metrics: dict[str, dict[str, Any]] = {
+            p: {
+                "metadata_candidates": 0,
+                "already_seen_skipped": 0,
+                "download_attempted": 0,
+                "download_success": 0,
+                "decode_success": 0,
+                "crop_success": 0,
+                "siglip_scored": 0,
+                "siglip_pass": 0,
+                "siglip_fail": 0,
+                "seconds_metadata": 0.0,
+                "seconds_network": 0.0,
+                "seconds_decode": 0.0,
+                "seconds_siglip": 0.0,
+            }
+            for p in self.providers
+        }
+        self.concept_metrics: dict[str, dict[str, int]] = {}
+
+    def record(self, provider: str, field: str, amount: int = 1, cid: str | None = None) -> None:
+        p = provider if provider in self.metrics else "open_images"
+        with self._lock:
+            if field in self.metrics[p]:
+                self.metrics[p][field] += amount
+            if cid:
+                c_stats = self.concept_metrics.setdefault(cid, {"scored": 0, "pass": 0})
+                if field == "siglip_scored":
+                    c_stats["scored"] += amount
+                elif field == "siglip_pass":
+                    c_stats["pass"] += amount
+
+    def add_time(self, provider: str, field: str, duration: float) -> None:
+        p = provider if provider in self.metrics else "open_images"
+        with self._lock:
+            if field in self.metrics[p]:
+                self.metrics[p][field] += float(duration)
+
+    def add_siglip_time(self, duration: float) -> None:
+        with self._lock:
+            self.siglip_seconds += float(duration)
+
+    def summary(self, force: bool = False) -> str | None:
+        with self._lock:
+            now = time.time()
+            if not force and (now - self.last_report_time < 30.0):
+                return None
+            self.last_report_time = now
+            lines = ["\n==================== ACQUISITION FUNNEL ===================="]
+            total_cand = sum(int(m["metadata_candidates"]) for m in self.metrics.values())
+            total_seen = sum(int(m["already_seen_skipped"]) for m in self.metrics.values())
+            total_dl_att = sum(int(m["download_attempted"]) for m in self.metrics.values())
+            total_dl = sum(int(m["download_success"]) for m in self.metrics.values())
+            total_dec = sum(int(m["decode_success"]) for m in self.metrics.values())
+            total_scored = sum(int(m["siglip_scored"]) for m in self.metrics.values())
+            total_pass = sum(int(m["siglip_pass"]) for m in self.metrics.values())
+            total_rate = (total_pass / total_scored * 100) if total_scored > 0 else 0.0
+
+            for p in self.providers:
+                m = self.metrics[p]
+                scored = int(m["siglip_scored"])
+                passed = int(m["siglip_pass"])
+                rate = (passed / scored * 100) if scored > 0 else 0.0
+                lines.append(
+                    f"  [{p:11s}] meta={m['metadata_candidates']:4d} | seen_skip={m['already_seen_skipped']:4d} | "
+                    f"dl={m['download_success']:4d}/{m['download_attempted']:4d} | dec={m['decode_success']:4d} | "
+                    f"scored={scored:4d} | pass={passed:4d} ({rate:5.1f}%) | "
+                    f"time: meta={m['seconds_metadata']:5.1f}s net={m['seconds_network']:5.1f}s "
+                    f"dec={m['seconds_decode']:5.1f}s sig={m['seconds_siglip']:5.1f}s"
+                )
+            lines.append(
+                f"  [TOTAL] cand={total_cand} seen_skip={total_seen} dl={total_dl}/{total_dl_att} dec={total_dec} "
+                f"scored={total_scored} pass={total_pass} ({total_rate:.1f}% valid_rate) "
+                f"siglip_wall={self.siglip_seconds:.1f}s"
+            )
+            lines.append("=============================================================")
+            return "\n".join(lines)
+
+
+_FUNNEL = AcquisitionFunnel()
+_OPENVERSE_LOCK = threading.RLock()
 _OPENVERSE_COOLDOWN_UNTIL: float = 0.0
 _OPENVERSE_CONSECUTIVE_429: int = 0
 _OPENVERSE_LAST_SEARCH_TIME: float = 0.0
 _OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
 _OPENVERSE_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _OPENVERSE_UNAVAILABLE: bool = False
+
+_API_CACHE_LOCK = threading.RLock()
+_API_KEY_LOCKS: dict[tuple[str, tuple[Any, ...]], threading.Lock] = {}
 _MET_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _MET_SEARCH_CACHE: dict[str, list[Any]] = {}
 _ARTIC_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+
+_GLOBAL_NETWORK_SEMAPHORE = threading.Semaphore(16)
 _GLOBAL_DEDUP_LOCK = threading.RLock()
+_CACHED_RECORDS_LOCK = threading.RLock()
+_RESERVED_HASHES: set[str] = set()
+_RESERVED_PHASHES: list[str] = []
 _DOWNLOAD_WORKERS = 6
 _METADATA_WORKERS = 8
 _ACQUISITION_STATE_PATH: Path | None = None
@@ -462,6 +598,52 @@ def _disable_provider(provider: str, reason: str) -> None:
     persist_acquisition_state()
 
 
+def _route_key(concept_id: str, provider: str, query: str) -> str:
+    return hashlib.sha256(
+        f"{concept_id}\0{provider}\0{query.strip().lower()}".encode("utf-8")
+    ).hexdigest()
+
+
+def _record_route(route_key: str, field: str, amount: float = 1.0) -> None:
+    global _ACQUISITION_STATE_DIRTY
+    if not route_key:
+        return
+    with _ACQUISITION_STATE_LOCK:
+        route = _ACQUISITION_STATE.setdefault("routeStats", {}).setdefault(
+            route_key,
+            {"metadata": 0, "attempted": 0, "downloaded": 0,
+             "scored": 0, "passed": 0, "networkSeconds": 0.0},
+        )
+        route[field] = route.get(field, 0) + amount
+        _ACQUISITION_STATE_DIRTY += 1
+
+
+def _route_priority(route_key: str) -> float:
+    with _ACQUISITION_STATE_LOCK:
+        route = dict(_ACQUISITION_STATE.get("routeStats", {}).get(route_key, {}))
+    attempted = int(route.get("attempted", 0))
+    downloaded = int(route.get("downloaded", 0))
+    scored = int(route.get("scored", 0))
+    passed = int(route.get("passed", 0))
+    seconds = float(route.get("networkSeconds", 0.0))
+    if attempted >= 20 and downloaded == 0:
+        return 0.0
+    if scored >= 10 and passed == 0:
+        return 0.0
+    expected_valid = (passed + 1.0) / (scored + 5.0)
+    download_rate = (downloaded + 1.0) / (attempted + 2.0)
+    latency = max(0.1, seconds / max(1, attempted))
+    return expected_valid * download_rate / latency
+
+
+def _provider_viable(provider: str) -> bool:
+    with _FUNNEL._lock:
+        metrics = dict(_FUNNEL.metrics.get(provider, {}))
+    attempted = int(metrics.get("download_attempted", 0))
+    downloaded = int(metrics.get("download_success", 0))
+    return not (attempted >= 30 and downloaded == 0)
+
+
 def normalize_http_url(url: str) -> str:
     cleaned = "".join(character for character in url.strip() if ord(character) >= 32)
     parsed = urllib.parse.urlsplit(cleaned)
@@ -511,47 +693,50 @@ def safe_http_get(
                 url,
                 headers=request_headers,
             )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                if "openverse.org" in url:
-                    _OPENVERSE_CONSECUTIVE_429 = 0
-                    burst_avail = resp.headers.get(
-                        "x-ratelimit-available-anon_burst"
-                    )
-                    if burst_avail is not None:
+            with _GLOBAL_NETWORK_SEMAPHORE:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    if "openverse.org" in url:
+                        with _OPENVERSE_LOCK:
+                            _OPENVERSE_CONSECUTIVE_429 = 0
+                        burst_avail = resp.headers.get(
+                            "x-ratelimit-available-anon_burst"
+                        )
+                        if burst_avail is not None:
+                            try:
+                                if int(burst_avail) <= 1:
+                                    time.sleep(4.0)
+                            except ValueError:
+                                pass
+                    length = resp.headers.get("Content-Length")
+                    if length:
                         try:
-                            if int(burst_avail) <= 1:
-                                time.sleep(4.0)
+                            if int(length) > max_bytes:
+                                return None
                         except ValueError:
                             pass
-                length = resp.headers.get("Content-Length")
-                if length:
-                    try:
-                        if int(length) > max_bytes:
+                    out = bytearray()
+                    while True:
+                        chunk = resp.read(1024 * 256)
+                        if not chunk:
+                            break
+                        out.extend(chunk)
+                        if len(out) > max_bytes:
                             return None
-                    except ValueError:
-                        pass
-                out = bytearray()
-                while True:
-                    chunk = resp.read(1024 * 256)
-                    if not chunk:
-                        break
-                    out.extend(chunk)
-                    if len(out) > max_bytes:
-                        return None
-                if pause_seconds > 0:
-                    time.sleep(pause_seconds)
-                return bytes(out)
+                    if pause_seconds > 0:
+                        time.sleep(pause_seconds)
+                    return bytes(out)
         except urllib.error.HTTPError as exc:
             if (
                 "openverse.org" in url
                 and str(exc.headers.get("CF-Mitigated", "")).lower() == "challenge"
             ):
-                if not _OPENVERSE_UNAVAILABLE:
-                    print(
-                        "Openverse returned CF-Mitigated: challenge; provider "
-                        "disabled for this run without retry."
-                    )
-                _OPENVERSE_UNAVAILABLE = True
+                with _OPENVERSE_LOCK:
+                    if not _OPENVERSE_UNAVAILABLE:
+                        print(
+                            "Openverse returned CF-Mitigated: challenge; provider "
+                            "disabled for this run without retry."
+                        )
+                    _OPENVERSE_UNAVAILABLE = True
                 _disable_provider("openverse", "cloudflare_challenge")
                 return None
             if exc.code in (400, 401, 403, 404, 405, 410, 422):
@@ -570,19 +755,20 @@ def safe_http_get(
                     time.sleep(wait_sec)
                     continue
                 if "openverse.org" in url:
-                    _OPENVERSE_CONSECUTIVE_429 += 1
-                    if _OPENVERSE_CONSECUTIVE_429 >= 2:
-                        _OPENVERSE_COOLDOWN_UNTIL = time.time() + 60.0
-                        print(
-                            "Openverse circuit breaker tripped after repeated "
-                            "429 responses; cooldown for 60s."
-                        )
+                    with _OPENVERSE_LOCK:
+                        _OPENVERSE_CONSECUTIVE_429 += 1
+                        if _OPENVERSE_CONSECUTIVE_429 >= 2:
+                            _OPENVERSE_COOLDOWN_UNTIL = time.time() + 60.0
+                            print(
+                                "Openverse circuit breaker tripped after repeated "
+                                "429 responses; cooldown for 60s."
+                            )
                 return None
             elif exc.code in (500, 502, 503, 504) and attempt < max_retries:
                 time.sleep(min(2.0 ** attempt, 8.0))
                 continue
             return None
-        except (urllib.error.URLError, TimeoutError, ConnectionError):
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError, http.client.HTTPException):
             if attempt < max_retries:
                 time.sleep(min(0.75 * (attempt + 1), 3.0))
                 continue
@@ -1108,8 +1294,10 @@ def write_metadata_index(
     *,
     disk: DiskBudget,
 ) -> None:
+    with _CACHED_RECORDS_LOCK:
+        snapshot = [dict(record) for record in records.values()]
     serializable: list[dict[str, Any]] = []
-    for record in sorted(records.values(), key=lambda r: str(r["content_sha256"])):
+    for record in sorted(snapshot, key=lambda r: str(r["content_sha256"])):
         item = {
             key: value
             for key, value in record.items()
@@ -1152,50 +1340,85 @@ def store_image_record(
     dedup_lock: Any | None = None,
 ) -> dict[str, Any] | None:
     _lock = dedup_lock or _GLOBAL_DEDUP_LOCK
+    src_id = str(record.get("source_id", "open_images"))
+
     disk.before_write(len(image_bytes))
     sha = sha256_bytes(image_bytes)
     with _lock:
-        if sha in seen_hashes:
+        if sha in seen_hashes or sha in _RESERVED_HASHES:
             stats["exact_duplicates"] = stats.get("exact_duplicates", 0) + 1
             return None
+        _RESERVED_HASHES.add(sha)
 
+    phash: str | None = None
+    tmp: Path | None = None
     try:
-        rgb, extension = decode_image_bytes(image_bytes)
-    except Exception:
-        with _lock:
-            stats["invalid_images"] = stats.get("invalid_images", 0) + 1
-        return None
+        t0_dec = time.time()
+        try:
+            rgb, extension = decode_image_bytes(image_bytes)
+        except (OSError, ValueError, SyntaxError):
+            with _lock:
+                _RESERVED_HASHES.discard(sha)
+                stats["invalid_images"] = stats.get("invalid_images", 0) + 1
+            return None
+        _FUNNEL.add_time(src_id, "seconds_decode", time.time() - t0_dec)
+        _FUNNEL.record(src_id, "decode_success", 1)
 
-    phash = perceptual_hash64(rgb)
-    with _lock:
-        if any(phash_distance(phash, existing) <= NEAR_DUP_HAMMING for existing in seen_phashes):
-            stats["near_duplicates"] = stats.get("near_duplicates", 0) + 1
+        phash = perceptual_hash64(rgb)
+        with _lock:
+            all_phashes = seen_phashes + _RESERVED_PHASHES
+            if any(
+                phash_distance(phash, existing) <= NEAR_DUP_HAMMING
+                for existing in all_phashes
+            ):
+                _RESERVED_HASHES.discard(sha)
+                stats["near_duplicates"] = stats.get("near_duplicates", 0) + 1
+                return None
+            _RESERVED_PHASHES.append(phash)
+
+        dest = raw_dir / f"{prefix}_{sha[:20]}{extension}"
+        tmp = dest.with_name(f"{dest.name}.{threading.get_ident()}.tmp")
+        tmp.write_bytes(image_bytes)
+        try:
+            with Image.open(tmp) as check:
+                check.load()
+                check.convert("RGB")
+        except Exception:
+            tmp.unlink(missing_ok=True)
+            with _lock:
+                _RESERVED_HASHES.discard(sha)
+                if phash in _RESERVED_PHASHES:
+                    _RESERVED_PHASHES.remove(phash)
+                stats["invalid_images"] = stats.get("invalid_images", 0) + 1
             return None
 
-    dest = raw_dir / f"{prefix}_{sha[:20]}{extension}"
-    tmp = dest.with_name(f"{dest.name}.{threading.get_ident()}.tmp")
-    tmp.write_bytes(image_bytes)
-    try:
-        with Image.open(tmp) as check:
-            check.load()
-            check.convert("RGB")
-    except Exception:
-        tmp.unlink(missing_ok=True)
+        disk.commit_file(tmp, dest)
         with _lock:
-            stats["invalid_images"] = stats.get("invalid_images", 0) + 1
-        return None
-    tmp.replace(dest)
-
-    with _lock:
-        seen_hashes.add(sha)
-        seen_phashes.append(phash)
-        if seen_urls is not None:
-            if record.get("source_url"):
-                seen_urls.add(str(record["source_url"]))
-            if record.get("downloaded_url"):
-                seen_urls.add(str(record["downloaded_url"]))
-        if seen_image_ids is not None and record.get("image_id"):
-            seen_image_ids.add(str(record["image_id"]))
+            seen_hashes.add(sha)
+            _RESERVED_HASHES.discard(sha)
+            seen_phashes.append(phash)
+            try:
+                _RESERVED_PHASHES.remove(phash)
+            except ValueError:
+                pass
+            if seen_urls is not None:
+                if record.get("source_url"):
+                    seen_urls.add(str(record["source_url"]))
+                if record.get("downloaded_url"):
+                    seen_urls.add(str(record["downloaded_url"]))
+            if seen_image_ids is not None and record.get("image_id"):
+                seen_image_ids.add(str(record["image_id"]))
+    except Exception:
+        if tmp is not None:
+            tmp.unlink(missing_ok=True)
+        with _lock:
+            _RESERVED_HASHES.discard(sha)
+            if phash is not None:
+                try:
+                    _RESERVED_PHASHES.remove(phash)
+                except ValueError:
+                    pass
+        raise
 
     out = dict(record)
     out.update(
@@ -1238,8 +1461,7 @@ class OpenImagesBboxIndex:
         )
         if not data:
             raise RuntimeError(f"failed to download Open Images metadata: {url}")
-        self.disk.before_write(len(data))
-        atomic_write_bytes(path, data)
+        guarded_atomic_write_bytes(path, data, disk=self.disk)
         return path
 
     def load(self) -> None:
@@ -1435,22 +1657,38 @@ class OpenImagesBboxIndex:
         return found[offset : offset + max_count]
 
 
-def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[str, Any]]:
-    cache_key = (query.strip().lower(), limit, offset)
-    if cache_key in _MET_QUERY_CACHE:
-        return [dict(record) for record in _MET_QUERY_CACHE[cache_key]]
+def _api_key_lock(provider: str, key: tuple[Any, ...]) -> threading.Lock:
+    with _API_CACHE_LOCK:
+        return _API_KEY_LOCKS.setdefault((provider, key), threading.Lock())
+
+
+def _met_candidates_impl(
+    query: str,
+    limit: int = 36,
+    offset: int = 0,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     norm_query = query.strip().lower()
-    if norm_query not in _MET_SEARCH_CACHE:
+    cache_key = (norm_query, limit, offset)
+    with _API_CACHE_LOCK:
+        if cache_key in _MET_QUERY_CACHE:
+            return [dict(record) for record in _MET_QUERY_CACHE[cache_key]]
+        all_ids = _MET_SEARCH_CACHE.get(norm_query)
+
+    t0 = time.time()
+    if all_ids is None:
         search_url = (
             "https://collectionapi.metmuseum.org/public/collection/v1/search"
             f"?q={urllib.parse.quote(query)}&hasImages=true"
         )
         search = fetch_json(search_url, timeout=10, max_retries=1)
-        _MET_SEARCH_CACHE[norm_query] = list(search.get("objectIDs") or []) if search else []
+        all_ids = list(search.get("objectIDs") or []) if search else []
+        with _API_CACHE_LOCK:
+            _MET_SEARCH_CACHE[norm_query] = all_ids
 
-    all_ids = _MET_SEARCH_CACHE[norm_query]
     object_ids = all_ids[offset : offset + limit]
     if not object_ids:
+        _FUNNEL.add_time("met", "seconds_metadata", time.time() - t0)
         return []
 
     def load_object(object_id: Any) -> tuple[Any, dict[str, Any] | None]:
@@ -1461,12 +1699,27 @@ def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[st
             max_retries=0,
         )
 
-    # The Met search API returns IDs only. Fetch independent public-domain
-    # metadata concurrently, preserving search order through executor.map.
     with ThreadPoolExecutor(
         max_workers=min(_METADATA_WORKERS, max(1, len(object_ids)))
     ) as executor:
         objects = list(executor.map(load_object, object_ids))
+
+    _FUNNEL.add_time("met", "seconds_metadata", time.time() - t0)
+
+    concept_kw: set[str] = set()
+    if concept:
+        all_text = (
+            str(concept.get("retrieval_query", ""))
+            + " "
+            + " ".join(concept.get("phrasings_en", []))
+        ).lower()
+        words = re.findall(r"\b[a-zA-Z]{3,}\b", all_text)
+        concept_kw = set(words) - {
+            "with", "and", "the", "for", "from", "into", "over", "under", "after",
+            "through", "texture", "surface", "specimen", "background", "style",
+            "rustic", "fine", "light", "color", "painting", "drawing", "photo",
+            "image",
+        }
 
     out: list[dict[str, Any]] = []
     for object_id, obj in objects:
@@ -1475,6 +1728,25 @@ def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[st
         image_url = str(obj.get("primaryImageSmall") or obj.get("primaryImage") or "")
         if not image_url:
             continue
+
+        classification = str(obj.get("classification") or "")
+        obj_name = str(obj.get("objectName") or "")
+        title = str(obj.get("title") or "")
+        tags = [
+            str(t.get("term", ""))
+            for t in (obj.get("tags") or [])
+            if isinstance(t, dict)
+        ]
+        meta_blob = f"{title} {classification} {obj_name} {' '.join(tags)}".lower()
+
+        if (
+            classification.lower()
+            in ("coins", "medals", "armor", "arms and armor", "fragments", "ceramics-pottery")
+            and concept_kw
+        ):
+            if not any(kw in meta_blob for kw in concept_kw):
+                continue
+
         out.append(
             {
                 "source_id": "met",
@@ -1488,7 +1760,7 @@ def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[st
                     or f"https://www.metmuseum.org/art/collection/search/{object_id}"
                 ),
                 "creator": str(obj.get("artistDisplayName") or "Unknown"),
-                "title": str(obj.get("title") or ""),
+                "title": title,
                 "license": "CC0 1.0",
                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
                 "crop_coordinates": None,
@@ -1499,14 +1771,25 @@ def met_candidates(query: str, limit: int = 36, offset: int = 0) -> list[dict[st
                 "bbox_source": "",
             }
         )
-    _MET_QUERY_CACHE[cache_key] = out
+    with _API_CACHE_LOCK:
+        _MET_QUERY_CACHE[cache_key] = out
+    _FUNNEL.record("met", "metadata_candidates", len(out))
     return [dict(record) for record in out]
 
 
-def artic_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[str, Any]]:
-    cache_key = (query.strip().lower(), limit, page)
-    if cache_key in _ARTIC_QUERY_CACHE:
-        return [dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]]
+def _artic_candidates_impl(
+    query: str,
+    limit: int = 24,
+    page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    norm_query = query.strip().lower()
+    cache_key = (norm_query, limit, page)
+    with _API_CACHE_LOCK:
+        if cache_key in _ARTIC_QUERY_CACHE:
+            return [dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]]
+
+    t0 = time.time()
     url = (
         "https://api.artic.edu/api/v1/artworks/search"
         f"?q={urllib.parse.quote(query)}"
@@ -1516,6 +1799,8 @@ def artic_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[st
         f"&page={int(page)}"
     )
     payload = fetch_json(url, timeout=10, max_retries=1)
+    _FUNNEL.add_time("artic", "seconds_metadata", time.time() - t0)
+
     if not payload:
         return []
     iiif_base = str(
@@ -1553,25 +1838,38 @@ def artic_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[st
                 "bbox_source": "",
             }
         )
-    _ARTIC_QUERY_CACHE[cache_key] = out
+    with _API_CACHE_LOCK:
+        _ARTIC_QUERY_CACHE[cache_key] = out
+    _FUNNEL.record("artic", "metadata_candidates", len(out))
     return [dict(record) for record in out]
 
 
-def openverse_candidates(query: str, limit: int = 24, page: int = 1) -> list[dict[str, Any]]:
-    global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME
-    if _OPENVERSE_UNAVAILABLE:
-        return []
-    cache_key = (query.strip().lower(), limit, page)
-    if cache_key in _OPENVERSE_QUERY_CACHE:
-        return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
-    if time.time() < _OPENVERSE_COOLDOWN_UNTIL:
-        remaining = int(_OPENVERSE_COOLDOWN_UNTIL - time.time())
-        print(f"Openverse in cooldown ({remaining}s remaining), skipping query: {query}")
-        return []
-    elapsed = time.time() - _OPENVERSE_LAST_SEARCH_TIME
-    if elapsed < _OPENVERSE_SEARCH_MIN_INTERVAL:
-        time.sleep(_OPENVERSE_SEARCH_MIN_INTERVAL - elapsed)
-    _OPENVERSE_LAST_SEARCH_TIME = time.time()
+def _openverse_candidates_impl(
+    query: str,
+    limit: int = 24,
+    page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME, _OPENVERSE_UNAVAILABLE
+    with _OPENVERSE_LOCK:
+        if _OPENVERSE_UNAVAILABLE:
+            return []
+        norm_query = query.strip().lower()
+        cache_key = (norm_query, limit, page)
+        if cache_key in _OPENVERSE_QUERY_CACHE:
+            return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
+        now = time.time()
+        if now < _OPENVERSE_COOLDOWN_UNTIL:
+            remaining = int(_OPENVERSE_COOLDOWN_UNTIL - now)
+            print(f"Openverse in cooldown ({remaining}s remaining), skipping query: {query}")
+            return []
+        scheduled = max(now, _OPENVERSE_LAST_SEARCH_TIME + _OPENVERSE_SEARCH_MIN_INTERVAL)
+        wait_seconds = scheduled - now
+        _OPENVERSE_LAST_SEARCH_TIME = scheduled
+    if wait_seconds > 0:
+        time.sleep(wait_seconds)
+
+    t0 = time.time()
     url = (
         "https://api.openverse.org/v1/images/"
         f"?q={urllib.parse.quote(query)}"
@@ -1580,6 +1878,8 @@ def openverse_candidates(query: str, limit: int = 24, page: int = 1) -> list[dic
         f"&page={int(page)}"
     )
     payload = fetch_json(url, timeout=20)
+    _FUNNEL.add_time("openverse", "seconds_metadata", time.time() - t0)
+
     if not payload:
         return []
     out: list[dict[str, Any]] = []
@@ -1633,84 +1933,37 @@ def openverse_candidates(query: str, limit: int = 24, page: int = 1) -> list[dic
             }
         )
     res = out[:limit]
-    _OPENVERSE_QUERY_CACHE[cache_key] = res
+    with _OPENVERSE_LOCK:
+        _OPENVERSE_QUERY_CACHE[cache_key] = res
+    _FUNNEL.record("openverse", "metadata_candidates", len(res))
     return res
 
 
-def download_candidate(
-    *,
-    candidate: dict[str, Any],
-    concept: dict[str, Any],
-    raw_dir: Path,
-    seen_hashes: set[str],
-    seen_phashes: list[str],
-    disk: DiskBudget,
-    stats: dict[str, int],
-) -> dict[str, Any] | None:
-    if not disk.before_download():
-        return None
+def met_candidates(
+    query: str, limit: int = 36, offset: int = 0,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    key = (query.strip().lower(), limit, offset)
+    with _api_key_lock("met", key):
+        return _met_candidates_impl(query, limit, offset, concept)
 
-    urls = [str(candidate["source_url"])]
-    fallback = str(candidate.get("source_url_fallback") or "")
-    if fallback:
-        urls.append(fallback)
 
-    custom_headers: dict[str, str] | None = None
-    if str(candidate.get("source_id")) == "artic":
-        custom_headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                " (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Accept": (
-                "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
-            ),
-            "Referer": "https://www.artic.edu/",
-        }
+def artic_candidates(
+    query: str, limit: int = 24, page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    key = (query.strip().lower(), limit, page)
+    with _api_key_lock("artic", key):
+        return _artic_candidates_impl(query, limit, page, concept)
 
-    data: bytes | None = None
-    downloaded_url = ""
-    for url in urls:
-        data = safe_http_get(
-            url,
-            timeout=15,
-            max_retries=1,
-            max_bytes=disk.max_download_bytes(MAX_SINGLE_IMAGE_BYTES),
-            headers=custom_headers,
-        )
-        if data:
-            downloaded_url = url
-            break
-    if not data:
-        key = f"network_fail_{candidate['source_id']}"
-        stats[key] = stats.get(key, 0) + 1
-        return None
 
-    record = dict(candidate)
-    record.update(
-        {
-            "concept_id": concept["concept_id"],
-            "category": concept["category"],
-            "downloaded_url": downloaded_url,
-        }
-    )
-    prefix = {
-        "met": "met",
-        "artic": "artic",
-        "openverse": "ov",
-        "open_images": "oi",
-    }.get(str(candidate["source_id"]), "src")
-
-    return store_image_record(
-        raw_dir=raw_dir,
-        prefix=prefix,
-        image_bytes=data,
-        record=record,
-        seen_hashes=seen_hashes,
-        seen_phashes=seen_phashes,
-        disk=disk,
-        stats=stats,
-    )
+def openverse_candidates(
+    query: str, limit: int = 24, page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    key = (query.strip().lower(), limit, page)
+    with _api_key_lock("openverse", key):
+        return _openverse_candidates_impl(query, limit, page, concept)
 
 
 def fetch_candidate_image(
@@ -1731,7 +1984,12 @@ def fetch_candidate_image(
             "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
             "Referer": "https://www.artic.edu/",
         }
+    provider = str(candidate.get("source_id") or "open_images")
+    route_key = str(candidate.get("acquisition_route_key") or "")
     for url in urls:
+        _FUNNEL.record(provider, "download_attempted", 1)
+        _record_route(route_key, "attempted")
+        started = time.time()
         data = safe_http_get(
             url,
             timeout=15,
@@ -1739,7 +1997,12 @@ def fetch_candidate_image(
             max_bytes=disk.max_download_bytes(MAX_SINGLE_IMAGE_BYTES),
             headers=headers,
         )
+        duration = time.time() - started
+        _FUNNEL.add_time(provider, "seconds_network", duration)
+        _record_route(route_key, "networkSeconds", duration)
         if data:
+            _FUNNEL.record(provider, "download_success", 1)
+            _record_route(route_key, "downloaded")
             return candidate, data, url
     return None
 
@@ -1763,113 +2026,178 @@ def acquire_for_concept(
         return []
 
     crop_required = bool(concept.get("crop_required", False))
-    query = str(concept["retrieval_query"])
     cid = str(concept["concept_id"])
-    source_lists: dict[str, list[dict[str, Any]]] = {}
 
-    with _ACQUISITION_STATE_LOCK:
-        offsets = _ACQUISITION_STATE.setdefault("conceptOffsets", {}).setdefault(
-            cid, {"met": 0, "artic": 1, "openverse": 1, "open_images": 0}
-        )
-
-    def _get_candidates(src: str) -> list[dict[str, Any]]:
-        if src not in source_lists:
-            if src == "open_images":
-                cur_off = offsets.get("open_images", 0)
-                records = open_images.get_records(
-                    cid,
-                    max_count=max(max_count * 4, 20),
-                    offset=cur_off,
-                )
-                offsets["open_images"] = cur_off + len(records)
-                source_lists[src] = records
-            elif src == "met":
-                cur_off = offsets.get("met", 0)
-                records = met_candidates(query, limit=max(max_count * 3, 36), offset=cur_off)
-                offsets["met"] = cur_off + len(records)
-                source_lists[src] = records
-            elif src == "artic":
-                cur_page = offsets.get("artic", 1)
-                records = artic_candidates(query, limit=max(max_count * 2, 24), page=cur_page)
-                offsets["artic"] = cur_page + 1
-                source_lists[src] = records
-            elif src == "openverse":
-                cur_page = offsets.get("openverse", 1)
-                records = openverse_candidates(query, limit=max(max_count * 2, 24), page=cur_page)
-                offsets["openverse"] = cur_page + 1
-                source_lists[src] = records
-            else:
-                source_lists[src] = []
-        return source_lists[src]
+    raw_queries = [str(concept["retrieval_query"])]
+    for phrasing in concept.get("phrasings_en", []):
+        p_str = str(phrasing).strip()
+        if p_str and p_str not in raw_queries:
+            raw_queries.append(p_str)
+        if len(raw_queries) >= 3:
+            break
 
     if crop_required:
         if "open_images" not in allowed_sources:
             return []
         ordered_sources = ["open_images"]
     else:
-        ordered_sources = [
-            source for source in allowed_sources if source in ("met", "artic", "openverse")
+        pref = [
+            s
+            for s in concept.get("source_preference", ["artic", "met", "openverse"])
+            if s in allowed_sources and s in ("artic", "met", "openverse")
         ]
+        ordered_sources = (
+            pref if pref else [s for s in allowed_sources if s in ("artic", "met", "openverse")]
+        )
+
+    with _ACQUISITION_STATE_LOCK:
+        concept_cursors = _ACQUISITION_STATE.setdefault("conceptCursors", {}).setdefault(
+            cid, {
+                "stage": 0,
+                "offsets": {"met": 0, "artic": 1, "openverse": 1, "open_images": 0},
+            }
+        )
+        offsets = concept_cursors.setdefault(
+            "offsets", {"met": 0, "artic": 1, "openverse": 1, "open_images": 0}
+        )
+        legacy_offsets = _ACQUISITION_STATE.setdefault("conceptOffsets", {}).setdefault(
+            cid, offsets
+        )
+        for k, v in legacy_offsets.items():
+            if k not in offsets:
+                offsets[k] = v
+
+    stage_pairs: list[tuple[str, str]] = []
+    for src in ordered_sources:
+        for q in raw_queries:
+            stage_pairs.append((src, q))
+    stage_pairs.sort(
+        key=lambda pair: _route_priority(_route_key(cid, pair[0], pair[1])),
+        reverse=True,
+    )
 
     candidates: list[dict[str, Any]] = []
-    source_buckets = [_get_candidates(source) for source in ordered_sources]
-    for offset in range(max((len(bucket) for bucket in source_buckets), default=0)):
-        for bucket in source_buckets:
-            if offset < len(bucket):
-                cand = bucket[offset]
-                img_id = str(cand.get("image_id") or "")
-                src_url = str(cand.get("source_url") or "")
-                fb_url = str(cand.get("source_url_fallback") or "")
-                if seen_image_ids is not None and img_id and img_id in seen_image_ids:
-                    continue
-                if seen_urls is not None and src_url and src_url in seen_urls:
-                    continue
-                if seen_urls is not None and fb_url and fb_url in seen_urls:
-                    continue
-                candidates.append(cand)
+    start_stage = int(concept_cursors.get("stage", 0))
 
-    results: list[dict[str, Any]] = []
-    batch_width = max(_DOWNLOAD_WORKERS, max_count * 2)
-    with ThreadPoolExecutor(max_workers=_DOWNLOAD_WORKERS) as executor:
-        for start in range(0, len(candidates), batch_width):
-            fetched = executor.map(
-                lambda item: fetch_candidate_image(item, disk),
-                candidates[start : start + batch_width],
+    for step in range(len(stage_pairs)):
+        actual_idx = (start_stage + step) % len(stage_pairs)
+        src, query = stage_pairs[actual_idx]
+        route_key = _route_key(cid, src, query)
+        if not _provider_viable(src) or _route_priority(route_key) <= 0:
+            continue
+
+        batch_candidates: list[dict[str, Any]] = []
+        if src == "open_images":
+            cur_off = offsets.get("open_images", 0)
+            limit_oi = max(max_count * 4, 20)
+            records = open_images.get_records(cid, max_count=limit_oi, offset=cur_off)
+            if records:
+                offsets["open_images"] = cur_off + len(records)
+                legacy_offsets["open_images"] = offsets["open_images"]
+                batch_candidates = records
+        elif src == "artic":
+            cur_page = offsets.get("artic", 1)
+            limit_art = max(max_count * 2, 24)
+            records = artic_candidates(query, limit=limit_art, page=cur_page, concept=concept)
+            if records:
+                offsets["artic"] = cur_page + 1
+                legacy_offsets["artic"] = offsets["artic"]
+                batch_candidates = records
+        elif src == "met":
+            cur_off = offsets.get("met", 0)
+            limit_met = max(max_count * 2, 16)
+            records = met_candidates(query, limit=limit_met, offset=cur_off, concept=concept)
+            if records:
+                offsets["met"] = cur_off + limit_met
+                legacy_offsets["met"] = offsets["met"]
+                batch_candidates = records
+        elif src == "openverse":
+            cur_page = offsets.get("openverse", 1)
+            limit_ov = max(max_count * 2, 24)
+            records = openverse_candidates(query, limit=limit_ov, page=cur_page, concept=concept)
+            if records:
+                offsets["openverse"] = cur_page + 1
+                legacy_offsets["openverse"] = offsets["openverse"]
+                batch_candidates = records
+
+        _record_route(route_key, "metadata", len(batch_candidates))
+        for cand in batch_candidates:
+            cand["acquisition_route_key"] = route_key
+            cand["acquisition_query"] = query
+            img_id = str(cand.get("image_id") or "")
+            src_url = str(cand.get("source_url") or "")
+            fb_url = str(cand.get("source_url_fallback") or "")
+            if seen_image_ids is not None and img_id and img_id in seen_image_ids:
+                _FUNNEL.record(src, "already_seen_skipped", 1)
+                continue
+            if seen_urls is not None and src_url and src_url in seen_urls:
+                _FUNNEL.record(src, "already_seen_skipped", 1)
+                continue
+            if seen_urls is not None and fb_url and fb_url in seen_urls:
+                _FUNNEL.record(src, "already_seen_skipped", 1)
+                continue
+            candidates.append(cand)
+
+        if len(candidates) >= max_count * 2:
+            break
+        if not batch_candidates:
+            concept_cursors["stage"] = (actual_idx + 1) % len(stage_pairs)
+
+    if not candidates:
+        return []
+
+    candidates = candidates[:max_count]
+
+    stored_records: list[dict[str, Any]] = []
+    with ThreadPoolExecutor(max_workers=min(len(candidates), _DOWNLOAD_WORKERS)) as executor:
+        future_to_cand = {
+            executor.submit(fetch_candidate_image, cand, disk): cand
+            for cand in candidates
+        }
+        for future in concurrent.futures.as_completed(future_to_cand):
+            if len(stored_records) >= max_count:
+                for f in future_to_cand:
+                    f.cancel()
+                break
+            try:
+                payload = future.result()
+            except (OSError, ValueError, urllib.error.URLError):
+                continue
+            if payload is None:
+                continue
+            cand, data, downloaded_url = payload
+            rec = dict(cand)
+            rec.update(
+                {
+                    "concept_id": concept["concept_id"],
+                    "category": concept["category"],
+                    "downloaded_url": downloaded_url,
+                }
             )
-            for payload in fetched:
-                if payload is None:
-                    continue
-                candidate, data, downloaded_url = payload
-                record = dict(candidate)
-                record.update(
-                    {
-                        "concept_id": concept["concept_id"],
-                        "category": concept["category"],
-                        "downloaded_url": downloaded_url,
-                    }
-                )
-                prefix = {
-                    "met": "met", "artic": "artic", "openverse": "ov",
-                    "open_images": "oi",
-                }.get(str(candidate["source_id"]), "src")
-                stored = store_image_record(
-                    raw_dir=raw_dir,
-                    prefix=prefix,
-                    image_bytes=data,
-                    record=record,
-                    seen_hashes=seen_hashes,
-                    seen_phashes=seen_phashes,
-                    disk=disk,
-                    stats=stats,
-                    seen_urls=seen_urls,
-                    seen_image_ids=seen_image_ids,
-                    dedup_lock=dedup_lock,
-                )
-                if stored is not None:
-                    results.append(stored)
-                    if len(results) >= max_count:
-                        return results
-    return results
+            prefix = {
+                "met": "met",
+                "artic": "artic",
+                "openverse": "ov",
+                "open_images": "oi",
+            }.get(str(cand["source_id"]), "src")
+
+            stored = store_image_record(
+                raw_dir=raw_dir,
+                prefix=prefix,
+                image_bytes=data,
+                record=rec,
+                seen_hashes=seen_hashes,
+                seen_phashes=seen_phashes,
+                disk=disk,
+                stats=stats,
+                seen_urls=seen_urls,
+                seen_image_ids=seen_image_ids,
+                dedup_lock=dedup_lock,
+            )
+            if stored is not None:
+                stored_records.append(stored)
+
+    return stored_records
 
 
 def process_image(
@@ -2318,7 +2646,8 @@ def acquire_smoke_records(
                     open_images=open_images,
                 )
                 for record in records:
-                    cached_records[record["content_sha256"]] = record
+                    with _CACHED_RECORDS_LOCK:
+                        cached_records[record["content_sha256"]] = record
                     result.append(record)
                     needed -= 1
                     if needed <= 0:
@@ -2356,7 +2685,8 @@ def acquire_smoke_records(
                     open_images=open_images,
                 )
                 for record in records:
-                    cached_records[record["content_sha256"]] = record
+                    with _CACHED_RECORDS_LOCK:
+                        cached_records[record["content_sha256"]] = record
                     result.append(record)
                     needed -= 1
                     if needed <= 0:
@@ -2444,7 +2774,8 @@ def acquire_full_records(
                 seen_image_ids=seen_image_ids,
             )
             for record in records:
-                cached_records[record["content_sha256"]] = record
+                with _CACHED_RECORDS_LOCK:
+                    cached_records[record["content_sha256"]] = record
             result.extend(records)
 
         if limit_images and len(result) >= limit_images:
@@ -2659,6 +2990,7 @@ def score_records_with_cache(
     cache_fingerprint: str,
     disk: DiskBudget,
     chunk_size: int = 64,
+    save_cache: bool = True,
 ) -> tuple[list[dict[str, Any]], int, int, dict[str, int]]:
     missing = [r for r in acquired if str(r["content_sha256"]) not in cache]
     crop_totals = {
@@ -2674,6 +3006,7 @@ def score_records_with_cache(
         for key, value in crop_stats.items():
             crop_totals[key] += value
         processed_by_hash = {str(r["content_sha256"]): r for r in processed}
+        t0_sig = time.time()
         scored, _ = score_and_filter_relevance(
             processed=processed,
             concept_map=concept_map,
@@ -2683,18 +3016,38 @@ def score_records_with_cache(
             device=device,
             threshold=-float("inf"),
         )
+        sig_duration = time.time() - t0_sig
         for record in scored:
             sha = str(record["content_sha256"])
             cache[sha] = (
                 float(record["relevance_score"]),
                 np.asarray(record["siglip_feature"], dtype=np.float32),
             )
+            src_id = str(record.get("source_id", "open_images"))
+            cid = str(record.get("concept_id", ""))
+            route_key = str(record.get("acquisition_route_key") or "")
+            _FUNNEL.record(src_id, "siglip_scored", 1, cid=cid)
+            _record_route(route_key, "scored")
+            if float(record["relevance_score"]) >= threshold:
+                _FUNNEL.record(src_id, "siglip_pass", 1, cid=cid)
+                _record_route(route_key, "passed")
+            else:
+                _FUNNEL.record(src_id, "siglip_fail", 1, cid=cid)
+
+        if scored:
+            _FUNNEL.add_siglip_time(sig_duration)
+
         feature_width = next((len(value[1]) for value in cache.values()), 768)
         for record in chunk:
             sha = str(record["content_sha256"])
             if sha not in processed_by_hash:
                 cache[sha] = (float("-inf"), np.zeros(feature_width, dtype=np.float32))
-        save_relevance_cache(cache_path, cache_fingerprint, cache, disk)
+                src_id = str(record.get("source_id", "open_images"))
+                cid = str(record.get("concept_id", ""))
+                _FUNNEL.record(src_id, "siglip_scored", 1, cid=cid)
+                _FUNNEL.record(src_id, "siglip_fail", 1, cid=cid)
+        if save_cache:
+            save_relevance_cache(cache_path, cache_fingerprint, cache, disk)
 
     valid: list[dict[str, Any]] = []
     rejected = 0
@@ -3298,6 +3651,7 @@ def build_c11_dataset(
     download_workers: int = 6,
     metadata_workers: int = 8,
     checkpoint_every: int = 10,
+    adaptive_benchmark_seconds: float | None = None,
 ) -> dict[str, Any]:
     manifest = load_and_validate_manifest(manifest_path)
     policy = manifest.get("acquisition_policy", {})
@@ -3393,6 +3747,10 @@ def build_c11_dataset(
             stats=stats,
             open_images=open_images,
         )
+    elif adaptive_benchmark_seconds is not None:
+        if adaptive_benchmark_seconds <= 0:
+            raise ValueError("adaptive_benchmark_seconds must be positive")
+        acquired = list(cached_records.values())
     else:
         acquired = acquire_full_records(
             concepts=concepts,
@@ -3636,9 +3994,15 @@ def build_c11_dataset(
 
         start_time = time.time()
         valid_at_start = len(valid)
+        last_checkpoint_time = time.time()
+        benchmark_timed_out = False
 
         while len(valid) < desired_valid:
-            if limit_images is not None and len(acquired) >= limit_images:
+            if (
+                adaptive_benchmark_seconds is not None
+                and time.time() - start_time >= adaptive_benchmark_seconds
+            ):
+                benchmark_timed_out = True
                 break
             if not disk.before_download():
                 break
@@ -3678,9 +4042,9 @@ def build_c11_dataset(
                 state["consecutive_empty"] = 0
                 state["attempted"] += len(records)
                 for r in records:
-                    cached_records[str(r["content_sha256"])] = r
+                    with _CACHED_RECORDS_LOCK:
+                        cached_records[str(r["content_sha256"])] = r
                 acquired.extend(records)
-                write_metadata_index(index_path, cached_records, disk=disk)
 
                 new_valid, _, cache_hits, pass_crop_stats = score_records_with_cache(
                     acquired=records,
@@ -3694,11 +4058,24 @@ def build_c11_dataset(
                     cache_path=relevance_cache_path,
                     cache_fingerprint=relevance_fingerprint,
                     disk=disk,
+                    save_cache=False,
                 )
                 for key, value in pass_crop_stats.items():
                     crop_stats[key] += value
                 valid.extend(new_valid)
                 state["valid"] += len(new_valid)
+
+                now = time.time()
+                if (now - last_checkpoint_time >= 10.0) or len(acquired) % 25 == 0:
+                    write_metadata_index(index_path, cached_records, disk=disk)
+                    save_relevance_cache(
+                        relevance_cache_path,
+                        relevance_fingerprint,
+                        relevance_cache,
+                        disk,
+                    )
+                    persist_acquisition_state()
+                    last_checkpoint_time = now
 
                 elapsed = time.time() - start_time
                 valid_gained = len(valid) - valid_at_start
@@ -3715,12 +4092,72 @@ def build_c11_dataset(
                 if valid_per_sec > 0:
                     print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
 
+                report = _FUNNEL.summary()
+                if report:
+                    print(report)
+
             schedule_fetches()
 
+        while not task_queue.empty():
+            try:
+                task_queue.get_nowait()
+                task_queue.task_done()
+            except (queue.Empty, ValueError):
+                break
         for _ in threads:
             task_queue.put(None)
         for t in threads:
-            t.join(timeout=2.0)
+            t.join()
+        if any(t.is_alive() for t in threads):
+            raise RuntimeError("Acquisition worker threads failed to terminate cleanly")
+
+        write_metadata_index(index_path, cached_records, disk=disk)
+        save_relevance_cache(
+            relevance_cache_path,
+            relevance_fingerprint,
+            relevance_cache,
+            disk,
+        )
+        persist_acquisition_state()
+        final_funnel = _FUNNEL.summary(force=True)
+        if final_funnel:
+            print(final_funnel)
+
+        if adaptive_benchmark_seconds is not None:
+            elapsed = max(time.time() - start_time, 1e-9)
+            gained = len(valid) - valid_at_start
+            with _FUNNEL._lock:
+                funnel_metrics = {
+                    provider: dict(values)
+                    for provider, values in _FUNNEL.metrics.items()
+                }
+                siglip_seconds = _FUNNEL.siglip_seconds
+            scored = sum(int(values["siglip_scored"]) for values in funnel_metrics.values())
+            passed = sum(int(values["siglip_pass"]) for values in funnel_metrics.values())
+            benchmark_summary = {
+                "mode": "full-adaptive-benchmark",
+                "testClassification": "REAL_FULL_ACQUISITION_BENCHMARK",
+                "timedOut": benchmark_timed_out,
+                "elapsedSeconds": elapsed,
+                "currentValid": len(valid),
+                "validAtStart": valid_at_start,
+                "validGained": gained,
+                "remainingTo2500": max(0, FULL_TARGET_UNIQUE_IMAGES - len(valid)),
+                "validPerSecond": gained / elapsed,
+                "siglipAcceptanceRate": passed / scored if scored else 0.0,
+                "funnel": funnel_metrics,
+                "siglipWallSeconds": siglip_seconds,
+                "relevanceThreshold": threshold,
+                "cacheRecords": len(cached_records),
+            }
+            benchmark_path = Path("ml/palettebrain/reports/candidate-11-adaptive-benchmark.json")
+            guarded_atomic_write_text(
+                benchmark_path,
+                json.dumps(benchmark_summary, ensure_ascii=False, indent=2) + "\n",
+                disk=disk,
+            )
+            print(json.dumps(benchmark_summary, ensure_ascii=False, indent=2))
+            return benchmark_summary
 
         if limit_images is None and len(valid) < FULL_MIN_UNIQUE_IMAGES:
             raise RuntimeError(
@@ -3879,6 +4316,7 @@ def main() -> None:
     parser.add_argument("--download-workers", type=int, default=16)
     parser.add_argument("--metadata-workers", type=int, default=16)
     parser.add_argument("--checkpoint-every", type=int, default=10)
+    parser.add_argument("--adaptive-benchmark-seconds", type=float)
     args = parser.parse_args()
 
     build_c11_dataset(
@@ -3897,6 +4335,7 @@ def main() -> None:
         download_workers=int(args.download_workers),
         metadata_workers=int(args.metadata_workers),
         checkpoint_every=int(args.checkpoint_every),
+        adaptive_benchmark_seconds=args.adaptive_benchmark_seconds,
     )
 
 

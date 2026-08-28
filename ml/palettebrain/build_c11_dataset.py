@@ -27,10 +27,9 @@ PROVENANCE_FIELDS = {
     "prompt", "source_id", "source_group_id", "image_id", "crop_coordinates",
     "mask_area_fraction", "license", "split",
 }
-NEGATIVE_SELECTION_VERSION = "c11-safe-ranking-negative-v1"
+NEGATIVE_SELECTION_VERSION = "c11-safe-ranking-negative-v2-color-prior-hard"
 NEGATIVE_POOL_SIZE = 256
 MIN_COLOR_PRIOR_COSINE_DISTANCE = 0.08
-MIN_TEACHER_DISTANCE = 0.25
 
 
 def sha256_file(path: Path) -> str:
@@ -96,17 +95,14 @@ def build_safe_ranking_negatives(arrays: dict[str, np.ndarray]) -> dict[str, np.
             prior_norms[candidates] * prior_norms[row_index]
         )
         prior_distance = 1.0 - cosine
-        teacher_distance = np.linalg.norm(
-            teachers[candidates] - teachers[row_index], axis=1
-        )
-        separated = (prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE) | (
-            teacher_distance >= MIN_TEACHER_DISTANCE
-        )
+        separated = prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE
         if not separated.any():
             continue
         candidates = candidates[separated]
-        scores = prior_distance[separated] + teacher_distance[separated]
-        selected = int(candidates[int(np.argmax(scores))])
+        # The ranking loss consumes color_prior, so eligibility and hardness
+        # are both defined in that representation.  The closest safe negative
+        # is informative without degenerating into an arbitrary farthest row.
+        selected = int(candidates[int(np.argmin(prior_distance[separated]))])
         negatives[row_index] = priors[selected]
         negative_groups[row_index] = groups[selected]
         valid[row_index] = 1.0
@@ -238,6 +234,7 @@ def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dic
     )
     free = shutil.disk_usage(output.parent if output.parent.exists() else Path.cwd()).free
     print(f"DISK used={used / 1024**3:.2f} GiB free={free / 1024**3:.2f} GiB")
+    source_sha256 = sha256_file(source)
     source_archive = np.load(source, allow_pickle=False)
     missing = sorted((set(CORE_FIELDS) | PROVENANCE_FIELDS) - set(source_archive.files))
     if missing:
@@ -252,6 +249,8 @@ def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dic
     np.savez_compressed(temporary, **arrays)
     temporary.replace(output)
     report = audit(output, engineering_smoke=engineering_smoke)
+    report["sourceSha256"] = source_sha256
+    report["sourcePath"] = str(source).replace("\\", "/")
     if engineering_smoke:
         report["testClassification"] = "ENGINEERING_SMOKE_ONLY"
         report["productionReady"] = False

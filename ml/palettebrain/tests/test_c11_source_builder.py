@@ -106,14 +106,14 @@ def test_acquisition_downloads_with_bounded_concurrency(
         return {**candidate, "content_sha256": candidate["image_id"]}
 
     class OpenImages:
-        def get_records(self, _concept_id: str, max_count: int):
+        def get_records(self, _concept_id: str, max_count: int, offset: int = 0):
             return [
                 {
                     "source_id": "open_images",
                     "source_url": f"https://example.test/{index}.jpg",
                     "image_id": f"image-{index}",
                 }
-                for index in range(min(6, max_count))
+                for index in range(offset, offset + min(6, max_count))
             ]
 
     monkeypatch.setattr(source, "fetch_candidate_image", fake_fetch)
