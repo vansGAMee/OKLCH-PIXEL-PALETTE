@@ -3399,44 +3399,104 @@ def build_c11_dataset(
             if limit_images is not None
             else FULL_TARGET_UNIQUE_IMAGES
         )
-        for cap in FULL_ACQUISITION_CAPS[1:]:
-            if len(valid) >= desired_valid:
-                break
+        print("Starting adaptive streaming top-up...")
+        import queue
+        import threading
+        import time
+        import math
+        
+        task_queue = queue.Queue()
+        target_per_concept = desired_valid // max(1, len(concepts))
+        
+        concept_state = {}
+        for cid in concepts:
+            count_valid = sum(1 for r in valid if r.get("concept_id") == cid)
+            count_attempted = sum(1 for r in acquired if r.get("concept_id") == cid)
+            concept_state[cid] = {
+                "valid": count_valid,
+                "attempted": count_attempted,
+                "inflight": 0,
+                "exhausted": False
+            }
+            
+        def fetch_worker():
+            while True:
+                task = task_queue.get()
+                if task is None: break
+                state, needed = task
+                try:
+                    records, open_images_out = acquire_for_concept(
+                        concept_id=cid,
+                        query=concepts[cid],
+                        raw_dir=raw_dir,
+                        limit=state["attempted"] + needed,
+                        cached_records=cached_records,
+                        seen_hashes=seen_hashes,
+                        seen_phashes=seen_phashes,
+                        disk=disk,
+                        stats=stats,
+                        open_images=open_images
+                    )
+                    state["attempted"] = max(state["attempted"], len(records))
+                    if len(records) < state["attempted"] + needed:
+                        state["exhausted"] = True
+                    result_queue.put((cid, records, state))
+                except Exception as e:
+                    print(f"Fetch error for {cid}: {e}")
+                    state["exhausted"] = True
+                    result_queue.put((cid, [], state))
+                task_queue.task_done()
+                
+        result_queue = queue.Queue()
+        fetch_thread = threading.Thread(target=fetch_worker, daemon=True)
+        fetch_thread.start()
+        
+        def schedule_fetches():
+            if task_queue.qsize() > 2: return
+            underfilled = []
+            for cid, state in concept_state.items():
+                if state["exhausted"]: continue
+                deficit = target_per_concept - state["valid"] - state["inflight"]
+                if deficit > 0:
+                    underfilled.append((deficit, cid, state))
+            underfilled.sort(key=lambda x: x[0], reverse=True)
+            for deficit, cid, state in underfilled[:4]:
+                if state["attempted"] == 0:
+                    needed = deficit * 4
+                else:
+                    acc_rate = state["valid"] / state["attempted"]
+                    safe_rate = max(0.05, acc_rate)
+                    needed = math.ceil(deficit / safe_rate)
+                needed = min(needed, 32)
+                state["inflight"] += needed
+                task_queue.put((state, needed))
+                
+        schedule_fetches()
+        
+        start_time = time.time()
+        valid_at_start = len(valid)
+        
+        while len(valid) < desired_valid:
             if limit_images is not None and len(acquired) >= limit_images:
                 break
             if not disk.before_download():
                 break
-
-            print(
-                f"Top-up acquisition: {len(valid)} valid < {desired_valid}; "
-                f"raising per-concept cap to {cap}."
-            )
-            selected_concepts = underfilled_concept_ids(
-                records=acquired,
-                valid_records=valid,
-                concepts=concepts,
-                desired_valid=desired_valid,
-                next_cap=cap,
-            )
-            if not selected_concepts:
-                break
-            acquired = acquire_full_records(
-                concepts=concepts,
-                raw_dir=raw_dir,
-                cached_records=cached_records,
-                seen_hashes=seen_hashes,
-                seen_phashes=seen_phashes,
-                disk=disk,
-                stats=stats,
-                open_images=open_images,
-                limit_images=limit_images,
-                per_concept_cap=cap,
-                only_concept_ids=selected_concepts,
-                checkpoint_every=checkpoint_every,
-            )
+            
+            try:
+                cid, records, state = result_queue.get(timeout=2.0)
+            except queue.Empty:
+                if task_queue.empty() and all(s["inflight"] == 0 for s in concept_state.values()):
+                    break
+                continue
+                
+            state["inflight"] = max(0, state["inflight"] - len(records))
+            if not records: continue
+            
+            acquired.extend(records)
             write_metadata_index(index_path, cached_records, disk=disk)
-            valid, relevance_rejected, cache_hits, pass_crop_stats = score_records_with_cache(
-                acquired=acquired,
+            
+            new_valid, _, cache_hits, pass_crop_stats = score_records_with_cache(
+                acquired=records,
                 concept_map=concept_map,
                 model=model,
                 processor=processor,
@@ -3450,12 +3510,24 @@ def build_c11_dataset(
             )
             for key, value in pass_crop_stats.items():
                 crop_stats[key] += value
-            print(
-                f"Top-up result: VALID={len(valid)} RAW={len(acquired)} "
-                f"cache_hits={cache_hits} concepts={len(selected_concepts)}"
-            )
+            valid.extend(new_valid)
+            state["valid"] += len(new_valid)
+            
+            elapsed = time.time() - start_time
+            valid_gained = len(valid) - valid_at_start
+            valid_per_sec = valid_gained / elapsed if elapsed > 0 else 0
+            deficit_remaining = desired_valid - len(valid)
+            eta_sec = deficit_remaining / valid_per_sec if valid_per_sec > 0 else 0
+            
+            print(f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} (latest {cid}: fetched {len(records)} -> valid {len(new_valid)})")
+            if valid_per_sec > 0:
+                print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
+            
+            schedule_fetches()
+            
+        task_queue.put(None)
 
-        if len(valid) < FULL_MIN_UNIQUE_IMAGES:
+        if limit_images is None and len(valid) < FULL_MIN_UNIQUE_IMAGES:
             raise RuntimeError(
                 f"FULL DATASET FAILED: {len(valid)} valid unique images "
                 f"< hard minimum {FULL_MIN_UNIQUE_IMAGES}"
