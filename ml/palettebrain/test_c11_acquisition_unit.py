@@ -29,6 +29,7 @@ from prepare_c11_recovered_source import (
     write_metadata_index,
 )
 import prepare_c11_recovered_source as collector
+import urllib.error
 
 class TestC11AcquisitionUnit(unittest.TestCase):
     def setUp(self):
@@ -467,6 +468,109 @@ class TestC11AcquisitionUnit(unittest.TestCase):
             thread.join()
             payload = json.loads((raw / 'metadata.json').read_text(encoding='utf-8'))
             self.assertGreaterEqual(len(payload['records']), 100)
+
+    def test_17_transient_provider_disable_does_not_survive_resume(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / 'state.json'
+            state_path.write_text(json.dumps({
+                'schema': collector.ACQUISITION_STATE_SCHEMA,
+                'fingerprint': 'fp',
+                'permanentFailedUrls': {},
+                'disabledProviders': {'openverse': {'reason': 'cloudflare_challenge'}},
+            }), encoding='utf-8')
+            configure_acquisition_runtime(
+                state_path=state_path, fingerprint='fp',
+                download_workers=4, metadata_workers=4,
+            )
+            self.assertFalse(collector._OPENVERSE_UNAVAILABLE)
+            self.assertNotIn('openverse', collector._ACQUISITION_STATE['disabledProviders'])
+
+    def test_18_artic_403_circuit_breaks_after_three_requests(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            configure_acquisition_runtime(
+                state_path=Path(tmpdir) / 'state.json', fingerprint='artic-fp',
+                download_workers=4, metadata_workers=4,
+            )
+            calls = []
+            def forbidden(request, timeout):
+                del timeout
+                calls.append(request.full_url)
+                raise urllib.error.HTTPError(request.full_url, 403, 'Forbidden', {}, None)
+            with mock.patch.object(collector.urllib.request, 'urlopen', side_effect=forbidden):
+                for index in range(5):
+                    safe_http_get(
+                        f'https://www.artic.edu/iiif/2/image-{index}/full/600,/0/default.jpg',
+                        max_retries=0, pause_seconds=0,
+                    )
+            self.assertEqual(len(calls), 3)
+            self.assertTrue(collector._ARTIC_UNAVAILABLE)
+            self.assertFalse(collector._provider_viable('artic'))
+
+            configure_acquisition_runtime(
+                state_path=Path(tmpdir) / 'state.json', fingerprint='artic-fp',
+                download_workers=4, metadata_workers=4,
+            )
+            self.assertTrue(collector._ARTIC_UNAVAILABLE)
+            self.assertEqual(
+                collector._ACQUISITION_STATE['disabledProviders']['artic']['reason'],
+                'iiif_http_403',
+            )
+
+    def test_19_met_metadata_ranks_concept_matches_first(self):
+        query = f'workshop-{time.time_ns()}'
+        concept = {
+            'concept_id': query,
+            'retrieval_query': 'potter workshop studio artisan interior',
+            'phrasings_en': [],
+        }
+        def fetch(url, **_kwargs):
+            if '/search?' in url:
+                return {'objectIDs': [1, 2]}
+            if url.endswith('/1'):
+                return {
+                    'isPublicDomain': True, 'primaryImageSmall': 'https://img.test/1.jpg',
+                    'classification': 'Ceramics', 'objectName': 'Bowl', 'title': 'Bowl',
+                    'tags': [], 'objectURL': 'https://met.test/1',
+                }
+            return {
+                'isPublicDomain': True, 'primaryImageSmall': 'https://img.test/2.jpg',
+                'classification': 'Paintings', 'objectName': 'Painting',
+                'title': 'Artisan in a pottery workshop interior',
+                'tags': [{'term': 'Potter'}], 'objectURL': 'https://met.test/2',
+            }
+        with mock.patch.object(collector, 'fetch_json', side_effect=fetch):
+            records = met_candidates(query, limit=2, offset=0, concept=concept)
+        self.assertEqual(records[0]['image_id'], 'met_2')
+        self.assertGreater(records[0]['metadata_relevance_matches'], records[1]['metadata_relevance_matches'])
+
+    def test_20_cursor_advances_only_after_successfully_consumed_page(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw = Path(tmpdir); cache = raw / 'cache'; cache.mkdir()
+            configure_acquisition_runtime(
+                state_path=raw / 'state.json', fingerprint='cursor-fp',
+                download_workers=2, metadata_workers=2,
+            )
+            disk = DiskBudget(raw_dir=raw, cache_dir=cache, target_bytes=10**7, hard_bytes=2*10**7, minimum_free_bytes=0)
+            concept = {
+                'concept_id': 'cursor_concept', 'category': 'styles',
+                'retrieval_query': 'cursor query', 'crop_required': False,
+                'source_preference': ['met'],
+            }
+            with mock.patch.object(collector, 'met_candidates', return_value=collector.CandidateBatch(consumed=False)):
+                acquire_for_concept(
+                    concept=concept, raw_dir=raw, max_count=1,
+                    allowed_sources=('met',), seen_hashes=set(), seen_phashes=[],
+                    disk=disk, stats={}, open_images=mock.Mock(),
+                )
+            offsets = collector._ACQUISITION_STATE['conceptCursors']['cursor_concept']['offsets']
+            self.assertEqual(offsets['met'], 0)
+            with mock.patch.object(collector, 'met_candidates', return_value=collector.CandidateBatch(consumed=True)):
+                acquire_for_concept(
+                    concept=concept, raw_dir=raw, max_count=1,
+                    allowed_sources=('met',), seen_hashes=set(), seen_phashes=[],
+                    disk=disk, stats={}, open_images=mock.Mock(),
+                )
+            self.assertEqual(offsets['met'], 8)
 
     def test_11_funnel_instrumentation(self):
         from prepare_c11_recovered_source import _FUNNEL

@@ -503,6 +503,10 @@ _OPENVERSE_LAST_SEARCH_TIME: float = 0.0
 _OPENVERSE_SEARCH_MIN_INTERVAL: float = 3.5
 _OPENVERSE_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _OPENVERSE_UNAVAILABLE: bool = False
+_ARTIC_LOCK = threading.RLock()
+_ARTIC_CONSECUTIVE_403: int = 0
+_ARTIC_UNAVAILABLE: bool = False
+_ARTIC_403_CIRCUIT_THRESHOLD = 3
 
 _API_CACHE_LOCK = threading.RLock()
 _API_KEY_LOCKS: dict[tuple[str, tuple[Any, ...]], threading.Lock] = {}
@@ -529,6 +533,12 @@ _ACQUISITION_STATE_DIRTY = 0
 _ACQUISITION_STATE_LAST_FLUSH = 0.0
 
 
+class CandidateBatch(list[dict[str, Any]]):
+    def __init__(self, values: Iterable[dict[str, Any]] = (), *, consumed: bool) -> None:
+        super().__init__(values)
+        self.consumed = bool(consumed)
+
+
 def configure_acquisition_runtime(
     *,
     state_path: Path,
@@ -538,6 +548,7 @@ def configure_acquisition_runtime(
 ) -> None:
     global _ACQUISITION_STATE_PATH, _ACQUISITION_STATE
     global _DOWNLOAD_WORKERS, _METADATA_WORKERS, _OPENVERSE_UNAVAILABLE
+    global _ARTIC_UNAVAILABLE, _ARTIC_CONSECUTIVE_403
     if not 1 <= download_workers <= 64 or not 1 <= metadata_workers <= 64:
         raise ValueError("acquisition worker counts must be in 1..64")
     _DOWNLOAD_WORKERS = int(download_workers)
@@ -560,7 +571,31 @@ def configure_acquisition_runtime(
         "permanentFailedUrls": {},
         "disabledProviders": {},
     }
-    _OPENVERSE_UNAVAILABLE = "openverse" in _ACQUISITION_STATE["disabledProviders"]
+    # Provider challenges are transient external state. Never carry a run-local
+    # circuit breaker into a future resume and silently starve a healthy route.
+    _ACQUISITION_STATE.setdefault("disabledProviders", {}).pop("openverse", None)
+    disabled_providers = _ACQUISITION_STATE.setdefault("disabledProviders", {})
+    artic_disabled = disabled_providers.get("artic", {})
+    artic_retry_after = float(artic_disabled.get("retryAfter", 0.0) or 0.0)
+    recent_artic_403 = [
+        float(details.get("timestamp", 0.0) or 0.0)
+        for url, details in _ACQUISITION_STATE.get("permanentFailedUrls", {}).items()
+        if "www.artic.edu/iiif/" in url
+        and details.get("reason") == "http_403"
+        and float(details.get("timestamp", 0.0) or 0.0) > time.time() - 6 * 60 * 60
+    ]
+    if len(recent_artic_403) >= _ARTIC_403_CIRCUIT_THRESHOLD:
+        artic_retry_after = max(artic_retry_after, max(recent_artic_403) + 6 * 60 * 60)
+        disabled_providers["artic"] = {
+            "reason": "iiif_http_403",
+            "timestamp": max(recent_artic_403),
+            "retryAfter": artic_retry_after,
+        }
+    if artic_retry_after <= time.time():
+        disabled_providers.pop("artic", None)
+    _OPENVERSE_UNAVAILABLE = False
+    _ARTIC_UNAVAILABLE = artic_retry_after > time.time()
+    _ARTIC_CONSECUTIVE_403 = 0
     persist_acquisition_state()
 
 
@@ -591,10 +626,15 @@ def _mark_permanent_url_failure(url: str, reason: str) -> None:
         persist_acquisition_state()
 
 
-def _disable_provider(provider: str, reason: str) -> None:
+def _disable_provider(
+    provider: str, reason: str, *, cooldown_seconds: float | None = None
+) -> None:
     with _ACQUISITION_STATE_LOCK:
         disabled = _ACQUISITION_STATE.setdefault("disabledProviders", {})
-        disabled[provider] = {"reason": reason, "timestamp": time.time()}
+        timestamp = time.time()
+        disabled[provider] = {"reason": reason, "timestamp": timestamp}
+        if cooldown_seconds is not None:
+            disabled[provider]["retryAfter"] = timestamp + cooldown_seconds
     persist_acquisition_state()
 
 
@@ -630,6 +670,8 @@ def _route_priority(route_key: str) -> float:
         return 0.0
     if scored >= 10 and passed == 0:
         return 0.0
+    if int(route.get("emptyBatches", 0)) >= 2:
+        return 0.0
     expected_valid = (passed + 1.0) / (scored + 5.0)
     download_rate = (downloaded + 1.0) / (attempted + 2.0)
     latency = max(0.1, seconds / max(1, attempted))
@@ -637,6 +679,10 @@ def _route_priority(route_key: str) -> float:
 
 
 def _provider_viable(provider: str) -> bool:
+    if provider == "artic":
+        with _ARTIC_LOCK:
+            if _ARTIC_UNAVAILABLE:
+                return False
     with _FUNNEL._lock:
         metrics = dict(_FUNNEL.metrics.get(provider, {}))
     attempted = int(metrics.get("download_attempted", 0))
@@ -666,6 +712,7 @@ def safe_http_get(
     headers: dict[str, str] | None = None,
 ) -> bytes | None:
     global _OPENVERSE_CONSECUTIVE_429, _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_UNAVAILABLE
+    global _ARTIC_CONSECUTIVE_403, _ARTIC_UNAVAILABLE
     if not url.startswith(("https://", "http://")):
         _mark_permanent_url_failure(str(url), "unsupported_url_scheme")
         persist_acquisition_state()
@@ -679,6 +726,11 @@ def safe_http_get(
         _mark_permanent_url_failure(str(url), "malformed_url")
         persist_acquisition_state()
         return None
+    is_artic_iiif = "www.artic.edu/iiif/" in url
+    if is_artic_iiif:
+        with _ARTIC_LOCK:
+            if _ARTIC_UNAVAILABLE:
+                return None
     if url in _ACQUISITION_STATE.get("permanentFailedUrls", {}):
         return None
     request_headers = {
@@ -707,6 +759,9 @@ def safe_http_get(
                                     time.sleep(4.0)
                             except ValueError:
                                 pass
+                    if is_artic_iiif:
+                        with _ARTIC_LOCK:
+                            _ARTIC_CONSECUTIVE_403 = 0
                     length = resp.headers.get("Content-Length")
                     if length:
                         try:
@@ -726,6 +781,22 @@ def safe_http_get(
                         time.sleep(pause_seconds)
                     return bytes(out)
         except urllib.error.HTTPError as exc:
+            if is_artic_iiif and exc.code == 403:
+                tripped = False
+                with _ARTIC_LOCK:
+                    _ARTIC_CONSECUTIVE_403 += 1
+                    if (
+                        _ARTIC_CONSECUTIVE_403 >= _ARTIC_403_CIRCUIT_THRESHOLD
+                        and not _ARTIC_UNAVAILABLE
+                    ):
+                        _ARTIC_UNAVAILABLE = True
+                        tripped = True
+                _mark_permanent_url_failure(url, "http_403")
+                if tripped:
+                    _disable_provider(
+                        "artic", "iiif_http_403", cooldown_seconds=6 * 60 * 60
+                    )
+                return None
             if (
                 "openverse.org" in url
                 and str(exc.headers.get("CF-Mitigated", "")).lower() == "challenge"
@@ -737,7 +808,6 @@ def safe_http_get(
                             "disabled for this run without retry."
                         )
                     _OPENVERSE_UNAVAILABLE = True
-                _disable_provider("openverse", "cloudflare_challenge")
                 return None
             if exc.code in (400, 401, 403, 404, 405, 410, 422):
                 _mark_permanent_url_failure(url, f"http_{exc.code}")
@@ -1654,7 +1724,7 @@ class OpenImagesBboxIndex:
                     continue
                 found.append(dict(record))
                 used_images.add(record["image_id"])
-        return found[offset : offset + max_count]
+        return CandidateBatch(found[offset : offset + max_count], consumed=True)
 
 
 def _api_key_lock(provider: str, key: tuple[Any, ...]) -> threading.Lock:
@@ -1669,10 +1739,14 @@ def _met_candidates_impl(
     concept: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     norm_query = query.strip().lower()
-    cache_key = (norm_query, limit, offset)
+    concept_id = str((concept or {}).get("concept_id", ""))
+    cache_key = (norm_query, limit, offset, concept_id)
     with _API_CACHE_LOCK:
         if cache_key in _MET_QUERY_CACHE:
-            return [dict(record) for record in _MET_QUERY_CACHE[cache_key]]
+            return CandidateBatch(
+                (dict(record) for record in _MET_QUERY_CACHE[cache_key]),
+                consumed=True,
+            )
         all_ids = _MET_SEARCH_CACHE.get(norm_query)
 
     t0 = time.time()
@@ -1682,7 +1756,10 @@ def _met_candidates_impl(
             f"?q={urllib.parse.quote(query)}&hasImages=true"
         )
         search = fetch_json(search_url, timeout=10, max_retries=1)
-        all_ids = list(search.get("objectIDs") or []) if search else []
+        if search is None:
+            _FUNNEL.add_time("met", "seconds_metadata", time.time() - t0)
+            return CandidateBatch(consumed=False)
+        all_ids = list(search.get("objectIDs") or [])
         with _API_CACHE_LOCK:
             _MET_SEARCH_CACHE[norm_query] = all_ids
 
@@ -1703,6 +1780,7 @@ def _met_candidates_impl(
         max_workers=min(_METADATA_WORKERS, max(1, len(object_ids)))
     ) as executor:
         objects = list(executor.map(load_object, object_ids))
+    consumed = all(obj is not None for _, obj in objects)
 
     _FUNNEL.add_time("met", "seconds_metadata", time.time() - t0)
 
@@ -1761,6 +1839,9 @@ def _met_candidates_impl(
                 ),
                 "creator": str(obj.get("artistDisplayName") or "Unknown"),
                 "title": title,
+                "object_name": obj_name,
+                "classification": classification,
+                "tags": tags,
                 "license": "CC0 1.0",
                 "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
                 "crop_coordinates": None,
@@ -1771,10 +1852,24 @@ def _met_candidates_impl(
                 "bbox_source": "",
             }
         )
+    if concept_kw:
+        for record in out:
+            metadata_blob = " ".join([
+                str(record.get("title", "")),
+                str(record.get("object_name", "")),
+                str(record.get("classification", "")),
+                " ".join(record.get("tags", [])),
+            ]).lower()
+            metadata_terms = set(re.findall(r"\b[a-zA-Z]{3,}\b", metadata_blob))
+            record["metadata_relevance_matches"] = len(concept_kw & metadata_terms)
+        out.sort(
+            key=lambda record: int(record.get("metadata_relevance_matches", 0)),
+            reverse=True,
+        )
     with _API_CACHE_LOCK:
         _MET_QUERY_CACHE[cache_key] = out
     _FUNNEL.record("met", "metadata_candidates", len(out))
-    return [dict(record) for record in out]
+    return CandidateBatch((dict(record) for record in out), consumed=consumed)
 
 
 def _artic_candidates_impl(
@@ -1787,7 +1882,10 @@ def _artic_candidates_impl(
     cache_key = (norm_query, limit, page)
     with _API_CACHE_LOCK:
         if cache_key in _ARTIC_QUERY_CACHE:
-            return [dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]]
+            return CandidateBatch(
+                (dict(record) for record in _ARTIC_QUERY_CACHE[cache_key]),
+                consumed=True,
+            )
 
     t0 = time.time()
     url = (
@@ -1801,8 +1899,8 @@ def _artic_candidates_impl(
     payload = fetch_json(url, timeout=10, max_retries=1)
     _FUNNEL.add_time("artic", "seconds_metadata", time.time() - t0)
 
-    if not payload:
-        return []
+    if payload is None:
+        return CandidateBatch(consumed=False)
     iiif_base = str(
         payload.get("config", {}).get("iiif_url")
         or "https://www.artic.edu/iiif/2"
@@ -1841,7 +1939,7 @@ def _artic_candidates_impl(
     with _API_CACHE_LOCK:
         _ARTIC_QUERY_CACHE[cache_key] = out
     _FUNNEL.record("artic", "metadata_candidates", len(out))
-    return [dict(record) for record in out]
+    return CandidateBatch((dict(record) for record in out), consumed=True)
 
 
 def _openverse_candidates_impl(
@@ -1853,16 +1951,19 @@ def _openverse_candidates_impl(
     global _OPENVERSE_COOLDOWN_UNTIL, _OPENVERSE_LAST_SEARCH_TIME, _OPENVERSE_UNAVAILABLE
     with _OPENVERSE_LOCK:
         if _OPENVERSE_UNAVAILABLE:
-            return []
+            return CandidateBatch(consumed=False)
         norm_query = query.strip().lower()
         cache_key = (norm_query, limit, page)
         if cache_key in _OPENVERSE_QUERY_CACHE:
-            return [dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]]
+            return CandidateBatch(
+                (dict(x) for x in _OPENVERSE_QUERY_CACHE[cache_key]),
+                consumed=True,
+            )
         now = time.time()
         if now < _OPENVERSE_COOLDOWN_UNTIL:
             remaining = int(_OPENVERSE_COOLDOWN_UNTIL - now)
             print(f"Openverse in cooldown ({remaining}s remaining), skipping query: {query}")
-            return []
+            return CandidateBatch(consumed=False)
         scheduled = max(now, _OPENVERSE_LAST_SEARCH_TIME + _OPENVERSE_SEARCH_MIN_INTERVAL)
         wait_seconds = scheduled - now
         _OPENVERSE_LAST_SEARCH_TIME = scheduled
@@ -1880,8 +1981,8 @@ def _openverse_candidates_impl(
     payload = fetch_json(url, timeout=20)
     _FUNNEL.add_time("openverse", "seconds_metadata", time.time() - t0)
 
-    if not payload:
-        return []
+    if payload is None:
+        return CandidateBatch(consumed=False)
     out: list[dict[str, Any]] = []
     for item in payload.get("results", []):
         if not isinstance(item, dict):
@@ -1936,14 +2037,17 @@ def _openverse_candidates_impl(
     with _OPENVERSE_LOCK:
         _OPENVERSE_QUERY_CACHE[cache_key] = res
     _FUNNEL.record("openverse", "metadata_candidates", len(res))
-    return res
+    return CandidateBatch(res, consumed=True)
 
 
 def met_candidates(
     query: str, limit: int = 36, offset: int = 0,
     concept: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    key = (query.strip().lower(), limit, offset)
+    key = (
+        query.strip().lower(), limit, offset,
+        str((concept or {}).get("concept_id", "")),
+    )
     with _api_key_lock("met", key):
         return _met_candidates_impl(query, limit, offset, concept)
 
@@ -1987,6 +2091,8 @@ def fetch_candidate_image(
     provider = str(candidate.get("source_id") or "open_images")
     route_key = str(candidate.get("acquisition_route_key") or "")
     for url in urls:
+        if not _provider_viable(provider):
+            return None
         _FUNNEL.record(provider, "download_attempted", 1)
         _record_route(route_key, "attempted")
         started = time.time()
@@ -2091,35 +2197,42 @@ def acquire_for_concept(
             cur_off = offsets.get("open_images", 0)
             limit_oi = max(max_count * 4, 20)
             records = open_images.get_records(cid, max_count=limit_oi, offset=cur_off)
-            if records:
+            if getattr(records, "consumed", True):
                 offsets["open_images"] = cur_off + len(records)
                 legacy_offsets["open_images"] = offsets["open_images"]
+            if records:
                 batch_candidates = records
         elif src == "artic":
             cur_page = offsets.get("artic", 1)
-            limit_art = max(max_count * 2, 24)
+            limit_art = min(max(max_count, 8), 12)
             records = artic_candidates(query, limit=limit_art, page=cur_page, concept=concept)
-            if records:
+            if getattr(records, "consumed", False):
                 offsets["artic"] = cur_page + 1
                 legacy_offsets["artic"] = offsets["artic"]
+            if records:
                 batch_candidates = records
         elif src == "met":
             cur_off = offsets.get("met", 0)
-            limit_met = max(max_count * 2, 16)
+            limit_met = min(max(max_count, 8), 12)
             records = met_candidates(query, limit=limit_met, offset=cur_off, concept=concept)
-            if records:
+            if getattr(records, "consumed", False):
                 offsets["met"] = cur_off + limit_met
                 legacy_offsets["met"] = offsets["met"]
+            if records:
                 batch_candidates = records
         elif src == "openverse":
             cur_page = offsets.get("openverse", 1)
-            limit_ov = max(max_count * 2, 24)
+            limit_ov = min(max(max_count, 8), 12)
             records = openverse_candidates(query, limit=limit_ov, page=cur_page, concept=concept)
-            if records:
+            if getattr(records, "consumed", False):
                 offsets["openverse"] = cur_page + 1
                 legacy_offsets["openverse"] = offsets["openverse"]
+            if records:
                 batch_candidates = records
 
+        _record_route(route_key, "batches", 1)
+        if getattr(records, "consumed", False) and not batch_candidates:
+            _record_route(route_key, "emptyBatches", 1)
         _record_route(route_key, "metadata", len(batch_candidates))
         for cand in batch_candidates:
             cand["acquisition_route_key"] = route_key
@@ -2144,7 +2257,7 @@ def acquire_for_concept(
             concept_cursors["stage"] = (actual_idx + 1) % len(stage_pairs)
 
     if not candidates:
-        return []
+        return CandidateBatch(consumed=True)
 
     candidates = candidates[:max_count]
 

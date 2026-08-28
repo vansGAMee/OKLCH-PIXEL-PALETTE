@@ -2,13 +2,13 @@
   "mode": "full-adaptive-benchmark",
   "testClassification": "REAL_FULL_ACQUISITION_BENCHMARK",
   "timedOut": true,
-  "elapsedSeconds": 127.51359462738037,
-  "currentValid": 993,
+  "elapsedSeconds": 239.738605260849,
+  "currentValid": 1036,
   "validAtStart": 993,
-  "validGained": 0,
-  "remainingTo2500": 1507,
-  "validPerSecond": 0.0,
-  "siglipAcceptanceRate": 0.0,
+  "validGained": 43,
+  "remainingTo2500": 1464,
+  "validPerSecond": 0.17936201786614048,
+  "siglipAcceptanceRate": 0.7288135593220338,
   "funnel": {
     "open_images": {
       "metadata_candidates": 0,
@@ -26,36 +26,6 @@
       "seconds_siglip": 0.0
     },
     "met": {
-      "metadata_candidates": 104,
-      "already_seen_skipped": 50,
-      "download_attempted": 54,
-      "download_success": 54,
-      "decode_success": 54,
-      "crop_success": 0,
-      "siglip_scored": 42,
-      "siglip_pass": 0,
-      "siglip_fail": 42,
-      "seconds_metadata": 168.79382348060608,
-      "seconds_network": 110.15608930587769,
-      "seconds_decode": 0.39399147033691406,
-      "seconds_siglip": 0.0
-    },
-    "artic": {
-      "metadata_candidates": 382,
-      "already_seen_skipped": 77,
-      "download_attempted": 192,
-      "download_success": 0,
-      "decode_success": 0,
-      "crop_success": 0,
-      "siglip_scored": 0,
-      "siglip_pass": 0,
-      "siglip_fail": 0,
-      "seconds_metadata": 6.557404279708862,
-      "seconds_network": 41.75751233100891,
-      "seconds_decode": 0.0,
-      "seconds_siglip": 0.0
-    },
-    "openverse": {
       "metadata_candidates": 0,
       "already_seen_skipped": 0,
       "download_attempted": 0,
@@ -65,13 +35,43 @@
       "siglip_scored": 0,
       "siglip_pass": 0,
       "siglip_fail": 0,
-      "seconds_metadata": 0.0,
+      "seconds_metadata": 43.39952206611633,
       "seconds_network": 0.0,
       "seconds_decode": 0.0,
       "seconds_siglip": 0.0
+    },
+    "artic": {
+      "metadata_candidates": 132,
+      "already_seen_skipped": 38,
+      "download_attempted": 30,
+      "download_success": 0,
+      "decode_success": 0,
+      "crop_success": 0,
+      "siglip_scored": 0,
+      "siglip_pass": 0,
+      "siglip_fail": 0,
+      "seconds_metadata": 9.738104343414307,
+      "seconds_network": 0.7101695537567139,
+      "seconds_decode": 0.0,
+      "seconds_siglip": 0.0
+    },
+    "openverse": {
+      "metadata_candidates": 98,
+      "already_seen_skipped": 0,
+      "download_attempted": 73,
+      "download_success": 73,
+      "decode_success": 73,
+      "crop_success": 0,
+      "siglip_scored": 59,
+      "siglip_pass": 43,
+      "siglip_fail": 16,
+      "seconds_metadata": 362.7492632865906,
+      "seconds_network": 133.68318343162537,
+      "seconds_decode": 2.7117133140563965,
+      "seconds_siglip": 0.0
     }
   },
-  "siglipWallSeconds": 1.1790142059326172,
+  "siglipWallSeconds": 1.805638313293457,
   "relevanceThreshold": 0.03875705599784851,
-  "cacheRecords": 2201
+  "cacheRecords": 2260
 }
