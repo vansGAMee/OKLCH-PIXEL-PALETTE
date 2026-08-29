@@ -27,7 +27,7 @@ PROVENANCE_FIELDS = {
     "prompt", "source_id", "source_group_id", "image_id", "crop_coordinates",
     "mask_area_fraction", "license", "split",
 }
-NEGATIVE_SELECTION_VERSION = "c11-safe-ranking-negative-v2-color-prior-hard"
+NEGATIVE_SELECTION_VERSION = "c11-safe-ranking-negative-v3-bounded-global-order"
 NEGATIVE_POOL_SIZE = 256
 MIN_COLOR_PRIOR_COSINE_DISTANCE = 0.08
 
@@ -71,48 +71,98 @@ def build_safe_ranking_negatives(arrays: dict[str, np.ndarray]) -> dict[str, np.
     prior_norms = np.maximum(np.linalg.norm(priors, axis=1), 1e-12)
     negatives = np.zeros_like(priors)
     negative_groups = np.full(rows, "", dtype=f"<U{max(1, max(map(len, groups), default=1))}")
+    negative_indices = np.full(rows, -1, dtype=np.int64)
     valid = np.zeros(rows, dtype=np.float32)
     train_indices = np.flatnonzero(split == "train")
 
-    for row_index in train_indices:
-        eligible = train_indices[
-            (groups[train_indices] != groups[row_index])
-            & (concepts[train_indices] != concepts[row_index])
-            & (images[train_indices] != images[row_index])
-            & (contents[train_indices] != contents[row_index])
-            & (target_hashes[train_indices] != target_hashes[row_index])
-        ]
-        if not len(eligible):
+    # Candidate identity hashes and ordering are immutable for this archive and
+    # therefore paid once.  The previous implementation rebuilt a full boolean
+    # mask and sorted an O(N) list independently for every row.
+    stable_candidate_keys = {
+        int(candidate): hashlib.sha256(
+            "|".join((
+                NEGATIVE_SELECTION_VERSION,
+                groups[candidate],
+                concepts[candidate],
+                images[candidate],
+                contents[candidate],
+                target_hashes[candidate],
+                str(int(candidate)),
+            )).encode("utf-8")
+        ).digest()
+        for candidate in train_indices
+    }
+    ordered_train = sorted(
+        (int(candidate) for candidate in train_indices),
+        key=stable_candidate_keys.__getitem__,
+    )
+
+    for row_index_value in train_indices:
+        row_index = int(row_index_value)
+        candidate_block: list[int] = []
+        selected = -1
+        for candidate in ordered_train:
+            if (
+                candidate == row_index
+                or groups[candidate] == groups[row_index]
+                or concepts[candidate] == concepts[row_index]
+                or images[candidate] == images[row_index]
+                or contents[candidate] == contents[row_index]
+                or target_hashes[candidate] == target_hashes[row_index]
+            ):
+                continue
+            candidate_block.append(candidate)
+            if len(candidate_block) < NEGATIVE_POOL_SIZE:
+                continue
+            candidates = np.asarray(candidate_block, dtype=np.int64)
+            cosine = (priors[candidates] @ priors[row_index]) / (
+                prior_norms[candidates] * prior_norms[row_index]
+            )
+            prior_distance = 1.0 - cosine
+            separated = prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE
+            if separated.any():
+                legal = candidates[separated]
+                selected = int(legal[int(np.argmin(prior_distance[separated]))])
+                break
+            candidate_block.clear()
+
+        if selected < 0 and candidate_block:
+            candidates = np.asarray(candidate_block, dtype=np.int64)
+            cosine = (priors[candidates] @ priors[row_index]) / (
+                prior_norms[candidates] * prior_norms[row_index]
+            )
+            prior_distance = 1.0 - cosine
+            separated = prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE
+            if separated.any():
+                legal = candidates[separated]
+                selected = int(legal[int(np.argmin(prior_distance[separated]))])
+
+        if selected < 0:
             continue
-        ranked = sorted(
-            eligible.tolist(),
-            key=lambda candidate: hashlib.sha256(
-                f"{NEGATIVE_SELECTION_VERSION}|{groups[row_index]}|{groups[candidate]}|{candidate}".encode()
-            ).digest(),
-        )[:NEGATIVE_POOL_SIZE]
-        candidates = np.asarray(ranked, dtype=np.int64)
-        cosine = (priors[candidates] @ priors[row_index]) / (
-            prior_norms[candidates] * prior_norms[row_index]
-        )
-        prior_distance = 1.0 - cosine
-        separated = prior_distance >= MIN_COLOR_PRIOR_COSINE_DISTANCE
-        if not separated.any():
-            continue
-        candidates = candidates[separated]
-        # The ranking loss consumes color_prior, so eligibility and hardness
-        # are both defined in that representation.  The closest safe negative
-        # is informative without degenerating into an arbitrary farthest row.
-        selected = int(candidates[int(np.argmin(prior_distance[separated]))])
         negatives[row_index] = priors[selected]
         negative_groups[row_index] = groups[selected]
+        negative_indices[row_index] = selected
         valid[row_index] = 1.0
 
     return {
         "ranking_negative_color_prior": negatives,
         "ranking_negative_source_group_id": negative_groups,
+        "ranking_negative_index": negative_indices,
         "ranking_negative_valid": valid,
         "negative_selection_version": np.asarray(NEGATIVE_SELECTION_VERSION),
     }
+
+
+def split_membership_leaks(values: np.ndarray, splits: np.ndarray) -> list[str]:
+    """Return identities occurring in more than one split in one pass."""
+    identities = np.asarray(values).astype(str)
+    split_values = np.asarray(splits).astype(str)
+    if identities.shape != split_values.shape:
+        raise ValueError("identity and split arrays must have matching shapes")
+    memberships: dict[str, set[str]] = {}
+    for identity, split_value in zip(identities.tolist(), split_values.tolist(), strict=True):
+        memberships.setdefault(identity, set()).add(split_value)
+    return sorted(identity for identity, seen in memberships.items() if len(seen) > 1)
 
 
 def audit(path: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
@@ -161,19 +211,10 @@ def audit(path: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
         licenses = np.asarray(archive["license"]).astype(str)
         mask_area = np.asarray(archive["mask_area_fraction"], dtype=np.float64)
         crops = np.asarray(archive["crop_coordinates"], dtype=np.float64)
-        leaking_groups = sorted({
-            group for group in set(groups.tolist())
-            if len(set(splits[groups == group].tolist())) > 1
-        })
+        leaking_groups = split_membership_leaks(groups, splits)
         content_hashes = np.asarray(archive["content_sha256"]).astype(str)
-        leaking_content = sorted({
-            value for value in set(content_hashes.tolist())
-            if len(set(splits[content_hashes == value].tolist())) > 1
-        })
-        leaking_images = sorted({
-            value for value in set(image_ids.tolist())
-            if len(set(splits[image_ids == value].tolist())) > 1
-        })
+        leaking_content = split_membership_leaks(content_hashes, splits)
+        leaking_images = split_membership_leaks(image_ids, splits)
         suspicious_background = int(np.sum(mask_area < 0.20))
         if leaking_groups:
             errors.append(f"source-group split leakage: {len(leaking_groups)} groups")

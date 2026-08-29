@@ -72,13 +72,31 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
         "seed": 20260826,
     }
     expected_dependency = training_dependency_fingerprint()
+    dataset_sha256 = sha256_file(Path(args.dataset))
+    expected_dataset_identity: dict[str, Any] | None = None
+    if last_path.is_file():
+        try:
+            last_checkpoint = torch.load(last_path, map_location="cpu", weights_only=True)
+            if (
+                last_checkpoint.get("candidate") == "candidate-11"
+                and last_checkpoint.get("stage") == args.stage
+                and last_checkpoint.get("dependency_fingerprint") == expected_dependency
+                and last_checkpoint.get("dataset_identity", {}).get("primary") == dataset_sha256
+            ):
+                expected_dataset_identity = last_checkpoint.get("dataset_identity")
+        except (OSError, RuntimeError, KeyError, ValueError):
+            expected_dataset_identity = None
     for candidate in candidates:
         checkpoint = torch.load(candidate, map_location="cpu", weights_only=True)
         candidate_args = checkpoint.get("training_args", {})
         if (
             checkpoint.get("candidate") != "candidate-11"
             or checkpoint.get("stage") != args.stage
-            or checkpoint.get("dataset_identity", {}).get("primary") != sha256_file(Path(args.dataset))
+            or checkpoint.get("dataset_identity", {}).get("primary") != dataset_sha256
+            or (
+                expected_dataset_identity is not None
+                and checkpoint.get("dataset_identity") != expected_dataset_identity
+            )
             or checkpoint.get("dependency_fingerprint") != expected_dependency
             or any(candidate_args.get(key) != value for key, value in expected_training_args.items())
         ):
@@ -117,7 +135,7 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
         ],
         "selectedCheckpoint": args.output.as_posix(),
         "selectedCheckpointSha256": sha256_file(args.output),
-        "datasetSha256": sha256_file(Path(args.dataset)),
+        "datasetSha256": dataset_sha256,
         "selectedSourceCheckpoint": selected["checkpoint"],
         "candidates": rows,
     }

@@ -2342,13 +2342,14 @@ def acquire_for_concept(
     return stored_records
 
 
-def process_image(
+def prepare_relevance_image(
     path: Path,
     *,
     crop_required: bool,
     whole_frame_valid: bool,
     meta_crop: list[float] | tuple[float, float, float, float] | None,
-) -> tuple[np.ndarray, np.ndarray, Image.Image, np.ndarray, float] | None:
+) -> tuple[Image.Image, np.ndarray, float] | None:
+    """Decode, bound, crop, and validate only what SigLIP scoring needs."""
     try:
         with Image.open(path) as img:
             img.load()
@@ -2387,14 +2388,46 @@ def process_image(
         else:
             return None
 
-        pixels = np.asarray(rgb, dtype=np.float32).reshape(-1, 3) / 255.0
-        if len(pixels) < 100 or float(np.std(pixels)) < 1e-4:
-            return None
-        oklab = rgb_to_oklab_array(pixels)
-        color_prior = palette_or_pixels_to_oklch_histogram(oklab)
-        return oklab, color_prior, rgb, crop, float(mask_fraction)
-    except Exception:
+    except (OSError, Image.DecompressionBombError):
         return None
+
+    pixels = np.asarray(rgb, dtype=np.uint8).reshape(-1, 3)
+    if len(pixels) < 100 or float(np.std(pixels)) < 1e-4:
+        return None
+    return rgb, crop, float(mask_fraction)
+
+
+def extract_final_color_features(rgb: Image.Image) -> tuple[np.ndarray, np.ndarray]:
+    """Compute final-only OKLab pixels and color prior for a relevance survivor."""
+    pixels = np.asarray(rgb, dtype=np.float32).reshape(-1, 3) / 255.0
+    oklab = rgb_to_oklab_array(pixels)
+    color_prior = palette_or_pixels_to_oklch_histogram(oklab)
+    return oklab, color_prior
+
+
+def process_image(
+    path: Path,
+    *,
+    crop_required: bool,
+    whole_frame_valid: bool,
+    meta_crop: list[float] | tuple[float, float, float, float] | None,
+) -> tuple[np.ndarray, np.ndarray, Image.Image, np.ndarray, float] | None:
+    """Decode an image and compute final color features.
+
+    Expected corrupt-input failures return ``None``. Programming failures in
+    color conversion or feature extraction propagate and cannot poison caches.
+    """
+    prepared = prepare_relevance_image(
+        path,
+        crop_required=crop_required,
+        whole_frame_valid=whole_frame_valid,
+        meta_crop=meta_crop,
+    )
+    if prepared is None:
+        return None
+    rgb, crop, mask_fraction = prepared
+    oklab, color_prior = extract_final_color_features(rgb)
+    return oklab, color_prior, rgb, crop, mask_fraction
 
 
 def resolve_device(device: str) -> torch.device:
@@ -3043,6 +3076,7 @@ def process_acquired_records(
     *,
     acquired: list[dict[str, Any]],
     concept_map: dict[str, dict[str, Any]],
+    include_final_features: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     processed: list[dict[str, Any]] = []
     counters = {
@@ -3052,23 +3086,25 @@ def process_acquired_records(
     for record in acquired:
         concept = concept_map[str(record["concept_id"])]
         crop_required = bool(concept.get("crop_required", False))
-        processed_data = process_image(
+        prepared = prepare_relevance_image(
             Path(record["local_path"]),
             crop_required=crop_required,
             whole_frame_valid=bool(concept.get("whole_frame_valid", True)),
             meta_crop=record.get("crop_coordinates"),
         )
-        if processed_data is None:
+        if prepared is None:
             if crop_required:
                 counters["crop_required_skipped_no_valid_crop"] += 1
             continue
-        oklab, prior, pil_image, crop, mask_fraction = processed_data
+        pil_image, crop, mask_fraction = prepared
         out = dict(record)
-        out["oklab_pixels"] = oklab
-        out["color_prior"] = prior
         out["processed_pil"] = pil_image
         out["crop_coordinates"] = crop
         out["mask_area_fraction"] = mask_fraction
+        if include_final_features:
+            oklab, prior = extract_final_color_features(pil_image)
+            out["oklab_pixels"] = oklab
+            out["color_prior"] = prior
         if crop_required:
             counters["crop_required_accepted_before_relevance"] += 1
         processed.append(out)
@@ -3169,7 +3205,10 @@ def score_records_with_cache(
     disk: DiskBudget,
     chunk_size: int = 64,
     save_cache: bool = True,
+    cache_compaction_interval: int = 8,
 ) -> tuple[list[dict[str, Any]], int, int, dict[str, int]]:
+    if chunk_size < 1 or cache_compaction_interval < 1:
+        raise ValueError("chunk and cache compaction intervals must be positive")
     missing = [r for r in acquired if str(r["content_sha256"]) not in cache]
     crop_totals = {
         "crop_required_accepted_before_relevance": 0,
@@ -3187,11 +3226,13 @@ def score_records_with_cache(
             f"(existing relevance cache hits={existing_cache_hits})"
         )
 
-    for start in range(0, len(missing), chunk_size):
+    total_chunks = (len(missing) + chunk_size - 1) // chunk_size
+    for chunk_number, start in enumerate(range(0, len(missing), chunk_size), start=1):
         chunk = missing[start : start + chunk_size]
         processed, crop_stats = process_acquired_records(
             acquired=chunk,
             concept_map=concept_map,
+            include_final_features=False,
         )
         for key, value in crop_stats.items():
             crop_totals[key] += value
@@ -3236,7 +3277,10 @@ def score_records_with_cache(
                 cid = str(record.get("concept_id", ""))
                 _FUNNEL.record(src_id, "siglip_scored", 1, cid=cid)
                 _FUNNEL.record(src_id, "siglip_fail", 1, cid=cid)
-        if save_cache:
+        if save_cache and (
+            chunk_number % cache_compaction_interval == 0
+            or chunk_number == total_chunks
+        ):
             save_relevance_cache(cache_path, cache_fingerprint, cache, disk)
 
         done = min(start + len(chunk), total_missing)
@@ -3744,6 +3788,22 @@ def full_acquisition_complete(
     requirements: dict[str, Any],
 ) -> bool:
     return valid_count >= desired_valid and bool(requirements["mandatoryPass"])
+
+
+def require_full_visual_coverage(requirements: dict[str, Any]) -> None:
+    """Fail before final feature extraction when canonical coverage is deficient."""
+    if requirements.get("mandatoryPass") is True:
+        return
+    deficits = {
+        category: {
+            "additionalImagesNeeded": details["additionalImagesNeeded"],
+            "additionalConceptsNeeded": details["additionalConceptsNeeded"],
+        }
+        for category, details in requirements.get("failingCategories", {}).items()
+    }
+    raise RuntimeError(
+        "FULL DATASET COVERAGE FAILED: " + json.dumps(deficits, sort_keys=True)
+    )
 
 
 def audit_visual_coverage(
@@ -4486,9 +4546,7 @@ def build_c11_dataset(
                 valid_gained = len(valid) - valid_at_start
                 valid_per_sec = valid_gained / elapsed if elapsed > 0 else 0
                 deficit_remaining = max(0, desired_valid - len(valid))
-                eta_sec = (
-                    deficit_remaining / valid_per_sec if valid_per_sec > 0 else 0
-                )
+                eta_sec = deficit_remaining / valid_per_sec if valid_per_sec > 0 else None
 
                 print(
                     f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} "
@@ -4501,7 +4559,7 @@ def build_c11_dataset(
                     projected = (
                         remaining / resolved_per_min
                         if resolved_per_min > 0
-                        else 0.0
+                        else None
                     )
                     provider = (
                         str(records[0].get("source_id", "unknown"))
@@ -4518,9 +4576,10 @@ def build_c11_dataset(
                     print(
                         f"coverage: {categories} remaining_concepts={remaining} "
                         f"latest={cid} provider={provider} accepted={len(new_valid)} "
-                        f"elapsed={elapsed:.1f}s projected_gate_eta={projected:.1f}min"
+                        f"elapsed={elapsed:.1f}s projected_gate_eta="
+                        f"{f'{projected:.1f}min' if projected is not None else 'unknown'}"
                     )
-                if valid_per_sec > 0:
+                if eta_sec is not None:
                     print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
 
                 report = _FUNNEL.summary()
@@ -4590,6 +4649,7 @@ def build_c11_dataset(
             print(json.dumps(benchmark_summary, ensure_ascii=False, indent=2))
             return benchmark_summary
 
+        require_full_visual_coverage(coverage_state)
         if limit_images is None and len(valid) < FULL_MIN_UNIQUE_IMAGES:
             raise RuntimeError(
                 f"FULL DATASET FAILED: {len(valid)} valid unique images "

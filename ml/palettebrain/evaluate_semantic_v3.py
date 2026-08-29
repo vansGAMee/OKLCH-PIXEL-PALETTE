@@ -25,6 +25,223 @@ except ImportError:
     from parity_harness import decode_raw
 
 
+PALETTE_STRUCTURE_REFERENCE_VERSION = "c11-palette-structure-v2-indexed"
+DEFAULT_DECODER_BATCH_SIZE = 128
+_STATIC_EVALUATION_CONTEXTS: dict[tuple[Any, ...], dict[str, Any]] = {}
+_PALETTE_STRUCTURE_CONTEXTS: dict[tuple[Any, ...], dict[str, Any]] = {}
+_FILE_SHA256_CACHE: dict[tuple[str, int, int], str] = {}
+
+
+def resolve_evaluation_device(name: str) -> torch.device:
+    selected = torch.device(
+        "cuda" if name == "auto" and torch.cuda.is_available()
+        else ("cpu" if name == "auto" else name)
+    )
+    if selected.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA requested but unavailable")
+    return selected
+
+
+def clear_static_evaluation_context_cache() -> None:
+    _STATIC_EVALUATION_CONTEXTS.clear()
+    _PALETTE_STRUCTURE_CONTEXTS.clear()
+    _FILE_SHA256_CACHE.clear()
+
+
+def _cached_file_sha256(path: str | Path) -> str:
+    resolved = Path(path).resolve()
+    stat = resolved.stat()
+    key = (resolved.as_posix(), stat.st_size, stat.st_mtime_ns)
+    digest = _FILE_SHA256_CACHE.get(key)
+    if digest is None:
+        digest = _sha256_file(resolved)
+        _FILE_SHA256_CACHE[key] = digest
+    return digest
+
+
+def _collect_evaluation_prompts(
+    v2: dict[str, Any], v3: dict[str, Any], extra_prompts: tuple[str, ...]
+) -> list[str]:
+    prompts: list[str] = []
+    for concept in v2["concepts"].values():
+        prompts.extend(concept["prompts"])
+    for bucket in v3["buckets"].values():
+        prompts.extend(bucket)
+    for pair in v3["bilingualPairs"]:
+        prompts.extend(pair)
+    for item in v3["abstract"]:
+        prompts.extend([item["en"], item["ru"], *item["references"], *item["hardNegatives"]])
+    for pair in v3["longText"] + v3["compositionContrasts"]:
+        prompts.extend(pair)
+    for group in v3["oodParaphraseGroups"]:
+        prompts.extend(group)
+    prompts.extend(v3["adversarialComposition"])
+    prompts.extend(["grass", "blood", "moonlight", "candlelight", "rust", "snow", "hospital", "glass"])
+    prompts.extend(extra_prompts)
+    return list(dict.fromkeys(prompts))
+
+
+def load_static_evaluation_context(
+    benchmark_v2: str | Path,
+    benchmark_v3: str | Path,
+    *,
+    cache_dir: str,
+    device: torch.device,
+    extra_prompts: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Load and embed checkpoint-invariant evaluation data once per content hash."""
+    v2_path = Path(benchmark_v2)
+    v3_path = Path(benchmark_v3)
+    key = (
+        v2_path.resolve().as_posix(), _cached_file_sha256(v2_path),
+        v3_path.resolve().as_posix(), _cached_file_sha256(v3_path),
+        str(Path(cache_dir).resolve()), str(device), extra_prompts,
+    )
+    cached = _STATIC_EVALUATION_CONTEXTS.get(key)
+    if cached is not None:
+        return cached
+    v2 = json.loads(v2_path.read_text(encoding="utf-8"))
+    v3 = json.loads(v3_path.read_text(encoding="utf-8"))
+    prompts = _collect_evaluation_prompts(v2, v3, extra_prompts)
+    encoder = load_encoder(device=str(device), cache_dir=cache_dir)
+    embeddings = embed_texts(prompts, encoder=encoder, batch_size=64)
+    references, _ = _family_references(v2_path)
+    context = {
+        "v2": v2,
+        "v3": v3,
+        "prompts": prompts,
+        "embeddings": embeddings,
+        "prompt_index": {prompt: index for index, prompt in enumerate(prompts)},
+        "references": references,
+    }
+    _STATIC_EVALUATION_CONTEXTS[key] = context
+    return context
+
+
+def _model_device(model: torch.nn.Module) -> torch.device:
+    try:
+        return next(model.parameters()).device
+    except StopIteration:
+        return torch.device("cpu")
+
+
+def run_decoder_inputs(
+    model: torch.nn.Module,
+    rows: list[tuple[torch.Tensor, ...]],
+    *,
+    batch_size: int = DEFAULT_DECODER_BATCH_SIZE,
+) -> np.ndarray:
+    """Run compatible decoder inputs in bounded batches on the model device."""
+    if batch_size < 1:
+        raise ValueError("batch_size must be positive")
+    if not rows:
+        return np.empty((0, 9, 5), dtype=np.float32)
+    device = _model_device(model)
+    outputs: list[np.ndarray] = []
+    for start in range(0, len(rows), batch_size):
+        chunk = rows[start:start + batch_size]
+        inputs = tuple(
+            torch.cat([row[position] for row in chunk], dim=0).to(device)
+            for position in range(len(chunk[0]))
+        )
+        with torch.inference_mode():
+            raw = model(*inputs)
+        outputs.append(raw.detach().cpu().numpy())
+    return np.concatenate(outputs, axis=0)
+
+
+def decode_embeddings(
+    model: torch.nn.Module,
+    embeddings: np.ndarray,
+    *,
+    count: int,
+    seed: int,
+    batch_size: int = DEFAULT_DECODER_BATCH_SIZE,
+) -> np.ndarray:
+    """Decode a prompt-ordered embedding matrix without scalar model calls."""
+    values = np.asarray(embeddings, dtype=np.float32)
+    if values.ndim != 2 or values.shape[1] != 384:
+        raise ValueError("embeddings must have shape [N,384]")
+    return run_decoder_inputs(
+        model,
+        [_inputs(embedding, count, seed) for embedding in values],
+        batch_size=batch_size,
+    )
+
+
+def _structure_reference_index(
+    indices: np.ndarray,
+    groups: np.ndarray,
+    counts: np.ndarray,
+    *,
+    limit: int = 5,
+) -> dict[int, list[int]]:
+    """Precompute top deterministic unrelated references in O(V log V)."""
+    references: dict[int, list[int]] = {}
+    for count in np.unique(counts[indices]):
+        count_indices = [int(index) for index in indices if counts[index] == count]
+        ordered = sorted(
+            count_indices,
+            key=lambda candidate: hashlib.sha256(
+                f"{PALETTE_STRUCTURE_REFERENCE_VERSION}|{groups[candidate]}|{candidate}".encode("utf-8")
+            ).digest(),
+        )
+        default = ordered[:limit]
+        special_groups = {groups[index] for index in default}
+        by_excluded_group = {
+            group: [candidate for candidate in ordered if groups[candidate] != group][:limit]
+            for group in special_groups
+        }
+        for index in count_indices:
+            references[index] = by_excluded_group.get(groups[index], default)
+    return references
+
+
+def load_palette_structure_context(
+    dataset_path: str | Path, split: str
+) -> dict[str, Any]:
+    """Load checkpoint-invariant validation arrays and indexes once."""
+    path = Path(dataset_path)
+    key = (path.resolve().as_posix(), _cached_file_sha256(path), split)
+    cached = _PALETTE_STRUCTURE_CONTEXTS.get(key)
+    if cached is not None:
+        return cached
+    required = {
+        "text_embedding", "count_mask", "seed_noise", "locked_mask",
+        "locked_colors", "target", "split", "source_group_id",
+    }
+    with np.load(path, allow_pickle=False) as archive:
+        missing = sorted(required - set(archive.files))
+        if missing:
+            raise RuntimeError(f"palette structure dataset is missing {missing}")
+        arrays = {name: np.asarray(archive[name]) for name in required}
+    split_values = arrays["split"].astype(str)
+    indices = np.flatnonzero(split_values == split)
+    groups = arrays["source_group_id"].astype(str)
+    counts = arrays["count_mask"].sum(axis=1).astype(np.int64)
+    eligible_indices = np.asarray(
+        [index for index in indices if counts[index] >= 2], dtype=np.int64
+    )
+    targets = representation_to_oklab_numpy(
+        np.asarray(arrays["target"], dtype=np.float32)
+    )
+    context = {
+        "arrays": arrays,
+        "groups": groups,
+        "counts": counts,
+        "eligible_indices": eligible_indices,
+        "reference_indices": _structure_reference_index(
+            eligible_indices, groups, counts
+        ) if len(eligible_indices) else {},
+        "target_signatures": {
+            int(index): _relational_signature(targets[index, :counts[index]])
+            for index in eligible_indices
+        },
+    }
+    _PALETTE_STRUCTURE_CONTEXTS[key] = context
+    return context
+
+
 def _pairwise_min(palette: np.ndarray) -> float:
     distances = np.linalg.norm(palette[:, None] - palette[None, :], axis=-1)
     return float(distances[np.triu_indices(len(palette), 1)].min())
@@ -168,52 +385,45 @@ def palette_structure_metric(
 ) -> tuple[float | None, list[dict[str, Any]]]:
     if not dataset_path:
         return None, []
-    archive = np.load(dataset_path, allow_pickle=False)
-    required = {"text_embedding", "count_mask", "seed_noise", "locked_mask", "locked_colors", "target", "split", "source_group_id"}
-    missing = sorted(required - set(archive.files))
-    if missing:
-        raise RuntimeError(f"palette structure dataset is missing {missing}")
-    split_values = np.asarray(archive["split"]).astype(str)
-    indices = np.flatnonzero(split_values == split)
-    groups = np.asarray(archive["source_group_id"]).astype(str)
-    count_masks = np.asarray(archive["count_mask"])
-    targets = representation_to_oklab_numpy(np.asarray(archive["target"], dtype=np.float32))
-    rows: list[dict[str, Any]] = []
-    for index in indices:
-        count = int(count_masks[index].sum())
-        if count < 2:
-            continue
+    context = load_palette_structure_context(dataset_path, split)
+    arrays = context["arrays"]
+    groups = context["groups"]
+    counts = context["counts"]
+    eligible_indices = context["eligible_indices"]
+    if not len(eligible_indices):
+        return None, []
+    reference_indices = context["reference_indices"]
+    target_signatures = context["target_signatures"]
+    device = _model_device(model)
+    input_names = ("text_embedding", "count_mask", "seed_noise", "locked_mask", "locked_colors")
+    raw_chunks: list[np.ndarray] = []
+    for start in range(0, len(eligible_indices), DEFAULT_DECODER_BATCH_SIZE):
+        batch_indices = eligible_indices[start:start + DEFAULT_DECODER_BATCH_SIZE]
         inputs = [
-            torch.as_tensor(np.asarray(archive[name])[index:index + 1], dtype=torch.float32)
-            for name in ("text_embedding", "count_mask", "seed_noise", "locked_mask", "locked_colors")
+            torch.as_tensor(arrays[name][batch_indices], dtype=torch.float32, device=device)
+            for name in input_names
         ]
-        with torch.no_grad():
-            raw = model(*inputs).numpy()
-        locked = np.asarray(archive["locked_mask"])[index, :count].astype(bool)
-        effective = raw[0, :count].copy()
-        effective[locked, :4] = np.asarray(archive["locked_colors"])[index, :count][locked, :4]
+        with torch.inference_mode():
+            raw_chunks.append(model(*inputs).detach().cpu().numpy())
+    generated = np.concatenate(raw_chunks, axis=0)
+    rows: list[dict[str, Any]] = []
+    for generated_row, index_value in enumerate(eligible_indices):
+        index = int(index_value)
+        count = int(counts[index])
+        locked = arrays["locked_mask"][index, :count].astype(bool)
+        effective = generated[generated_row, :count].copy()
+        effective[locked, :4] = arrays["locked_colors"][index, :count][locked, :4]
         generated_signature = _relational_signature(
             representation_to_oklab_numpy(effective[None])[0]
         )
         paired_error = float(np.mean(np.abs(
-            generated_signature - _relational_signature(targets[index, :count])
+            generated_signature - target_signatures[index]
         )))
-        unrelated = [
-            candidate for candidate in indices
-            if candidate != index
-            and groups[candidate] != groups[index]
-            and int(count_masks[candidate].sum()) == count
-        ]
-        unrelated = sorted(
-            unrelated,
-            key=lambda candidate: __import__("hashlib").sha256(
-                f"c11-palette-structure-v1|{groups[index]}|{groups[candidate]}".encode()
-            ).digest(),
-        )[:5]
+        unrelated = reference_indices[index]
         if not unrelated:
             continue
         unrelated_errors = [float(np.mean(np.abs(
-            generated_signature - _relational_signature(targets[candidate, :count])
+            generated_signature - target_signatures[candidate]
         ))) for candidate in unrelated]
         median_unrelated = float(np.median(unrelated_errors))
         rows.append({
@@ -227,8 +437,6 @@ def palette_structure_metric(
 
 
 def evaluate(args: argparse.Namespace) -> dict[str, Any]:
-    v2 = json.loads(Path(args.benchmark_v2).read_text(encoding="utf-8"))
-    v3 = json.loads(Path(args.benchmark_v3).read_text(encoding="utf-8"))
     sealed_test: dict[str, Any] | None = None
     sealed_prompts: list[str] = []
     semantic_test_path = Path(getattr(
@@ -243,38 +451,32 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             sealed_prompts,
             getattr(args, "concept_bank", "ml/palettebrain/c11_training_concepts.v1.json"),
         )
+    device = resolve_evaluation_device(args.device)
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
-    model = PaletteDecoder(PaletteDecoderConfig(**checkpoint["model_config"])).eval()
+    model = PaletteDecoder(PaletteDecoderConfig(**checkpoint["model_config"]))
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+    model = model.to(device).eval()
     structure_rate, structure_rows = palette_structure_metric(
         model, args.dataset, args.evaluation_split
     )
-    references, _ = _family_references(Path(args.benchmark_v2))
-    prompts: list[str] = []
-    for concept in v2["concepts"].values():
-        prompts.extend(concept["prompts"])
-    for bucket in v3["buckets"].values():
-        prompts.extend(bucket)
-    for pair in v3["bilingualPairs"]:
-        prompts.extend(pair)
-    for item in v3["abstract"]:
-        prompts.extend([item["en"], item["ru"], *item["references"], *item["hardNegatives"]])
-    for pair in v3["longText"] + v3["compositionContrasts"]:
-        prompts.extend(pair)
-    for group in v3["oodParaphraseGroups"]:
-        prompts.extend(group)
-    prompts.extend(v3["adversarialComposition"])
-    prompts.extend(["grass", "blood", "moonlight", "candlelight", "rust", "snow", "hospital", "glass"])
-    prompts.extend(sealed_prompts)
-    prompts = list(dict.fromkeys(prompts))
-    encoder = load_encoder(device=args.device, cache_dir=args.cache_dir)
-    embeddings = embed_texts(prompts, encoder=encoder, batch_size=64)
-    prompt_index = {prompt: index for index, prompt in enumerate(prompts)}
-    palettes: dict[str, np.ndarray] = {}
-    for prompt, embedding in zip(prompts, embeddings, strict=True):
-        with torch.no_grad():
-            raw = model(*_inputs(embedding, 5, 42)).numpy()
-        palettes[prompt] = representation_to_oklab_numpy(raw[:, :5])[0]
+    context = load_static_evaluation_context(
+        args.benchmark_v2,
+        args.benchmark_v3,
+        cache_dir=args.cache_dir,
+        device=device,
+        extra_prompts=tuple(sealed_prompts),
+    )
+    v2 = context["v2"]
+    v3 = context["v3"]
+    references = context["references"]
+    prompts = context["prompts"]
+    embeddings = context["embeddings"]
+    prompt_index = context["prompt_index"]
+    decoded_prompts = decode_embeddings(model, embeddings, count=5, seed=42)
+    palettes = {
+        prompt: representation_to_oklab_numpy(raw[None, :5])[0]
+        for prompt, raw in zip(prompts, decoded_prompts, strict=True)
+    }
 
     family_rows = []
     categories: dict[str, list[bool]] = {}
@@ -370,9 +572,12 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     } for pair in v3["bilingualPairs"]]
     engineering_embedding = embeddings[prompt_index["rain"]]
     count_passes, inactive_passes, gamut_passes = [], [], []
-    for count in range(2, 10):
-        with torch.no_grad():
-            raw = model(*_inputs(engineering_embedding, count, 42)).numpy()[0]
+    engineering_counts = list(range(2, 10))
+    engineering_raw = run_decoder_inputs(
+        model,
+        [_inputs(engineering_embedding, count, 42) for count in engineering_counts],
+    )
+    for count, raw in zip(engineering_counts, engineering_raw, strict=True):
         decoded = decode_raw(raw, count)
         distinct = {tuple(round(channel, 4) for channel in color["srgb"]) for color in decoded}
         count_passes.append(len(decoded) == count and len(distinct) == count)
@@ -381,25 +586,34 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             all(-1e-4 <= channel <= 1.0001 for channel in color["srgb"])
             for color in decode_raw(raw, count)
         ))
-    with torch.no_grad():
-        repeat_a = model(*_inputs(engineering_embedding, 5, 42)).numpy()
-        repeat_b = model(*_inputs(engineering_embedding, 5, 42)).numpy()
-        seed_outputs = [model(*_inputs(engineering_embedding, 5, seed)).numpy() for seed in (1, 42, 999)]
-        unlocked_inputs = list(_inputs(engineering_embedding, 5, 43))
-        locked_inputs = list(_inputs(engineering_embedding, 5, 43))
-        locked_inputs[3][0, 0] = 1.0
-        locked_inputs[4][0, 0] = torch.tensor([0.55, 0.08, 0.0, 1.0])
-        unlocked_raw = model(*unlocked_inputs).numpy()
-        locked_raw = model(*locked_inputs).numpy()
+    unlocked_inputs = list(_inputs(engineering_embedding, 5, 43))
+    locked_inputs = list(_inputs(engineering_embedding, 5, 43))
+    locked_inputs[3][0, 0] = 1.0
+    locked_inputs[4][0, 0] = torch.tensor([0.55, 0.08, 0.0, 1.0])
+    repeated = run_decoder_inputs(
+        model,
+        [
+            _inputs(engineering_embedding, 5, 42),
+            _inputs(engineering_embedding, 5, 42),
+            *[_inputs(engineering_embedding, 5, seed) for seed in (1, 42, 999)],
+            tuple(unlocked_inputs),
+            tuple(locked_inputs),
+            _inputs(engineering_embedding, 5, 999),
+        ],
+    )
+    repeat_a, repeat_b = repeated[0:1], repeated[1:2]
+    seed_outputs = [repeated[index:index + 1] for index in range(2, 5)]
+    unlocked_raw, locked_raw = repeated[5:6], repeated[6:7]
     seed_palettes = [representation_to_oklab_numpy(value[:, :5])[0] for value in seed_outputs]
     seed_distances = [
         float(np.linalg.norm(seed_palettes[left].mean(0) - seed_palettes[right].mean(0)))
         for left in range(len(seed_palettes)) for right in range(left + 1, len(seed_palettes))
     ]
     restored_a = locked_raw.copy()
-    restored_b = model(*list(_inputs(engineering_embedding, 5, 999))).detach().numpy()
-    restored_a[0, 0, :4] = locked_inputs[4][0, 0].numpy()
-    restored_b[0, 0, :4] = locked_inputs[4][0, 0].numpy()
+    restored_b = repeated[7:8].copy()
+    locked_value = locked_inputs[4][0, 0].detach().cpu().numpy()
+    restored_a[0, 0, :4] = locked_value
+    restored_b[0, 0, :4] = locked_value
     lock_exact = np.array_equal(restored_a[0, 0, :4], restored_b[0, 0, :4])
     lock_conditioning = not np.array_equal(unlocked_raw, locked_raw)
     parity = json.loads(Path(args.parity_report).read_text(encoding="utf-8")) if Path(args.parity_report).is_file() else {}
@@ -460,12 +674,12 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "productionReady": False,
         "sources": {
             "benchmarkId": v3["benchmarkId"], "checkpoint": args.checkpoint,
-            "checkpointSha256": _sha256_file(args.checkpoint),
+            "checkpointSha256": _cached_file_sha256(args.checkpoint),
             "dataset": args.dataset,
-            "datasetSha256": _sha256_file(args.dataset) if args.dataset else None,
+            "datasetSha256": _cached_file_sha256(args.dataset) if args.dataset else None,
             "evaluationSplit": args.evaluation_split,
             "semanticTestBenchmark": semantic_test_path.as_posix() if sealed_test is not None else None,
-            "semanticTestSha256": _sha256_file(semantic_test_path) if sealed_test is not None else None,
+            "semanticTestSha256": _cached_file_sha256(semantic_test_path) if sealed_test is not None else None,
         },
         "metrics": metrics, "categoryRates": category_rates, "familyRows": family_rows,
         "directRows": direct_rows, "abstractRows": abstract_rows, "longRows": long_rows,
@@ -478,6 +692,9 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "seedMeanOklabDistances": seed_distances,
             "lockRestorationExact": lock_exact,
             "lockConditioningReachedModel": lock_conditioning,
+            "decoderDevice": str(_model_device(model)),
+            "decoderBatchSize": DEFAULT_DECODER_BATCH_SIZE,
+            "promptCount": len(prompts),
         },
     }
     output = Path(args.output)

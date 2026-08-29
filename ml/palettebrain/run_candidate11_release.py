@@ -142,7 +142,11 @@ def phase_dependency_fingerprint(name: str) -> str:
 
 
 def training_dependency_fingerprint() -> str:
-    return phase_dependency_fingerprint("stage_a")
+    try:
+        from .train_candidate11 import training_dependency_fingerprint as trainer_fingerprint
+    except ImportError:
+        from train_candidate11 import training_dependency_fingerprint as trainer_fingerprint
+    return trainer_fingerprint()
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -291,6 +295,45 @@ def semantic_valid(
     return valid, {"semanticFamilyWin": metric, "gate": 0.80 if require_gate else None}
 
 
+def qualification_artifact_valid(
+    report: dict[str, Any],
+    manifest: dict[str, Any],
+    checkpoint: Path,
+    dataset: Path,
+    *,
+    require_success: bool = True,
+) -> bool:
+    """A qualification is reusable only when it passed every hard gate."""
+    common = (
+        report.get("candidate") == "candidate-11"
+        and report.get("manifestDecoderSha256") == manifest.get("decoder", {}).get("sha256")
+        and checkpoint.is_file()
+        and report.get("checkpointSha256") == sha256_file(checkpoint)
+        and dataset.is_file()
+        and report.get("datasetSha256") == sha256_file(dataset)
+    )
+    if not common:
+        return False
+    if require_success:
+        return report.get("pass") is True and report.get("productionReady") is True
+    return (
+        report.get("testClassification") == "ENGINEERING_SMOKE_ONLY"
+        and report.get("pass") is False
+        and report.get("productionReady") is False
+    )
+
+
+def current_git_provenance() -> dict[str, str]:
+    return {
+        "branch": subprocess.check_output(
+            ["git", "branch", "--show-current"], cwd=ROOT, text=True
+        ).strip(),
+        "commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip(),
+    }
+
+
 def manifest_valid() -> tuple[bool, dict[str, Any]]:
     manifest = load_json(MANIFEST)
     decoder = manifest.get("decoder", {})
@@ -305,11 +348,11 @@ class Runner:
         self.state: dict[str, Any] = existing or {
             "schemaVersion": 1,
             "candidate": "candidate-11",
-            "branch": "codex/candidate11-recovery",
             "productionReady": False,
             "codename": None,
             "phases": {},
         }
+        self.state.update(current_git_provenance())
         smoke_flag = " --engineering-smoke" if args.engineering_smoke else ""
         self.state["command"] = f"{relative(PYTHON)} -u ml/palettebrain/run_candidate11_release.py --device {args.device} --resume{smoke_flag}"
         self.state["logsDirectory"] = relative(LOGS)
@@ -672,13 +715,12 @@ class Runner:
         def validate() -> tuple[bool, dict[str, Any]]:
             report = load_json(QUALIFICATION)
             manifest = load_json(MANIFEST)
-            valid = (
-                report.get("candidate") == "candidate-11"
-                and isinstance(report.get("productionReady"), bool)
-                and report.get("manifestDecoderSha256") == manifest.get("decoder", {}).get("sha256")
-                and STAGE_B.is_file()
-                and report.get("checkpointSha256") == sha256_file(STAGE_B)
-                and report.get("datasetSha256") == sha256_file(TRAIN_DATA)
+            valid = qualification_artifact_valid(
+                report,
+                manifest,
+                STAGE_B,
+                TRAIN_DATA,
+                require_success=not self.args.engineering_smoke,
             )
             return valid, {"hardFailures": report.get("hardFailures", []), "productionReady": report.get("productionReady", False)}
 

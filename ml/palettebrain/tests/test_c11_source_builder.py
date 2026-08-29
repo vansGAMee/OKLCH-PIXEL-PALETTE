@@ -119,6 +119,19 @@ def test_full_target_requires_coverage_and_targets_only_minimum(
     ) == []
 
 
+def test_failed_full_coverage_blocks_final_feature_extraction() -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    helper = getattr(source, "require_full_visual_coverage", None)
+    assert callable(helper)
+    requirements = full_visual_coverage_requirements(
+        records=_coverage_records(recovered=False),
+        concepts=_coverage_concepts(),
+    )
+    with pytest.raises(RuntimeError, match="FULL DATASET COVERAGE FAILED"):
+        helper(requirements)
+
+
 def test_coverage_recovery_reuses_all_cache_and_resume_progress() -> None:
     concepts = _coverage_concepts()
     before = _coverage_records(recovered=False)
@@ -616,3 +629,57 @@ def test_crop_required_policy_enforcement(tmp_path: Path) -> None:
     assert np.allclose(crop_coords, [0.1, 0.2, 0.8, 0.9])
     assert 0.40 <= mask_fraction <= 0.60
     assert oklab_px.shape[1] == 3
+
+
+def test_relevance_preparation_does_not_compute_final_color_features(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+    from PIL import Image
+
+    image_path = tmp_path / "relevance.jpg"
+    image = Image.new("RGB", (32, 32), color=(20, 30, 40))
+    image.putpixel((0, 0), (220, 10, 10))
+    image.save(image_path)
+    monkeypatch.setattr(
+        source,
+        "palette_or_pixels_to_oklch_histogram",
+        lambda _pixels: (_ for _ in ()).throw(AssertionError("final feature work ran")),
+    )
+    records, _ = source.process_acquired_records(
+        acquired=[{
+            "concept_id": "concept",
+            "local_path": str(image_path),
+            "content_sha256": "sha",
+        }],
+        concept_map={"concept": {"crop_required": False, "whole_frame_valid": True}},
+        include_final_features=False,
+    )
+    assert len(records) == 1
+    assert "processed_pil" in records[0]
+    assert "oklab_pixels" not in records[0]
+    assert "color_prior" not in records[0]
+
+
+def test_unexpected_color_feature_error_is_not_swallowed_or_cached(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+    from PIL import Image
+
+    image_path = tmp_path / "programming-error.jpg"
+    image = Image.new("RGB", (32, 32), color=(20, 30, 40))
+    image.putpixel((0, 0), (220, 10, 10))
+    image.save(image_path)
+    monkeypatch.setattr(
+        source,
+        "rgb_to_oklab_array",
+        lambda _pixels: (_ for _ in ()).throw(RuntimeError("programming defect")),
+    )
+    with pytest.raises(RuntimeError, match="programming defect"):
+        source.process_image(
+            image_path,
+            crop_required=False,
+            whole_frame_valid=True,
+            meta_crop=None,
+        )

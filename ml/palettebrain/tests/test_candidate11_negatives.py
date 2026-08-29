@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import numpy as np
 
 from ml.palettebrain.build_c11_dataset import (
@@ -69,3 +71,53 @@ def test_selects_closest_safe_prior_not_farthest() -> None:
     fixture["color_prior"][2] = np.asarray([0.0, 1.0, 0.0])
     result = build_safe_ranking_negatives(fixture)
     assert result["ranking_negative_source_group_id"][0] == "b"
+
+
+def _scaled_fixture(rows: int) -> dict[str, np.ndarray]:
+    indices = np.arange(rows)
+    priors = np.zeros((rows, 32), dtype=np.float32)
+    priors[indices, indices % priors.shape[1]] = 1.0
+    return {
+        "split": np.asarray(["train"] * rows),
+        "source_group_id": np.asarray([f"group-{index}" for index in indices]),
+        "concept_id": np.asarray([f"concept-{index}" for index in indices]),
+        "image_id": np.asarray([f"image-{index}" for index in indices]),
+        "content_sha256": np.asarray([f"content-{index}" for index in indices]),
+        "target": np.arange(rows * 9 * 5, dtype=np.float32).reshape(rows, 9, 5),
+        "color_prior": priors,
+        "teacher_latent": np.zeros((rows, 4), dtype=np.float32),
+    }
+
+
+def test_safe_negative_records_the_selected_index_and_every_identity_contract() -> None:
+    fixture = _scaled_fixture(96)
+    fixture["source_group_id"][1:6] = fixture["source_group_id"][0]
+    fixture["concept_id"][6:11] = fixture["concept_id"][0]
+    fixture["image_id"][11:16] = fixture["image_id"][0]
+    fixture["content_sha256"][16:21] = fixture["content_sha256"][0]
+    fixture["target"][21] = fixture["target"][0]
+
+    result = build_safe_ranking_negatives(fixture)
+
+    assert "ranking_negative_index" in result
+    for row, candidate in enumerate(result["ranking_negative_index"]):
+        if result["ranking_negative_valid"][row] == 0:
+            continue
+        candidate = int(candidate)
+        assert fixture["split"][candidate] == "train"
+        assert fixture["source_group_id"][candidate] != fixture["source_group_id"][row]
+        assert fixture["concept_id"][candidate] != fixture["concept_id"][row]
+        assert fixture["image_id"][candidate] != fixture["image_id"][row]
+        assert fixture["content_sha256"][candidate] != fixture["content_sha256"][row]
+        assert not np.array_equal(fixture["target"][candidate], fixture["target"][row])
+
+
+def test_safe_negative_scaling_is_not_quadratic() -> None:
+    timings = []
+    for rows in (128, 512):
+        fixture = _scaled_fixture(rows)
+        started = time.perf_counter()
+        build_safe_ranking_negatives(fixture)
+        timings.append(time.perf_counter() - started)
+    # Four times the input must remain comfortably below quadratic 16x growth.
+    assert timings[1] < timings[0] * 8.0, timings

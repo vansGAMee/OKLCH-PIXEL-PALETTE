@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import numpy as np
 import pytest
 import torch
@@ -17,6 +18,37 @@ def _oklab(lightness: float, chroma: float, hue_degrees: float) -> np.ndarray:
         [lightness, chroma * np.cos(angle), chroma * np.sin(angle)],
         dtype=np.float32,
     )
+
+
+def _scalar_reference(colors: np.ndarray, weights: np.ndarray | None = None) -> np.ndarray:
+    values = np.asarray(colors, dtype=np.float32).reshape(-1, 3)
+    if weights is None:
+        weights = np.ones(len(values), dtype=np.float32) / len(values)
+    else:
+        weights = np.asarray(weights, dtype=np.float32).reshape(-1)
+        weights = weights / (weights.sum() + 1e-8)
+    histogram = np.zeros(TOTAL_HISTOGRAM_BINS, dtype=np.float32)
+    chroma = np.sqrt(values[:, 1] ** 2 + values[:, 2] ** 2)
+    hue = np.arctan2(values[:, 2], values[:, 1]) % (2 * np.pi)
+    for index in range(len(values)):
+        light_float = float(np.clip((values[index, 0] - 0.15) / (0.75 / 6), 0, 5))
+        light_low = int(math.floor(light_float))
+        light_weights = ((light_low, 1 - (light_float - light_low)), (min(light_low + 1, 5), light_float - light_low))
+        if chroma[index] < 0.03:
+            for light_bin, light_weight in light_weights:
+                histogram[384 + light_bin] += weights[index] * light_weight
+            continue
+        hue_float = hue[index] / (2 * np.pi) * 16
+        hue_low = int(math.floor(hue_float)) % 16
+        hue_weights = ((hue_low, 1 - (hue_float - math.floor(hue_float))), ((hue_low + 1) % 16, hue_float - math.floor(hue_float)))
+        chroma_float = float(np.clip((chroma[index] - 0.03) / (0.22 / 4), 0, 3))
+        chroma_low = int(math.floor(chroma_float))
+        chroma_weights = ((chroma_low, 1 - (chroma_float - chroma_low)), (min(chroma_low + 1, 3), chroma_float - chroma_low))
+        for hue_bin, hue_weight in hue_weights:
+            for light_bin, light_weight in light_weights:
+                for chroma_bin, chroma_weight in chroma_weights:
+                    histogram[hue_bin * 24 + light_bin * 4 + chroma_bin] += weights[index] * hue_weight * light_weight * chroma_weight
+    return histogram / histogram.sum()
 
 
 def test_histogram_is_normalized_and_supports_batched_pixels() -> None:
@@ -68,3 +100,30 @@ def test_histogram_kl_has_finite_gradients() -> None:
     loss.backward()
     assert torch.isfinite(loss)
     assert logits.grad is not None and torch.isfinite(logits.grad).all()
+
+
+def test_vectorized_histogram_matches_scalar_reference_at_boundaries_and_random() -> None:
+    rng = np.random.RandomState(20260829)
+    boundary = np.stack([
+        _oklab(0.15, 0.0, 0.0), _oklab(0.90, 0.0, 0.0),
+        _oklab(0.55, 0.029999, 359.999), _oklab(0.55, 0.030001, 0.001),
+    ])
+    random = rng.normal(size=(10_000, 3)).astype(np.float32)
+    random = random * np.asarray([0.15, 0.08, 0.08], dtype=np.float32) + np.asarray([0.55, 0, 0], dtype=np.float32)
+    for values in (boundary, random):
+        expected = _scalar_reference(values)
+        actual = palette_or_pixels_to_oklch_histogram(values)
+        np.testing.assert_allclose(actual, expected, rtol=1e-6, atol=1e-7)
+        assert np.isfinite(actual).all()
+        assert actual.sum() == pytest.approx(1.0, abs=1e-6)
+
+
+def test_vectorized_histogram_matches_scalar_reference_with_weights() -> None:
+    values = np.stack([_oklab(0.2 + index * 0.1, 0.02 + index * 0.03, index * 51) for index in range(7)])
+    weights = np.asarray([1, 2, 3, 4, 5, 6, 7], dtype=np.float32)
+    np.testing.assert_allclose(
+        palette_or_pixels_to_oklch_histogram(values, weights),
+        _scalar_reference(values, weights),
+        rtol=1e-6,
+        atol=1e-7,
+    )

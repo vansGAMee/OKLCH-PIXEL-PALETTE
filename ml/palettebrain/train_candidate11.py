@@ -109,6 +109,20 @@ def training_dependency_fingerprint() -> str:
     return digest.hexdigest()
 
 
+def training_input_identity(args: argparse.Namespace) -> dict[str, Any]:
+    """Content identity for every artifact that can affect training state."""
+    identity: dict[str, Any] = {
+        "primary": _sha256_file(args.data),
+        "replay": [_sha256_file(path) for path in args.replay_data],
+        "initialization": _sha256_file(args.initialize_from),
+    }
+    if args.stage == "b":
+        if not args.stage_a_eval_report:
+            raise RuntimeError("Stage B requires a Stage A evaluation artifact")
+        identity["stage_a_evaluation"] = _sha256_file(args.stage_a_eval_report)
+    return identity
+
+
 def _device(name: str) -> torch.device:
     selected = torch.device("cuda" if name == "auto" and torch.cuda.is_available() else ("cpu" if name == "auto" else name))
     if selected.type == "cuda" and not torch.cuda.is_available():
@@ -253,10 +267,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     global_step = 0
     resume_epoch_progress: dict[str, Any] = {}
     dependency_fingerprint = training_dependency_fingerprint()
-    dataset_identity = {
-        "primary": _sha256_file(args.data),
-        "replay": [_sha256_file(path) for path in args.replay_data],
-    }
+    dataset_identity = training_input_identity(args)
     if args.resume:
         resumed = torch.load(args.resume, map_location="cpu", weights_only=True)
         if resumed.get("dataset_identity") != dataset_identity:
@@ -374,7 +385,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "loss_contract": {
                 "paletteStructure": "SmoothL1 pairwise physical OKLab geometry after matching and lock restoration",
                 "paletteStructureWeight": 0.20,
-                "rankingNegativeVersion": "c11-safe-ranking-negative-v2-color-prior-hard",
+                "rankingNegativeVersion": "c11-safe-ranking-negative-v3-bounded-global-order",
             },
             "python_rng_state": random.getstate(),
             "numpy_rng_state": {
