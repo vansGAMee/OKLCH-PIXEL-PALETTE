@@ -89,6 +89,7 @@ FULL_TARGET_UNIQUE_IMAGES = 2500
 FULL_MAX_VALID_IMAGES = 3500
 FULL_ACQUISITION_CAPS = (8, 10, 12, 14)
 FULL_MAX_PER_CONCEPT = max(FULL_ACQUISITION_CAPS)
+TARGETED_MAX_TRAINING_QUERIES = 4
 FULL_MIN_CATEGORY_COVERAGE = 0.65
 FULL_MIN_CATEGORY_IMAGES = 20
 FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE = 1.0
@@ -661,11 +662,18 @@ def _record_route(route_key: str, field: str, amount: float = 1.0) -> None:
 def _route_priority(route_key: str) -> float:
     with _ACQUISITION_STATE_LOCK:
         route = dict(_ACQUISITION_STATE.get("routeStats", {}).get(route_key, {}))
+        has_route_cursor = route_key in _ACQUISITION_STATE.get("routeOffsets", {})
+    # Stats written by the legacy provider-wide cursor cannot prove that this
+    # query's first page was ever visited. Give it one correctly isolated pass.
+    if route and not has_route_cursor:
+        return 1.0
     attempted = int(route.get("attempted", 0))
     downloaded = int(route.get("downloaded", 0))
     scored = int(route.get("scored", 0))
     passed = int(route.get("passed", 0))
     seconds = float(route.get("networkSeconds", 0.0))
+    if int(route.get("batches", 0)) >= 2 and int(route.get("metadata", 0)) == 0:
+        return 0.0
     if attempted >= 20 and downloaded == 0:
         return 0.0
     if scored >= 10 and passed == 0:
@@ -2127,9 +2135,12 @@ def acquire_for_concept(
     seen_urls: set[str] | None = None,
     seen_image_ids: set[str] | None = None,
     dedup_lock: Any | None = None,
+    max_training_queries: int = 3,
 ) -> list[dict[str, Any]]:
     if max_count <= 0:
         return []
+    if max_training_queries < 1:
+        raise ValueError("max_training_queries must be positive")
 
     crop_required = bool(concept.get("crop_required", False))
     cid = str(concept["concept_id"])
@@ -2139,7 +2150,7 @@ def acquire_for_concept(
         p_str = str(phrasing).strip()
         if p_str and p_str not in raw_queries:
             raw_queries.append(p_str)
-        if len(raw_queries) >= 3:
+        if len(raw_queries) >= max_training_queries:
             break
 
     if crop_required:
@@ -2192,6 +2203,13 @@ def acquire_for_concept(
         if not _provider_viable(src) or _route_priority(route_key) <= 0:
             continue
 
+        with _ACQUISITION_STATE_LOCK:
+            route_offsets = _ACQUISITION_STATE.setdefault("routeOffsets", {})
+            route_offset = route_offsets.setdefault(
+                route_key,
+                1 if src in {"artic", "openverse"} else 0,
+            )
+
         batch_candidates: list[dict[str, Any]] = []
         if src == "open_images":
             cur_off = offsets.get("open_images", 0)
@@ -2203,30 +2221,42 @@ def acquire_for_concept(
             if records:
                 batch_candidates = records
         elif src == "artic":
-            cur_page = offsets.get("artic", 1)
+            cur_page = int(route_offset)
             limit_art = min(max(max_count, 8), 12)
             records = artic_candidates(query, limit=limit_art, page=cur_page, concept=concept)
             if getattr(records, "consumed", False):
-                offsets["artic"] = cur_page + 1
-                legacy_offsets["artic"] = offsets["artic"]
+                with _ACQUISITION_STATE_LOCK:
+                    route_offsets[route_key] = cur_page + 1
+                    offsets["artic"] = max(
+                        int(offsets.get("artic", 1)), cur_page + 1
+                    )
+                    legacy_offsets["artic"] = offsets["artic"]
             if records:
                 batch_candidates = records
         elif src == "met":
-            cur_off = offsets.get("met", 0)
+            cur_off = int(route_offset)
             limit_met = min(max(max_count, 8), 12)
             records = met_candidates(query, limit=limit_met, offset=cur_off, concept=concept)
             if getattr(records, "consumed", False):
-                offsets["met"] = cur_off + limit_met
-                legacy_offsets["met"] = offsets["met"]
+                with _ACQUISITION_STATE_LOCK:
+                    route_offsets[route_key] = cur_off + limit_met
+                    offsets["met"] = max(
+                        int(offsets.get("met", 0)), cur_off + limit_met
+                    )
+                    legacy_offsets["met"] = offsets["met"]
             if records:
                 batch_candidates = records
         elif src == "openverse":
-            cur_page = offsets.get("openverse", 1)
+            cur_page = int(route_offset)
             limit_ov = min(max(max_count, 8), 12)
             records = openverse_candidates(query, limit=limit_ov, page=cur_page, concept=concept)
             if getattr(records, "consumed", False):
-                offsets["openverse"] = cur_page + 1
-                legacy_offsets["openverse"] = offsets["openverse"]
+                with _ACQUISITION_STATE_LOCK:
+                    route_offsets[route_key] = cur_page + 1
+                    offsets["openverse"] = max(
+                        int(offsets.get("openverse", 1)), cur_page + 1
+                    )
+                    legacy_offsets["openverse"] = offsets["openverse"]
             if records:
                 batch_candidates = records
 
@@ -2946,6 +2976,42 @@ def underfilled_concept_ids(
     return selected
 
 
+def initial_full_records(
+    cached_records: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Reuse every verified cached record before considering new acquisition."""
+    return list(cached_records.values())
+
+
+def targeted_allowed_sources(concept: dict[str, Any]) -> tuple[str, ...]:
+    """Production routes allowed during coverage-only recovery.
+
+    ArtIC is intentionally absent: its image route is known dead in this
+    environment. The normal broad collector retains its existing behavior.
+    """
+    if bool(concept.get("crop_required", False)):
+        return ("open_images",)
+    return ("openverse", "met")
+
+
+def _concept_recovery_priority(concept: dict[str, Any]) -> float:
+    cid = str(concept["concept_id"])
+    queries = [str(concept["retrieval_query"])]
+    for phrasing in concept.get("phrasings_en", []):
+        value = str(phrasing).strip()
+        if value and value not in queries:
+            queries.append(value)
+        if len(queries) >= TARGETED_MAX_TRAINING_QUERIES:
+            break
+    scores = [
+        _route_priority(_route_key(cid, provider, query))
+        for provider in targeted_allowed_sources(concept)
+        for query in queries
+        if _provider_viable(provider)
+    ]
+    return max(scores, default=0.0)
+
+
 def select_balanced_full_records(
     records: list[dict[str, Any]],
     max_images: int,
@@ -3485,15 +3551,16 @@ def audit_rows(rows: list[dict[str, Any]], *, smoke: bool) -> dict[str, Any]:
     }
 
 
-def audit_visual_coverage(
+def full_visual_coverage_requirements(
     *,
     records: list[dict[str, Any]],
     concepts: list[dict[str, Any]],
-    smoke: bool,
 ) -> dict[str, Any]:
+    """Return every FULL coverage result without raising on the first failure."""
     categories = sorted({str(c["category"]) for c in concepts})
     by_category: dict[str, dict[str, Any]] = {}
     zero_concepts: list[str] = []
+    failing_categories: dict[str, dict[str, Any]] = {}
 
     for category in categories:
         family_ids = {
@@ -3504,24 +3571,31 @@ def audit_visual_coverage(
         rows = [r for r in records if str(r["category"]) == category]
         covered = {str(r["concept_id"]) for r in rows}
         fraction = len(covered) / len(family_ids) if family_ids else 0.0
-        by_category[category] = {
+        required_covered = math.ceil(
+            len(family_ids) * FULL_MIN_CATEGORY_COVERAGE
+        )
+        details = {
             "images": len(rows),
             "coveredConcepts": len(covered),
             "totalConcepts": len(family_ids),
             "coverageFraction": fraction,
             "zeroConcepts": sorted(family_ids - covered),
+            "requiredImages": FULL_MIN_CATEGORY_IMAGES,
+            "requiredCoveredConcepts": required_covered,
+            "additionalImagesNeeded": max(
+                0, FULL_MIN_CATEGORY_IMAGES - len(rows)
+            ),
+            "additionalConceptsNeeded": max(
+                0, required_covered - len(covered)
+            ),
         }
+        by_category[category] = details
         zero_concepts.extend(sorted(family_ids - covered))
-
-        if not smoke and (
-            len(rows) < FULL_MIN_CATEGORY_IMAGES
-            or fraction < FULL_MIN_CATEGORY_COVERAGE
+        if (
+            details["additionalImagesNeeded"] > 0
+            or details["additionalConceptsNeeded"] > 0
         ):
-            raise RuntimeError(
-                f"FULL CATEGORY COVERAGE FAILED for {category}: "
-                f"{len(rows)} images, {len(covered)}/{len(family_ids)} "
-                f"({fraction:.1%})"
-            )
+            failing_categories[category] = details
 
     source_counts: dict[str, int] = {}
     type_counts: dict[str, int] = {}
@@ -3531,28 +3605,9 @@ def audit_visual_coverage(
         source_counts[source] = source_counts.get(source, 0) + 1
         type_counts[source_type] = type_counts.get(source_type, 0) + 1
 
-    if smoke:
-        required_sources = ["met", "artic", "open_images"]
-        if source_counts.get("openverse", 0) >= SMOKE_MIN_VALID_PER_SOURCE:
-            required_sources.append("openverse")
-        for source in required_sources:
-            if source_counts.get(source, 0) < SMOKE_MIN_VALID_PER_SOURCE:
-                raise RuntimeError(
-                    f"smoke source coverage failed for {source}: "
-                    f"{source_counts.get(source, 0)}"
-                )
-    else:
-        total = max(1, len(records))
-        real_fraction = type_counts.get("real_world", 0) / total
-        artwork_fraction = type_counts.get("artwork", 0) / total
-        if real_fraction < FULL_MIN_REAL_WORLD_FRACTION:
-            raise RuntimeError(
-                f"FULL real-world grounding too weak: {real_fraction:.1%}"
-            )
-        if artwork_fraction < FULL_MIN_ARTWORK_FRACTION:
-            raise RuntimeError(
-                f"FULL artwork grounding too weak: {artwork_fraction:.1%}"
-            )
+    total = max(1, len(records))
+    real_fraction = type_counts.get("real_world", 0) / total
+    artwork_fraction = type_counts.get("artwork", 0) / total
 
     bbox_valid = sum(
         1
@@ -3561,11 +3616,6 @@ def audit_visual_coverage(
         and r.get("bbox_provenance")
         and r.get("crop_coordinates") is not None
     )
-    if smoke and bbox_valid < SMOKE_MIN_VALID_PER_SOURCE:
-        raise RuntimeError(
-            f"smoke requires real bbox examples, got {bbox_valid}"
-        )
-
     crop_required_concepts = {
         str(c["concept_id"]) for c in concepts if bool(c.get("crop_required", False))
     }
@@ -3585,30 +3635,153 @@ def audit_visual_coverage(
         if count < FULL_MIN_CROP_REQUIRED_IMAGES_PER_CONCEPT
     }
 
-    if not smoke and crop_required_concepts:
-        if crop_coverage < FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE:
-            raise RuntimeError(
-                "FULL crop-required concept coverage FAILED: "
-                f"{len(crop_covered)}/{len(crop_required_concepts)} "
-                f"({crop_coverage:.1%})"
-            )
-        if weak_crop_concepts:
-            raise RuntimeError(
-                "FULL crop-required grounding too weak: "
-                + json.dumps(weak_crop_concepts, sort_keys=True)
-            )
-
     return {
         "categoryCoverage": by_category,
+        "failingCategories": failing_categories,
+        "remainingConcepts": sum(
+            int(details["additionalConceptsNeeded"])
+            for details in failing_categories.values()
+        ),
         "zeroImageConcepts": sorted(set(zero_concepts)),
         "sourceCounts": source_counts,
         "sourceTypeCounts": type_counts,
+        "realWorldFraction": real_fraction,
+        "artworkFraction": artwork_fraction,
+        "realWorldPass": real_fraction >= FULL_MIN_REAL_WORLD_FRACTION,
+        "artworkPass": artwork_fraction >= FULL_MIN_ARTWORK_FRACTION,
         "realBboxImages": bbox_valid,
         "cropRequiredConcepts": len(crop_required_concepts),
         "cropRequiredCoveredConcepts": len(crop_covered),
         "cropRequiredConceptCoverage": crop_coverage,
         "cropRequiredImageCounts": crop_counts,
+        "weakCropConcepts": weak_crop_concepts,
+        "mandatoryPass": (
+            not failing_categories
+            and real_fraction >= FULL_MIN_REAL_WORLD_FRACTION
+            and artwork_fraction >= FULL_MIN_ARTWORK_FRACTION
+            and crop_coverage >= FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE
+            and not weak_crop_concepts
+        ),
     }
+
+
+def select_targeted_recovery_concept_ids(
+    *,
+    requirements: dict[str, Any],
+    concepts: list[dict[str, Any]],
+    unavailable_concept_ids: set[str] | None = None,
+) -> list[str]:
+    """Choose only the minimum families that can make failing gates green."""
+    unavailable = unavailable_concept_ids or set()
+    concept_map = {str(concept["concept_id"]): concept for concept in concepts}
+    selected: list[str] = []
+
+    for category, details in requirements["failingCategories"].items():
+        zero = [
+            cid
+            for cid in details["zeroConcepts"]
+            if cid not in unavailable and cid in concept_map
+        ]
+        zero.sort(
+            key=lambda cid: (-_concept_recovery_priority(concept_map[cid]), cid)
+        )
+        concept_need = int(details["additionalConceptsNeeded"])
+        chosen = zero[:concept_need]
+        selected.extend(chosen)
+
+        image_need = max(
+            0,
+            int(details["additionalImagesNeeded"]) - concept_need,
+        )
+        if image_need:
+            category_ids = [
+                str(concept["concept_id"])
+                for concept in concepts
+                if str(concept["category"]) == category
+                and str(concept["concept_id"]) not in unavailable
+                and str(concept["concept_id"]) not in selected
+            ]
+            category_ids.sort(
+                key=lambda cid: (-_concept_recovery_priority(concept_map[cid]), cid)
+            )
+            selected.extend(category_ids[:image_need])
+
+    for cid in sorted(requirements["weakCropConcepts"]):
+        if cid not in unavailable and cid not in selected:
+            selected.append(cid)
+    return selected
+
+
+def full_acquisition_complete(
+    *,
+    valid_count: int,
+    desired_valid: int,
+    requirements: dict[str, Any],
+) -> bool:
+    return valid_count >= desired_valid and bool(requirements["mandatoryPass"])
+
+
+def audit_visual_coverage(
+    *,
+    records: list[dict[str, Any]],
+    concepts: list[dict[str, Any]],
+    smoke: bool,
+) -> dict[str, Any]:
+    result = full_visual_coverage_requirements(records=records, concepts=concepts)
+
+    if not smoke and result["failingCategories"]:
+        category = sorted(result["failingCategories"])[0]
+        details = result["failingCategories"][category]
+        raise RuntimeError(
+            f"FULL CATEGORY COVERAGE FAILED for {category}: "
+            f"{details['images']} images, "
+            f"{details['coveredConcepts']}/{details['totalConcepts']} "
+            f"({details['coverageFraction']:.1%})"
+        )
+
+    if smoke:
+        required_sources = ["met", "artic", "open_images"]
+        if result["sourceCounts"].get("openverse", 0) >= SMOKE_MIN_VALID_PER_SOURCE:
+            required_sources.append("openverse")
+        for source in required_sources:
+            if result["sourceCounts"].get(source, 0) < SMOKE_MIN_VALID_PER_SOURCE:
+                raise RuntimeError(
+                    f"smoke source coverage failed for {source}: "
+                    f"{result['sourceCounts'].get(source, 0)}"
+                )
+        if result["realBboxImages"] < SMOKE_MIN_VALID_PER_SOURCE:
+            raise RuntimeError(
+                f"smoke requires real bbox examples, got {result['realBboxImages']}"
+            )
+        return result
+
+    if not result["realWorldPass"]:
+        raise RuntimeError(
+            "FULL real-world grounding too weak: "
+            f"{result['realWorldFraction']:.1%}"
+        )
+    if not result["artworkPass"]:
+        raise RuntimeError(
+            "FULL artwork grounding too weak: "
+            f"{result['artworkFraction']:.1%}"
+        )
+    if (
+        result["cropRequiredConcepts"]
+        and result["cropRequiredConceptCoverage"]
+        < FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE
+    ):
+        raise RuntimeError(
+            "FULL crop-required concept coverage FAILED: "
+            f"{result['cropRequiredCoveredConcepts']}/"
+            f"{result['cropRequiredConcepts']} "
+            f"({result['cropRequiredConceptCoverage']:.1%})"
+        )
+    if result["weakCropConcepts"]:
+        raise RuntimeError(
+            "FULL crop-required grounding too weak: "
+            + json.dumps(result["weakCropConcepts"], sort_keys=True)
+        )
+    return result
 
 
 def save_dataset(
@@ -3863,21 +4036,9 @@ def build_c11_dataset(
     elif adaptive_benchmark_seconds is not None:
         if adaptive_benchmark_seconds <= 0:
             raise ValueError("adaptive_benchmark_seconds must be positive")
-        acquired = list(cached_records.values())
+        acquired = initial_full_records(cached_records)
     else:
-        acquired = acquire_full_records(
-            concepts=concepts,
-            raw_dir=raw_dir,
-            cached_records=cached_records,
-            seen_hashes=seen_hashes,
-            seen_phashes=seen_phashes,
-            disk=disk,
-            stats=stats,
-            open_images=open_images,
-            limit_images=limit_images,
-            per_concept_cap=FULL_ACQUISITION_CAPS[0],
-            checkpoint_every=checkpoint_every,
-        )
+        acquired = initial_full_records(cached_records)
 
     write_metadata_index(index_path, cached_records, disk=disk)
     print(
@@ -3885,7 +4046,7 @@ def build_c11_dataset(
         f"exact dupes={stats.get('exact_duplicates', 0)}; "
         f"near dupes={stats.get('near_duplicates', 0)}."
     )
-    if not acquired:
+    if not acquired and smoke:
         raise RuntimeError("no images acquired")
 
     processed: list[dict[str, Any]] = []
@@ -3985,6 +4146,35 @@ def build_c11_dataset(
             if limit_images is not None
             else FULL_TARGET_UNIQUE_IMAGES
         )
+        coverage_state = full_visual_coverage_requirements(
+            records=valid,
+            concepts=concepts,
+        )
+        print(
+            "Coverage deficits before network: "
+            + json.dumps(
+                {
+                    category: {
+                        "images": details["images"],
+                        "requiredImages": details["requiredImages"],
+                        "coveredConcepts": details["coveredConcepts"],
+                        "requiredCoveredConcepts": details[
+                            "requiredCoveredConcepts"
+                        ],
+                        "additionalImagesNeeded": details[
+                            "additionalImagesNeeded"
+                        ],
+                        "additionalConceptsNeeded": details[
+                            "additionalConceptsNeeded"
+                        ],
+                    }
+                    for category, details in coverage_state[
+                        "failingCategories"
+                    ].items()
+                },
+                sort_keys=True,
+            )
+        )
         print("Starting adaptive streaming top-up...")
         import queue
         import threading
@@ -4033,12 +4223,16 @@ def build_c11_dataset(
                 if task is None:
                     task_queue.task_done()
                     break
-                cid, concept, scheduled_amount = task
+                cid, concept, scheduled_amount, targeted_mode = task
                 try:
                     allowed = (
-                        ("open_images",)
-                        if bool(concept.get("crop_required", False))
-                        else ("met", "artic", "openverse")
+                        targeted_allowed_sources(concept)
+                        if targeted_mode
+                        else (
+                            ("open_images",)
+                            if bool(concept.get("crop_required", False))
+                            else ("met", "artic", "openverse")
+                        )
                     )
                     records = acquire_for_concept(
                         concept=concept,
@@ -4053,10 +4247,26 @@ def build_c11_dataset(
                         seen_urls=seen_urls,
                         seen_image_ids=seen_image_ids,
                         dedup_lock=dedup_lock,
+                        max_training_queries=(
+                            TARGETED_MAX_TRAINING_QUERIES
+                            if targeted_mode
+                            else 3
+                        ),
                     )
-                    result_queue.put((cid, concept, scheduled_amount, records, None))
+                    result_queue.put(
+                        (
+                            cid,
+                            concept,
+                            scheduled_amount,
+                            targeted_mode,
+                            records,
+                            None,
+                        )
+                    )
                 except Exception as exc:
-                    result_queue.put((cid, concept, scheduled_amount, [], exc))
+                    result_queue.put(
+                        (cid, concept, scheduled_amount, targeted_mode, [], exc)
+                    )
                 finally:
                     task_queue.task_done()
 
@@ -4067,24 +4277,60 @@ def build_c11_dataset(
             threads.append(t)
 
         def schedule_fetches() -> None:
-            if task_queue.qsize() >= 4:
+            outstanding = sum(
+                int(state["inflight"] > 0) for state in concept_state.values()
+            )
+            slots = max(0, 4 - outstanding)
+            if slots <= 0:
                 return
+
+            global_deficit = desired_valid - len(valid)
+            targeted_mode = global_deficit <= 0
+            if targeted_mode:
+                unavailable = {
+                    cid
+                    for cid, state in concept_state.items()
+                    if state["exhausted"]
+                }
+                planned = select_targeted_recovery_concept_ids(
+                    requirements=coverage_state,
+                    concepts=concepts,
+                    unavailable_concept_ids=unavailable,
+                )
+                active = [
+                    concept_state[cid]
+                    for cid in planned
+                    if concept_state[cid]["inflight"] == 0
+                ]
+                active.sort(
+                    key=lambda state: (
+                        -_concept_recovery_priority(state["concept"]),
+                        state["concept_id"],
+                    )
+                )
+                for state in active[:slots]:
+                    state["inflight"] += 2
+                    task_queue.put(
+                        (
+                            state["concept_id"],
+                            state["concept"],
+                            2,
+                            True,
+                        )
+                    )
+                return
+
             active = [
-                s
-                for s in concept_state.values()
-                if not s["exhausted"] and s["inflight"] == 0
+                state
+                for state in concept_state.values()
+                if not state["exhausted"] and state["inflight"] == 0
             ]
             if not active:
                 return
-            active.sort(key=lambda s: s["valid"])
-
-            global_deficit = desired_valid - len(valid)
-            if global_deficit <= 0:
-                return
-
+            active.sort(key=lambda state: state["valid"])
             base_target = max(8, math.ceil(desired_valid / max(1, len(concepts))))
 
-            for s in active[:4]:
+            for s in active[:slots]:
                 cid = s["concept_id"]
                 c = s["concept"]
                 if s["attempted"] > 0:
@@ -4101,16 +4347,21 @@ def build_c11_dataset(
                 needed_candidates = math.ceil(concept_deficit / acc_rate)
                 schedule_amount = max(2, min(32, needed_candidates))
                 s["inflight"] += schedule_amount
-                task_queue.put((cid, c, schedule_amount))
+                task_queue.put((cid, c, schedule_amount, False))
 
         schedule_fetches()
 
         start_time = time.time()
         valid_at_start = len(valid)
+        recovery_concepts_at_start = int(coverage_state["remainingConcepts"])
         last_checkpoint_time = time.time()
         benchmark_timed_out = False
 
-        while len(valid) < desired_valid:
+        while not full_acquisition_complete(
+            valid_count=len(valid),
+            desired_valid=desired_valid,
+            requirements=coverage_state,
+        ):
             if (
                 adaptive_benchmark_seconds is not None
                 and time.time() - start_time >= adaptive_benchmark_seconds
@@ -4119,24 +4370,26 @@ def build_c11_dataset(
                 break
             if not disk.before_download():
                 break
-            all_exhausted = all(s["exhausted"] for s in concept_state.values())
-            if (
-                all_exhausted
-                and all(s["inflight"] == 0 for s in concept_state.values())
-                and task_queue.empty()
-            ):
-                print("All candidate concepts exhausted.")
-                break
-
             try:
-                cid, concept, scheduled_amount, records, exc = result_queue.get(
-                    timeout=2.0
-                )
+                (
+                    cid,
+                    concept,
+                    scheduled_amount,
+                    targeted_mode,
+                    records,
+                    exc,
+                ) = result_queue.get(timeout=2.0)
             except queue.Empty:
                 if task_queue.empty() and all(
                     s["inflight"] == 0 for s in concept_state.values()
                 ):
-                    break
+                    schedule_fetches()
+                    if task_queue.empty() and all(
+                        s["inflight"] == 0 for s in concept_state.values()
+                    ):
+                        print("No viable acquisition route remains for the current deficits.")
+                        break
+                    continue
                 schedule_fetches()
                 continue
 
@@ -4152,7 +4405,6 @@ def build_c11_dataset(
                 if state["consecutive_empty"] >= 2:
                     state["exhausted"] = True
             else:
-                state["consecutive_empty"] = 0
                 state["attempted"] += len(records)
                 for r in records:
                     with _CACHED_RECORDS_LOCK:
@@ -4177,9 +4429,24 @@ def build_c11_dataset(
                     crop_stats[key] += value
                 valid.extend(new_valid)
                 state["valid"] += len(new_valid)
+                if targeted_mode and not new_valid:
+                    state["consecutive_empty"] += 1
+                    if state["consecutive_empty"] >= 2:
+                        state["exhausted"] = True
+                else:
+                    state["consecutive_empty"] = 0
+
+                coverage_state = full_visual_coverage_requirements(
+                    records=valid,
+                    concepts=concepts,
+                )
 
                 now = time.time()
-                if (now - last_checkpoint_time >= 10.0) or len(acquired) % 25 == 0:
+                if (
+                    targeted_mode
+                    or now - last_checkpoint_time >= 10.0
+                    or len(acquired) % 25 == 0
+                ):
                     write_metadata_index(index_path, cached_records, disk=disk)
                     save_relevance_cache(
                         relevance_cache_path,
@@ -4202,6 +4469,32 @@ def build_c11_dataset(
                     f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} "
                     f"(latest {cid}: fetched {len(records)} -> valid {len(new_valid)})"
                 )
+                if targeted_mode:
+                    remaining = int(coverage_state["remainingConcepts"])
+                    resolved = max(0, recovery_concepts_at_start - remaining)
+                    resolved_per_min = resolved / max(elapsed / 60.0, 1e-9)
+                    projected = (
+                        remaining / resolved_per_min
+                        if resolved_per_min > 0
+                        else 0.0
+                    )
+                    provider = (
+                        str(records[0].get("source_id", "unknown"))
+                        if records
+                        else "none"
+                    )
+                    categories = " ".join(
+                        f"{category}={details['coveredConcepts']}/"
+                        f"{details['requiredCoveredConcepts']}"
+                        for category, details in coverage_state[
+                            "failingCategories"
+                        ].items()
+                    ) or "all=PASS"
+                    print(
+                        f"coverage: {categories} remaining_concepts={remaining} "
+                        f"latest={cid} provider={provider} accepted={len(new_valid)} "
+                        f"elapsed={elapsed:.1f}s projected_gate_eta={projected:.1f}min"
+                    )
                 if valid_per_sec > 0:
                     print(f"VALID/sec={valid_per_sec:.2f} ETA={eta_sec/60:.1f}min")
 

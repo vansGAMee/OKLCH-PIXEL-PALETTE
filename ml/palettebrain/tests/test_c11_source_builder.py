@@ -15,16 +15,256 @@ import pytest
 from ml.palettebrain.color_distribution import palette_or_pixels_to_oklch_histogram
 from ml.palettebrain.prepare_c11_recovered_source import (
     DiskBudget,
+    FULL_MIN_CATEGORY_COVERAGE,
+    FULL_TARGET_UNIQUE_IMAGES,
     SIGLIP_REVISION,
+    audit_visual_coverage,
     choose_balanced_smoke,
     choose_calibration_threshold,
     extract_deterministic_palette,
+    full_acquisition_complete,
+    full_visual_coverage_requirements,
+    initial_full_records,
     normalize_http_url,
     rgb_to_oklab_array,
+    select_targeted_recovery_concept_ids,
     siglip_relevance_prompt,
     split_by_group,
+    targeted_allowed_sources,
     underfilled_concept_ids,
 )
+
+
+def _coverage_concepts() -> list[dict[str, object]]:
+    return [
+        {
+            "concept_id": cid,
+            "category": category,
+            "retrieval_query": cid,
+            "phrasings_en": [],
+            "crop_required": False,
+        }
+        for category, ids in {
+            "failing": ("f1", "f2", "f3", "f4"),
+            "healthy": ("h1", "h2", "h3", "h4"),
+        }.items()
+        for cid in ids
+    ]
+
+
+def _coverage_record(cid: str, category: str, index: int) -> dict[str, object]:
+    return {
+        "concept_id": cid,
+        "category": category,
+        "source_id": "met",
+        "source_type": "artwork" if index % 2 else "real_world",
+        "content_sha256": f"{category}-{cid}-{index}",
+    }
+
+
+def _coverage_records(*, recovered: bool) -> list[dict[str, object]]:
+    failing_ids = ("f1", "f2", "f3") if recovered else ("f1", "f2")
+    rows = [
+        _coverage_record(failing_ids[index % len(failing_ids)], "failing", index)
+        for index in range(20)
+    ]
+    rows.extend(
+        _coverage_record(("h1", "h2", "h3")[index % 3], "healthy", index)
+        for index in range(20)
+    )
+    return rows
+
+
+def test_full_target_requires_coverage_and_targets_only_minimum(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    monkeypatch.setattr(source, "_concept_recovery_priority", lambda concept: 1.0)
+    concepts = _coverage_concepts()
+    failing = full_visual_coverage_requirements(
+        records=_coverage_records(recovered=False),
+        concepts=concepts,
+    )
+    assert not full_acquisition_complete(
+        valid_count=FULL_TARGET_UNIQUE_IMAGES,
+        desired_valid=FULL_TARGET_UNIQUE_IMAGES,
+        requirements=failing,
+    )
+    planned = select_targeted_recovery_concept_ids(
+        requirements=failing,
+        concepts=concepts,
+    )
+    assert len(planned) == 1
+    assert planned[0] in {"f3", "f4"}
+    assert not any(cid.startswith("h") for cid in planned)
+    assert select_targeted_recovery_concept_ids(
+        requirements=failing,
+        concepts=concepts,
+        unavailable_concept_ids={"f3", "f4"},
+    ) == []
+
+    passed = full_visual_coverage_requirements(
+        records=_coverage_records(recovered=True),
+        concepts=concepts,
+    )
+    assert full_acquisition_complete(
+        valid_count=FULL_TARGET_UNIQUE_IMAGES,
+        desired_valid=FULL_TARGET_UNIQUE_IMAGES,
+        requirements=passed,
+    )
+    assert select_targeted_recovery_concept_ids(
+        requirements=passed,
+        concepts=concepts,
+    ) == []
+
+
+def test_coverage_recovery_reuses_all_cache_and_resume_progress() -> None:
+    concepts = _coverage_concepts()
+    before = _coverage_records(recovered=False)
+    cached = {
+        str(record["content_sha256"]): record
+        for record in before
+    }
+    assert initial_full_records(cached) == before
+
+    recovered = _coverage_record("f3", "failing", 99)
+    cached[str(recovered["content_sha256"])] = recovered
+    resumed = initial_full_records(cached)
+    requirements = full_visual_coverage_requirements(
+        records=resumed,
+        concepts=concepts,
+    )
+    assert requirements["mandatoryPass"] is True
+
+
+def test_targeted_routes_skip_artic_and_quality_constants_are_unchanged() -> None:
+    concept = {"crop_required": False}
+    assert targeted_allowed_sources(concept) == ("openverse", "met")
+    assert "artic" not in targeted_allowed_sources(concept)
+    assert targeted_allowed_sources({"crop_required": True}) == ("open_images",)
+    assert FULL_TARGET_UNIQUE_IMAGES == 2500
+    assert FULL_MIN_CATEGORY_COVERAGE == 0.65
+
+
+def test_targeted_recovery_skips_dead_routes_and_uses_fourth_allowed_query(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source.configure_acquisition_runtime(
+        state_path=tmp_path / "state.json",
+        fingerprint="targeted-query-test",
+        download_workers=1,
+        metadata_workers=1,
+    )
+    concept = {
+        "concept_id": "missing",
+        "category": "failing",
+        "retrieval_query": "dead one",
+        "phrasings_en": ["dead two", "dead three", "fresh four"],
+        "crop_required": False,
+        "source_preference": ["met"],
+    }
+    for query in ("dead one", "dead two", "dead three"):
+        key = source._route_key("missing", "met", query)
+        source._ACQUISITION_STATE.setdefault("routeStats", {})[key] = {
+            "batches": 2,
+            "metadata": 0,
+        }
+        source._ACQUISITION_STATE.setdefault("routeOffsets", {})[key] = 8
+    legacy_key = source._route_key("legacy", "met", "legacy query")
+    source._ACQUISITION_STATE["routeStats"][legacy_key] = {
+        "batches": 5,
+        "metadata": 0,
+    }
+    assert source._route_priority(legacy_key) == 1.0
+    source._ACQUISITION_STATE.setdefault("conceptCursors", {})["missing"] = {
+        "stage": 0,
+        "offsets": {"met": 99, "artic": 1, "openverse": 1, "open_images": 0},
+    }
+
+    queries: list[str] = []
+    offsets: list[int] = []
+
+    def candidates(query: str, **kwargs: object) -> list[dict[str, object]]:
+        queries.append(query)
+        offsets.append(int(kwargs["offset"]))
+        return source.CandidateBatch(
+            [
+                {
+                    "source_id": "met",
+                    "source_url": "https://example.test/fresh.jpg",
+                    "image_id": "fresh",
+                }
+            ],
+            consumed=True,
+        )
+
+    monkeypatch.setattr(source, "met_candidates", candidates)
+    monkeypatch.setattr(
+        source,
+        "fetch_candidate_image",
+        lambda candidate, _disk: (
+            candidate,
+            b"image",
+            candidate["source_url"],
+        ),
+    )
+    monkeypatch.setattr(
+        source,
+        "store_image_record",
+        lambda **kwargs: {
+            **kwargs["record"],
+            "content_sha256": "fresh-sha",
+        },
+    )
+    records = source.acquire_for_concept(
+        concept=concept,
+        raw_dir=tmp_path,
+        max_count=1,
+        allowed_sources=("met",),
+        seen_hashes=set(),
+        seen_phashes=[],
+        disk=object(),
+        stats={},
+        open_images=object(),
+        max_training_queries=source.TARGETED_MAX_TRAINING_QUERIES,
+    )
+    assert queries == ["fresh four"]
+    assert offsets == [0]
+    assert [record["content_sha256"] for record in records] == ["fresh-sha"]
+
+
+def test_smoke_coverage_behavior_does_not_require_full_category_gate() -> None:
+    concepts = [
+        {
+            "concept_id": "only",
+            "category": "tiny",
+            "crop_required": False,
+        }
+    ]
+    records: list[dict[str, object]] = []
+    for source_id in ("met", "artic", "open_images"):
+        for index in range(2):
+            records.append(
+                {
+                    "concept_id": "only",
+                    "category": "tiny",
+                    "source_id": source_id,
+                    "source_type": "real_world",
+                    "bbox_provenance": "verified" if source_id == "open_images" else "",
+                    "crop_coordinates": [0.0, 0.0, 1.0, 1.0]
+                    if source_id == "open_images"
+                    else None,
+                }
+            )
+    assert audit_visual_coverage(
+        records=records,
+        concepts=concepts,
+        smoke=True,
+    )["categoryCoverage"]["tiny"]["images"] == 6
 
 
 def test_http_url_normalization_quotes_spaces_and_removes_controls() -> None:
