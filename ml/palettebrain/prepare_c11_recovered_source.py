@@ -1008,42 +1008,41 @@ def rgb_to_oklab_array(rgb: np.ndarray) -> np.ndarray:
     rgb = np.asarray(rgb, dtype=np.float32)
     if rgb.ndim != 2 or rgb.shape[1] != 3:
         raise ValueError("rgb must have shape [N,3]")
-    r = np.where(
-        rgb[:, 0] > 0.04045,
-        ((rgb[:, 0] + 0.055) / 1.055) ** 2.4,
-        rgb[:, 0] / 12.92,
-    )
-    g = np.where(
-        rgb[:, 1] > 0.04045,
-        ((rgb[:, 1] + 0.055) / 1.055) ** 2.4,
-        rgb[:, 1] / 12.92,
-    )
-    b = np.where(
-        rgb[:, 2] > 0.04045,
-        ((rgb[:, 2] + 0.055) / 1.055) ** 2.4,
-        rgb[:, 2] / 12.92,
-    )
+
+    linear = np.empty_like(rgb)
+    high = rgb > 0.04045
+    linear[high] = ((rgb[high] + 0.055) / 1.055) ** 2.4
+    linear[~high] = rgb[~high] / 12.92
+
+    r = linear[:, 0]
+    g = linear[:, 1]
+    b = linear[:, 2]
+
     l_val = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
     m_val = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
     s_val = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
+
     l_root = np.cbrt(np.maximum(l_val, 0.0))
     m_root = np.cbrt(np.maximum(m_val, 0.0))
     s_root = np.cbrt(np.maximum(s_val, 0.0))
-    return np.stack(
-        [
-            0.2104542553 * l_root
-            + 0.7936177850 * m_root
-            - 0.0040720468 * s_root,
-            1.9779984951 * l_root
-            - 2.4285922050 * m_root
-            + 0.4505937099 * s_root,
-            0.0259040371 * l_root
-            + 0.7827717662 * m_root
-            - 0.8086757660 * s_root,
-        ],
-        axis=-1,
-    ).astype(np.float32)
 
+    out = np.empty_like(rgb)
+    out[:, 0] = (
+        0.2104542553 * l_root
+        + 0.7936177850 * m_root
+        - 0.0040720468 * s_root
+    )
+    out[:, 1] = (
+        1.9779984951 * l_root
+        - 2.4285922050 * m_root
+        + 0.4505937099 * s_root
+    )
+    out[:, 2] = (
+        0.0259040371 * l_root
+        + 0.7827717662 * m_root
+        - 0.8086757660 * s_root
+    )
+    return out
 
 def extract_deterministic_palette(
     oklab_pixels: np.ndarray,
@@ -3176,6 +3175,18 @@ def score_records_with_cache(
         "crop_required_accepted_before_relevance": 0,
         "crop_required_skipped_no_valid_crop": 0,
     }
+
+    # post-raw progress telemetry
+    postraw_started = time.time()
+    total_missing = len(missing)
+    existing_cache_hits = len(acquired) - total_missing
+
+    if total_missing:
+        print(
+            f"Post-raw preprocessing: 0/{total_missing} "
+            f"(existing relevance cache hits={existing_cache_hits})"
+        )
+
     for start in range(0, len(missing), chunk_size):
         chunk = missing[start : start + chunk_size]
         processed, crop_stats = process_acquired_records(
@@ -3227,6 +3238,20 @@ def score_records_with_cache(
                 _FUNNEL.record(src_id, "siglip_fail", 1, cid=cid)
         if save_cache:
             save_relevance_cache(cache_path, cache_fingerprint, cache, disk)
+
+        done = min(start + len(chunk), total_missing)
+        elapsed = max(time.time() - postraw_started, 1e-9)
+        rate = done / elapsed
+        remaining = total_missing - done
+        eta_seconds = remaining / rate if rate > 0 else float("inf")
+
+        print(
+            f"Post-raw preprocessing: {done}/{total_missing} "
+            f"({100.0 * done / max(total_missing, 1):.1f}%) "
+            f"rate={rate:.2f} rec/s "
+            f"elapsed={elapsed / 60.0:.1f}m "
+            f"ETA={eta_seconds / 60.0:.1f}m"
+        )
 
     valid: list[dict[str, Any]] = []
     rejected = 0
