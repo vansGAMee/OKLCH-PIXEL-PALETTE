@@ -153,11 +153,106 @@ def test_coverage_recovery_reuses_all_cache_and_resume_progress() -> None:
 
 def test_targeted_routes_skip_artic_and_quality_constants_are_unchanged() -> None:
     concept = {"crop_required": False}
-    assert targeted_allowed_sources(concept) == ("openverse", "met")
+    assert targeted_allowed_sources(concept) == ("commons", "openverse", "met")
     assert "artic" not in targeted_allowed_sources(concept)
     assert targeted_allowed_sources({"crop_required": True}) == ("open_images",)
     assert FULL_TARGET_UNIQUE_IMAGES == 2500
     assert FULL_MIN_CATEGORY_COVERAGE == 0.65
+
+
+def test_commons_candidates_require_explicit_cc0_or_cc_by_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    payload = {
+        "query": {"pages": {"17": {
+            "pageid": 17,
+            "title": "File:Licensed artwork.jpg",
+            "imageinfo": [{
+                "thumburl": "https://upload.wikimedia.org/example.jpg",
+                "mime": "image/jpeg",
+                "descriptionurl": "https://commons.wikimedia.org/wiki/File:Licensed_artwork.jpg",
+                "extmetadata": {
+                    "LicenseShortName": {"value": "CC BY 4.0"},
+                    "LicenseUrl": {"value": "https://creativecommons.org/licenses/by/4.0/"},
+                    "Artist": {"value": "Example artist"},
+                    "ObjectName": {"value": "painting"},
+                },
+            }],
+        }}}
+    }
+    monkeypatch.setattr(source, "fetch_json", lambda *_args, **_kwargs: payload)
+    rows = source.commons_candidates("quiet dread", limit=4, page=1)
+    assert len(rows) == 1
+    assert rows[0]["source_id"] == "commons"
+    assert rows[0]["license"] == "CC BY 4.0"
+    assert rows[0]["source_type"] == "artwork"
+    assert rows[0]["landing_url"].startswith("https://commons.wikimedia.org/")
+
+
+def test_commons_accepts_explicit_public_domain_metadata_without_a_cc_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source._COMMONS_QUERY_CACHE.clear()
+    payload = {"query": {"pages": {"18": {
+        "pageid": 18, "title": "File:Public domain work.jpg",
+        "imageinfo": [{
+            "url": "https://upload.wikimedia.org/public-domain.jpg",
+            "mime": "image/jpeg",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Public_domain_work.jpg",
+            "extmetadata": {
+                "LicenseShortName": {"value": "Public domain"},
+                "Copyrighted": {"value": "False"},
+            },
+        }],
+    }}}}
+    monkeypatch.setattr(source, "fetch_json", lambda *_args, **_kwargs: payload)
+    rows = source.commons_candidates("public domain work", limit=4, page=1)
+    assert rows[0]["license"] == "Public domain"
+    assert rows[0]["license_url"] == "https://commons.wikimedia.org/wiki/Commons:Licensing"
+
+
+def test_commons_rejects_sharealike_or_missing_license_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source._COMMONS_QUERY_CACHE.clear()
+    payload = {"query": {"pages": {"17": {
+        "pageid": 17, "title": "File:Not permitted.jpg",
+        "imageinfo": [{
+            "url": "https://upload.wikimedia.org/example.jpg",
+            "mime": "image/jpeg",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Not_permitted.jpg",
+            "extmetadata": {"LicenseShortName": {"value": "CC BY-SA 4.0"}},
+        }],
+    }}}}
+    monkeypatch.setattr(source, "fetch_json", lambda *_args, **_kwargs: payload)
+    assert source.commons_candidates("quiet dread", limit=4, page=1) == []
+
+
+def test_commons_rejects_non_image_media_before_download(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    source._COMMONS_QUERY_CACHE.clear()
+    payload = {"query": {"pages": {"19": {
+        "pageid": 19, "title": "File:Book scan.pdf",
+        "imageinfo": [{
+            "url": "https://upload.wikimedia.org/book.pdf", "mime": "application/pdf",
+            "descriptionurl": "https://commons.wikimedia.org/wiki/File:Book_scan.pdf",
+            "extmetadata": {
+                "LicenseShortName": {"value": "Public domain"},
+                "Copyrighted": {"value": "False"},
+            },
+        }],
+    }}}}
+    monkeypatch.setattr(source, "fetch_json", lambda *_args, **_kwargs: payload)
+    assert source.commons_candidates("book scan", limit=4, page=1) == []
 
 
 def test_targeted_recovery_skips_dead_routes_and_uses_fourth_allowed_query(

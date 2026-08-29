@@ -416,7 +416,7 @@ class AcquisitionFunnel:
         self.start_time = time.time()
         self.last_report_time = time.time()
         self.siglip_seconds = 0.0
-        self.providers = ("open_images", "met", "artic", "openverse")
+        self.providers = ("open_images", "met", "artic", "openverse", "commons")
         self.metrics: dict[str, dict[str, Any]] = {
             p: {
                 "metadata_candidates": 0,
@@ -514,6 +514,7 @@ _API_KEY_LOCKS: dict[tuple[str, tuple[Any, ...]], threading.Lock] = {}
 _MET_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _MET_SEARCH_CACHE: dict[str, list[Any]] = {}
 _ARTIC_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+_COMMONS_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 
 _GLOBAL_NETWORK_SEMAPHORE = threading.Semaphore(16)
 _GLOBAL_DEDUP_LOCK = threading.RLock()
@@ -1259,6 +1260,25 @@ def strict_openimages_license(url: str) -> tuple[str, str] | None:
     for prefix, label in allowed:
         if normalized.startswith(prefix):
             return label, raw
+    return None
+
+
+def strict_commons_license(metadata: dict[str, Any]) -> tuple[str, str] | None:
+    """Accept only explicitly disclosed Commons CC0 or attribution licenses."""
+    def value(key: str) -> str:
+        raw = metadata.get(key, {})
+        return str(raw.get("value", "") if isinstance(raw, dict) else raw).strip()
+
+    label = re.sub(r"<[^>]+>", "", value("LicenseShortName"))
+    url = value("LicenseUrl")
+    normalized = url.lower().replace("http://", "https://")
+    copyrighted = value("Copyrighted").lower()
+    if label.lower() == "public domain" and copyrighted in {"false", "no"}:
+        return "Public domain", "https://commons.wikimedia.org/wiki/Commons:Licensing"
+    if normalized.startswith("https://creativecommons.org/publicdomain/zero/"):
+        return "CC0 1.0", url
+    if normalized.startswith("https://creativecommons.org/licenses/by/") and "-sa" not in label.lower():
+        return label or "CC BY", url
     return None
 
 
@@ -2047,6 +2067,102 @@ def _openverse_candidates_impl(
     return CandidateBatch(res, consumed=True)
 
 
+def _commons_candidates_impl(
+    query: str,
+    limit: int = 24,
+    page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Search Wikimedia Commons and retain only explicitly compatible media."""
+    cache_key = (query.strip().lower(), limit, page)
+    with _API_CACHE_LOCK:
+        cached = _COMMONS_QUERY_CACHE.get(cache_key)
+    if cached is not None:
+        return CandidateBatch((dict(item) for item in cached), consumed=True)
+
+    t0 = time.time()
+    offset = max(0, int(page) - 1) * min(50, int(limit))
+    url = (
+        "https://commons.wikimedia.org/w/api.php?action=query&format=json"
+        "&generator=search&gsrnamespace=6"
+        f"&gsrsearch={urllib.parse.quote(query)}"
+        f"&gsrlimit={min(50, int(limit))}&gsroffset={offset}"
+        "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=900"
+    )
+    payload = fetch_json(url, timeout=15, max_retries=1)
+    _FUNNEL.add_time("commons", "seconds_metadata", time.time() - t0)
+    if payload is None:
+        return CandidateBatch(consumed=False)
+
+    rows: list[dict[str, Any]] = []
+    pages = payload.get("query", {}).get("pages", {})
+    if not isinstance(pages, dict):
+        return CandidateBatch(consumed=True)
+    for item in pages.values():
+        if not isinstance(item, dict):
+            continue
+        info = (item.get("imageinfo") or [None])[0]
+        if not isinstance(info, dict):
+            continue
+        if not str(info.get("mime") or "").lower().startswith("image/"):
+            continue
+        license_info = strict_commons_license(dict(info.get("extmetadata") or {}))
+        if license_info is None:
+            continue
+        image_url = str(info.get("thumburl") or info.get("url") or "").strip()
+        landing_url = str(info.get("descriptionurl") or "").strip()
+        if not image_url.startswith(("https://", "http://")) or not landing_url.startswith(("https://", "http://")):
+            continue
+        license_name, license_url = license_info
+        extmetadata = dict(info.get("extmetadata") or {})
+        artist = extmetadata.get("Artist", {})
+        artist_text = str(artist.get("value", "") if isinstance(artist, dict) else artist)
+        artist_text = re.sub(r"<[^>]+>", "", artist_text).strip() or "Unknown"
+        metadata_parts = [str(item.get("title") or "")]
+        metadata_parts.extend(
+            re.sub(
+                r"<[^>]+>", "",
+                str(value.get("value", "") if isinstance(value, dict) else value),
+            )
+            for value in extmetadata.values()
+        )
+        metadata_text = " ".join(metadata_parts).lower()
+        source_type = (
+            "artwork"
+            if any(term in metadata_text for term in (
+                "painting", "drawing", "watercolor", "engraving", "print", "illustration", "fresco", "portrait",
+            ))
+            else "unknown"
+        )
+        page_id = item.get("pageid")
+        if page_id is None:
+            continue
+        rows.append({
+            "source_id": "commons",
+            "source_type": source_type,
+            "image_id": f"commons_{page_id}",
+            "foreign_identifier": str(page_id),
+            "provider": "commons.wikimedia.org",
+            "source_url": image_url,
+            "landing_url": landing_url,
+            "creator": artist_text,
+            "title": str(item.get("title") or ""),
+            "license": license_name,
+            "license_url": license_url,
+            "crop_coordinates": None,
+            "bbox_provenance": "",
+            "bbox_annotation_key": "",
+            "bbox_class_name": "",
+            "bbox_label_mid": "",
+            "bbox_source": "",
+        })
+    rows = rows[:limit]
+    with _API_CACHE_LOCK:
+        _COMMONS_QUERY_CACHE[cache_key] = rows
+    _FUNNEL.record("commons", "metadata_candidates", len(rows))
+    return CandidateBatch(rows, consumed=True)
+
+
 def met_candidates(
     query: str, limit: int = 36, offset: int = 0,
     concept: dict[str, Any] | None = None,
@@ -2075,6 +2191,15 @@ def openverse_candidates(
     key = (query.strip().lower(), limit, page)
     with _api_key_lock("openverse", key):
         return _openverse_candidates_impl(query, limit, page, concept)
+
+
+def commons_candidates(
+    query: str, limit: int = 24, page: int = 1,
+    concept: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    key = (query.strip().lower(), limit, page)
+    with _api_key_lock("commons", key):
+        return _commons_candidates_impl(query, limit, page, concept)
 
 
 def fetch_candidate_image(
@@ -2159,22 +2284,24 @@ def acquire_for_concept(
     else:
         pref = [
             s
-            for s in concept.get("source_preference", ["artic", "met", "openverse"])
-            if s in allowed_sources and s in ("artic", "met", "openverse")
+            for s in concept.get("source_preference", ["commons", "artic", "met", "openverse"])
+            if s in allowed_sources and s in ("commons", "artic", "met", "openverse")
         ]
-        ordered_sources = (
-            pref if pref else [s for s in allowed_sources if s in ("artic", "met", "openverse")]
-        )
+        available = [
+            source for source in allowed_sources
+            if source in ("commons", "artic", "met", "openverse")
+        ]
+        ordered_sources = pref + [source for source in available if source not in pref]
 
     with _ACQUISITION_STATE_LOCK:
         concept_cursors = _ACQUISITION_STATE.setdefault("conceptCursors", {}).setdefault(
             cid, {
                 "stage": 0,
-                "offsets": {"met": 0, "artic": 1, "openverse": 1, "open_images": 0},
+                "offsets": {"met": 0, "artic": 1, "openverse": 1, "commons": 1, "open_images": 0},
             }
         )
         offsets = concept_cursors.setdefault(
-            "offsets", {"met": 0, "artic": 1, "openverse": 1, "open_images": 0}
+            "offsets", {"met": 0, "artic": 1, "openverse": 1, "commons": 1, "open_images": 0}
         )
         legacy_offsets = _ACQUISITION_STATE.setdefault("conceptOffsets", {}).setdefault(
             cid, offsets
@@ -2206,7 +2333,7 @@ def acquire_for_concept(
             route_offsets = _ACQUISITION_STATE.setdefault("routeOffsets", {})
             route_offset = route_offsets.setdefault(
                 route_key,
-                1 if src in {"artic", "openverse"} else 0,
+                1 if src in {"artic", "openverse", "commons"} else 0,
             )
 
         batch_candidates: list[dict[str, Any]] = []
@@ -2256,6 +2383,17 @@ def acquire_for_concept(
                         int(offsets.get("openverse", 1)), cur_page + 1
                     )
                     legacy_offsets["openverse"] = offsets["openverse"]
+            if records:
+                batch_candidates = records
+        elif src == "commons":
+            cur_page = int(route_offset)
+            limit_commons = min(max(max_count, 8), 20)
+            records = commons_candidates(query, limit=limit_commons, page=cur_page, concept=concept)
+            if getattr(records, "consumed", False):
+                with _ACQUISITION_STATE_LOCK:
+                    route_offsets[route_key] = cur_page + 1
+                    offsets["commons"] = max(int(offsets.get("commons", 1)), cur_page + 1)
+                    legacy_offsets["commons"] = offsets["commons"]
             if records:
                 batch_candidates = records
 
@@ -2320,6 +2458,7 @@ def acquire_for_concept(
                 "met": "met",
                 "artic": "artic",
                 "openverse": "ov",
+                "commons": "commons",
                 "open_images": "oi",
             }.get(str(cand["source_id"]), "src")
 
@@ -3023,7 +3162,7 @@ def targeted_allowed_sources(concept: dict[str, Any]) -> tuple[str, ...]:
     """
     if bool(concept.get("crop_required", False)):
         return ("open_images",)
-    return ("openverse", "met")
+    return ("commons", "openverse", "met")
 
 
 def _concept_recovery_priority(concept: dict[str, Any]) -> float:
@@ -4316,7 +4455,7 @@ def build_c11_dataset(
                         else (
                             ("open_images",)
                             if bool(concept.get("crop_required", False))
-                            else ("met", "artic", "openverse")
+                else ("commons", "met", "artic", "openverse")
                         )
                     )
                     records = acquire_for_concept(
