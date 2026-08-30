@@ -28,9 +28,11 @@ from ml.palettebrain.prepare_c11_recovered_source import (
     normalize_http_url,
     rgb_to_oklab_array,
     select_targeted_recovery_concept_ids,
+    summarize_palette_diversity,
     siglip_relevance_prompt,
     split_by_group,
     targeted_allowed_sources,
+    training_acquisition_queries,
     underfilled_concept_ids,
 )
 
@@ -117,6 +119,95 @@ def test_full_target_requires_coverage_and_targets_only_minimum(
         requirements=passed,
         concepts=concepts,
     ) == []
+
+
+def test_palette_statistics_are_diagnostic_only_and_cannot_change_acceptance() -> None:
+    import math
+
+    def prior(hue_degrees: float) -> np.ndarray:
+        hue = math.radians(hue_degrees)
+        color = np.asarray(
+            [[0.60, 0.14 * math.cos(hue), 0.14 * math.sin(hue)]],
+            dtype=np.float32,
+        )
+        return palette_or_pixels_to_oklch_histogram(color)
+
+    concepts = _coverage_concepts()
+    records = [
+        {
+            **record,
+            "color_prior": prior(55.0 if index % 2 else 135.0),
+        }
+        for index, record in enumerate(_coverage_records(recovered=True))
+    ]
+    before = full_visual_coverage_requirements(records=records, concepts=concepts)
+    diagnostic = summarize_palette_diversity(records)
+    recolored = [{**record, "color_prior": prior(300.0)} for record in records]
+    after = full_visual_coverage_requirements(records=recolored, concepts=concepts)
+
+    assert before == after
+    assert before["mandatoryPass"] is True
+    assert diagnostic["diagnosticOnly"] is True
+    assert diagnostic["influencesAcceptance"] is False
+    assert diagnostic["images"] == len(records)
+
+
+def test_targeted_queries_and_sources_ignore_palette_hints() -> None:
+    concept = {
+        "concept_id": "dewy_lawn_blades",
+        "retrieval_query": "grass dew morning lawn",
+        "palette_semantic_retrieval_hint": "green",
+        "phrasings_en": ["dewy lawn in early morning"],
+    }
+
+    queries = training_acquisition_queries(
+        concept,
+        max_queries=6,
+    )
+
+    assert queries[0] == "grass dew morning lawn"
+    assert all("green" not in query for query in queries)
+    assert len(queries) == len(set(queries))
+    assert targeted_allowed_sources(concept) == ("commons", "openverse", "met")
+
+
+def test_route_priority_ignores_palette_family_statistics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ml.palettebrain.prepare_c11_recovered_source as source
+
+    shared = {
+        "attempted": 12,
+        "downloaded": 10,
+        "scored": 10,
+        "passed": 6,
+        "networkSeconds": 4.0,
+        "metadata": 20,
+        "batches": 1,
+    }
+    monkeypatch.setattr(
+        source,
+        "_ACQUISITION_STATE",
+        {
+            "routeOffsets": {"high-palette": 1, "low-palette": 1},
+            "routeStats": {
+                "high-palette": {
+                    **shared,
+                    "semanticScored": 10,
+                    "semanticPassed": 10,
+                },
+                "low-palette": {
+                    **shared,
+                    "semanticScored": 10,
+                    "semanticPassed": 0,
+                },
+            },
+        },
+    )
+
+    assert source._route_priority("high-palette") == pytest.approx(
+        source._route_priority("low-palette")
+    )
 
 
 def test_failed_full_coverage_blocks_final_feature_extraction() -> None:

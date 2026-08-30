@@ -53,3 +53,30 @@ def test_release_rejects_structurally_valid_failed_qualification(tmp_path) -> No
     report["pass"] = True
     report["productionReady"] = True
     assert qualification_artifact_valid(report, manifest, checkpoint, dataset)
+
+
+def test_stage_a_probe_contract_preserves_base_and_requires_clear_family_gain() -> None:
+    base = {
+        "semanticFamilyWin": 0.06,
+        "directEn": 4 / 7,
+        "directRu": 1.0,
+        "basicConcepts": 0.15,
+        "paletteStructureWinRate": 0.459,
+    }
+    passing = {
+        "semanticFamilyWin": 0.15,
+        "directEn": 4 / 7,
+        "directRu": 1.0,
+        "basicConcepts": 0.15,
+        "paletteStructureWinRate": 0.42,
+    }
+    valid, evidence = run_candidate11_release.probe_metrics_contract(base, passing)
+    assert valid
+    assert evidence["minimumSemanticFamilyWin"] == 0.15
+    assert evidence["failures"] == []
+
+    broken = {**passing, "semanticFamilyWin": 0.14, "directRu": 0.0}
+    valid, evidence = run_candidate11_release.probe_metrics_contract(base, broken)
+    assert not valid
+    assert any("semanticFamilyWin" in value for value in evidence["failures"])
+    assert any("directRu" in value for value in evidence["failures"])

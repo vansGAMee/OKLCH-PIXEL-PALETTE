@@ -29,13 +29,13 @@ def test_engineering_invalid_candidate_is_rejected_first() -> None:
     assert valid > invalid
 
 
-def test_checkpoint_selection_uses_dev_benchmarks_only(tmp_path, monkeypatch) -> None:
+def test_checkpoint_selection_uses_dev_only_and_accepts_save_contract_resume(tmp_path, monkeypatch) -> None:
     dataset = tmp_path / "data.npz"
     dataset.write_bytes(b"dataset")
     output = tmp_path / "stage-a-best.pt"
     candidate = tmp_path / "stage-a-dev-epoch-001.pt"
     candidate.write_bytes(b"checkpoint")
-    expected_dependency = "dep"
+    expected_dependency = "05bb4b0691c3ae52e5a49a3d5afdaa04f0ec224f776726d1539332f77b2c44d3"
     checkpoint = {
         "candidate": "candidate-11", "stage": "a",
         "dataset_identity": {"primary": hashlib.sha256(b"dataset").hexdigest()},
@@ -48,7 +48,7 @@ def test_checkpoint_selection_uses_dev_benchmarks_only(tmp_path, monkeypatch) ->
     }
     seen_splits = []
     monkeypatch.setattr(selector.torch, "load", lambda *_args, **_kwargs: checkpoint)
-    monkeypatch.setattr(selector, "training_dependency_fingerprint", lambda: expected_dependency)
+    monkeypatch.setattr(selector, "training_dependency_fingerprint", lambda: "current-dependency")
     monkeypatch.setattr(selector, "atomic_copy", lambda _source, destination: destination.write_bytes(b"best"))
     def evaluate(args):
         seen_splits.append(args.evaluation_split)

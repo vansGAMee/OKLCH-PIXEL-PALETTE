@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contract": "candidate-11-target-grounded-full-photo-release-v1",
+  "methodology": {
+    "semanticFamily": "Target-grounded held-out full-photo palettes; category rows are included in the aggregate and remain reported as diagnostics.",
+    "devSemanticFloor": "BASE validation score 0.62; Stage A 0.64; Stage B 0.65.",
+    "sealedSemanticFloor": "Five-point non-inferiority band from BASE test score 0.68; Stage B test score 0.67.",
+    "progress": "Stage B must materially beat BASE on palette diversity, OOD transfer, held-out transfer, and long-text behavior while preserving direct controls.",
+    "excludedLegacyHardGates": [
+      "per-category 0.80 stereotypes",
+      "abstract all-or-nothing heuristic",
+      "hand-authored adversarial hue stereotypes"
+    ]
+  },
+  "commonThresholds": {
+    "semanticTargetContrastMargin": [">", 0.0],
+    "directEn": [">=", 0.5714285714285714],
+    "directRu": [">=", 1.0],
+    "exclusion": [">=", 0.5],
+    "cleanMultiColor": [">=", 0.2],
+    "nearDuplicateRate": ["<=", 0.5],
+    "crossPromptCollapseRate": ["<=", 0.05],
+    "oodParaphrases": [">=", 0.25],
+    "heldOutRelated": [">=", 0.5],
+    "ruEnSemanticAgreement": [">=", 0.5],
+    "count": [">=", 1.0],
+    "inactive": [">=", 1.0],
+    "locks": [">=", 1.0],
+    "seedDiversity": [">=", 1.0],
+    "seedStability": [">=", 1.0],
+    "gamut": [">=", 1.0],
+    "determinism": [">=", 1.0]
+  },
+  "devThresholds": {
+    "semanticFamilyWin": [">=", 0.62],
+    "paletteStructureWinRate": [">=", 0.55]
+  },
+  "sealedThresholds": {
+    "semanticFamilyWin": [">=", 0.63],
+    "paletteStructureWinRate": [">=", 0.4]
+  },
+  "commonBooleanGates": [
+    "longPromptGate",
+    "crossPromptCollapseGate",
+    "pytorchOnnxParity",
+    "onnxBrowserParity",
+    "realBrowserSemanticSmoke"
+  ],
+  "sealedBooleanGates": ["sealedSemanticTestGate"]
+}

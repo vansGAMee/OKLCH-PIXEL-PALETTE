@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import time
 from pathlib import Path
 from typing import Any
 
@@ -270,12 +271,33 @@ def audit(path: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
 
 
 def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dict[str, Any]:
+    started = time.perf_counter()
     used = (source.stat().st_size if source.is_file() else 0) + (
         output.stat().st_size if output.is_file() else 0
     )
     free = shutil.disk_usage(output.parent if output.parent.exists() else Path.cwd()).free
     print(f"DISK used={used / 1024**3:.2f} GiB free={free / 1024**3:.2f} GiB")
     source_sha256 = sha256_file(source)
+    if output.is_file():
+        existing = audit(output, engineering_smoke=engineering_smoke)
+        with np.load(output, allow_pickle=False) as existing_archive:
+            existing_source_sha = (
+                str(existing_archive["source_input_sha256"].item())
+                if "source_input_sha256" in existing_archive.files
+                else ""
+            )
+        if existing["pass"] and existing_source_sha == source_sha256:
+            existing["sourceSha256"] = source_sha256
+            existing["sourcePath"] = str(source).replace("\\", "/")
+            existing["reusedExistingArtifact"] = True
+            existing["elapsedSeconds"] = time.perf_counter() - started
+            existing["rowsPerSecond"] = existing["recordCount"] / max(
+                existing["elapsedSeconds"], 1e-9
+            )
+            return existing
+        raise FileExistsError(
+            f"refusing to overwrite versioned dataset artifact: {output}"
+        )
     source_archive = np.load(source, allow_pickle=False)
     missing = sorted((set(CORE_FIELDS) | PROVENANCE_FIELDS) - set(source_archive.files))
     if missing:
@@ -285,6 +307,7 @@ def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dic
         )
     arrays = {name: np.asarray(source_archive[name]) for name in source_archive.files}
     arrays.update(build_safe_ranking_negatives(arrays))
+    arrays["source_input_sha256"] = np.asarray(source_sha256)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix(output.suffix + ".tmp.npz")
     np.savez_compressed(temporary, **arrays)
@@ -292,6 +315,11 @@ def build(source: Path, output: Path, *, engineering_smoke: bool = False) -> dic
     report = audit(output, engineering_smoke=engineering_smoke)
     report["sourceSha256"] = source_sha256
     report["sourcePath"] = str(source).replace("\\", "/")
+    report["reusedExistingArtifact"] = False
+    report["elapsedSeconds"] = time.perf_counter() - started
+    report["rowsPerSecond"] = report["recordCount"] / max(
+        report["elapsedSeconds"], 1e-9
+    )
     if engineering_smoke:
         report["testClassification"] = "ENGINEERING_SMOKE_ONLY"
         report["productionReady"] = False
@@ -310,6 +338,12 @@ def main() -> None:
     args = parser.parse_args()
     report = build(Path(args.input), Path(args.output), engineering_smoke=args.engineering_smoke) if args.output else audit(Path(args.input), engineering_smoke=args.engineering_smoke)
     report_path = Path(args.report)
+    if report_path.exists():
+        existing = json.loads(report_path.read_text(encoding="utf-8"))
+        if existing.get("sha256") != report.get("sha256"):
+            raise FileExistsError(
+                f"refusing to overwrite versioned dataset report: {report_path}"
+            )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))

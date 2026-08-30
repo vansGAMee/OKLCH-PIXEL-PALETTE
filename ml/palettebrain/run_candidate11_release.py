@@ -20,13 +20,26 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    from .c11_release_contract import (
+        phase_artifact_reusable,
+        stage_a_metrics_contract,
+        stage_b_probe_metrics_contract,
+    )
+except ImportError:
+    from c11_release_contract import (
+        phase_artifact_reusable,
+        stage_a_metrics_contract,
+        stage_b_probe_metrics_contract,
+    )
+
 
 ROOT = Path(__file__).resolve().parents[2]
 ML = ROOT / "ml" / "palettebrain"
 REPORTS = ML / "reports"
-LOGS = REPORTS / "candidate-11-logs"
-STATE_PATH = REPORTS / "candidate-11-run-state.json"
-PREFLIGHT_REPORT = REPORTS / "candidate-11-preflight.json"
+LOGS = REPORTS / "candidate-11-corrected-contract-v2-logs"
+STATE_PATH = REPORTS / "candidate-11-corrected-contract-v2-run-state.json"
+PREFLIGHT_REPORT = REPORTS / "candidate-11-corrected-contract-v2-preflight.json"
 PYTHON = Path(sys.executable).resolve()
 SEED = "20260826"
 
@@ -39,45 +52,67 @@ HISTORICAL_C11 = ML / "checkpoints" / "candidate-11-best.pt"
 BASE = ML / "checkpoints" / "candidate-11-base.pt"
 
 SMOKE_SOURCE = ML / "data" / "palettebrain_c11_smoke_recovered_source.npz"
-FULL_SOURCE = ML / "data" / "palettebrain_c11_recovered_source.npz"
-TRAIN_DATA = ML / "data" / "palettebrain_c11_repaired_v2.npz"
-STAGE_A = ML / "checkpoints" / "candidate-11-stage-a-best.pt"
-STAGE_B = ML / "checkpoints" / "candidate-11-stage-b-best.pt"
-STAGE_A_EVAL = REPORTS / "candidate-11-stage-a-semantic-v3.json"
-STAGE_B_EVAL = REPORTS / "candidate-11-stage-b-semantic-v3.json"
-STAGE_A_SELECTION = REPORTS / "candidate-11-stage-a-dev-selection.json"
-STAGE_B_SELECTION = REPORTS / "candidate-11-stage-b-dev-selection.json"
-RELEASE_EVAL = REPORTS / "candidate-11-release-semantic-v3.json"
-SEALED_EVAL = REPORTS / "candidate-11-sealed-evaluation.json"
-VISUAL_REPORT = REPORTS / "candidate-11-visual-report.html"
-ONNX = ROOT / "public" / "models" / "palettebrain-v4-candidate11-repaired.onnx"
+FULL_SOURCE = ML / "data" / "palettebrain_c11_recovered_source_corrected_contract_v1.npz"
+SOURCE_REPORT = REPORTS / "candidate-11-source-corrected-contract-v1.json"
+SOURCE_ACCEPTANCE = REPORTS / "candidate-11-source-corrected-contract-v1-acceptance.json"
+ACQUISITION_ACCEPTANCE = REPORTS / "candidate-11-corrected-contract-bounded-v1.json"
+TRAIN_DATA = ML / "data" / "palettebrain_c11_corrected_contract_v1.npz"
+DATASET_REPORT = REPORTS / "candidate-11-dataset-corrected-contract-v1-audit.json"
+BASE_EVAL = REPORTS / "candidate-11-base-corrected-contract-v3-semantic-v3.json"
+STAGE_A_PROBE = ML / "checkpoints" / "candidate-11-stage-a-corrected-contract-v2-probe-best.pt"
+STAGE_A_PROBE_EVAL = REPORTS / "candidate-11-stage-a-corrected-contract-v4-probe-semantic-v3.json"
+STAGE_A_PROBE_ACCEPTANCE = REPORTS / "candidate-11-stage-a-corrected-contract-v5-probe-acceptance.json"
+STAGE_A = ML / "checkpoints" / "candidate-11-stage-a-corrected-contract-v2-best.pt"
+STAGE_B_PREFLIGHT = REPORTS / "candidate-11-stage-b-corrected-contract-v2-preflight.json"
+STAGE_B_PROBE = ML / "checkpoints" / "candidate-11-stage-b-corrected-contract-v2-probe-best.pt"
+STAGE_B_PROBE_EVAL = REPORTS / "candidate-11-stage-b-corrected-contract-v2-probe-semantic-v3.json"
+STAGE_B_PROBE_ACCEPTANCE = REPORTS / "candidate-11-stage-b-corrected-contract-v2-probe-acceptance.json"
+STAGE_B = ML / "checkpoints" / "candidate-11-stage-b-corrected-contract-v2-best.pt"
+STAGE_A_EVAL = REPORTS / "candidate-11-stage-a-corrected-contract-v3-semantic-v3.json"
+STAGE_B_EVAL = REPORTS / "candidate-11-stage-b-corrected-contract-v2-semantic-v3.json"
+STAGE_A_SELECTION = REPORTS / "candidate-11-stage-a-corrected-contract-v3-dev-selection.json"
+STAGE_B_SELECTION = REPORTS / "candidate-11-stage-b-corrected-contract-v2-dev-selection.json"
+RELEASE_EVAL = REPORTS / "candidate-11-corrected-contract-v3-release-semantic-v3.json"
+SEALED_EVAL = REPORTS / "candidate-11-corrected-contract-v3-sealed-evaluation.json"
+VISUAL_REPORT = REPORTS / "candidate-11-corrected-contract-v2-visual-report.html"
+ONNX = ROOT / "public" / "models" / "palettebrain-v4-candidate11-corrected-contract-v2.onnx"
 MANIFEST = ROOT / "public" / "models" / "palettebrain-v2.manifest.json"
-PARITY = REPORTS / "candidate-11-parity.json"
-BROWSER_EMBEDDINGS = REPORTS / "candidate-11-browser-embeddings.json"
-BROWSER_PALETTES = REPORTS / "candidate-11-browser-current-parity.json"
-BROWSER_EMBEDDING_INPUT = REPORTS / "candidate-11-browser-embedding-input.json"
-BROWSER_PALETTE_INPUT = REPORTS / "candidate-11-browser-palette-input.json"
-BROWSER_SMOKE = REPORTS / "real-browser-semantic-smoke.json"
-QUALIFICATION = REPORTS / "candidate-11-stage-b-qualification.json"
-DEV_QUALIFICATION = REPORTS / "candidate-11-dev-qualification.json"
+PARITY = REPORTS / "candidate-11-corrected-contract-v2-parity.json"
+BROWSER_EMBEDDINGS = REPORTS / "candidate-11-corrected-contract-v2-browser-embeddings.json"
+BROWSER_PALETTES = REPORTS / "candidate-11-corrected-contract-v2-browser-current-parity.json"
+BROWSER_EMBEDDING_INPUT = REPORTS / "candidate-11-corrected-contract-v2-browser-embedding-input.json"
+BROWSER_PALETTE_INPUT = REPORTS / "candidate-11-corrected-contract-v2-browser-palette-input.json"
+BROWSER_SMOKE = REPORTS / "candidate-11-corrected-contract-v2-real-browser-semantic-smoke.json"
+QUALIFICATION = REPORTS / "candidate-11-corrected-contract-v3-qualification.json"
+DEV_QUALIFICATION = REPORTS / "candidate-11-corrected-contract-v3-dev-qualification.json"
+REPLAY_DATA = ML / "data" / "palettebrain_candidate3_direct8_v1.npz"
 
 PHASE_DEPENDENCIES: dict[str, tuple[str, ...]] = {
     "source_data_preflight": ("validate_benchmarks.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
     "smoke_48_images": ("prepare_c11_recovered_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
-    "full_visual_source": ("prepare_c11_recovered_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
+    "corrected_acquisition_acceptance": ("prepare_c11_recovered_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
+    "full_visual_source": ("prepare_c11_recovered_source.py", "validate_c11_corrected_source.py", "c11_training_concepts.v1.json", "c11_source_manifest.v1.json"),
     "repaired_training_dataset": ("build_c11_dataset.py",),
+    "base_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "stage_a_probe": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
+    "stage_a_probe_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "stage_a_probe_acceptance": ("run_candidate11_release.py",),
     "stage_a": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
     "stage_b": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
     "stage_a_dev_selection": ("select_candidate11_checkpoint.py", "evaluate_semantic_v3.py", "benchmark_semantic_v3.json"),
     "stage_b_dev_selection": ("select_candidate11_checkpoint.py", "evaluate_semantic_v3.py", "benchmark_semantic_v3.json"),
-    "stage_a_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "stage_a_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json", "c11_release_contract.py", "c11_target_semantic_gate.v1.json"),
+    "stage_b_preflight": ("audit_c11_stage_b_preflight.py", "train_candidate11.py", "model.py", "train_decoder.py"),
+    "stage_b_probe": ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"),
+    "stage_b_probe_semantic_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
+    "stage_b_probe_acceptance": ("c11_release_contract.py", "run_candidate11_release.py"),
     "frozen_pytorch_evaluation": ("evaluate_semantic_v3.py", "benchmark_semantic_v3.json", "benchmark_visual_semantic_v2.json"),
     "visual_report": ("inspect_semantics.py",),
     "onnx_export": ("export_c11_onnx.py", "model.py"),
     "pytorch_ort_parity": ("parity_harness.py", "model.py", "color_math.py"),
     "ort_browser_parity": ("parity_harness.py", "browser_runtime_harness.mjs", "model.py"),
     "browser_semantic_smoke": ("../../scripts/test-real-browser.mjs", "../../src/lib/ai-palette/inference.ts", "../../src/lib/ai-palette/paletteAdapter.ts"),
-    "canonical_qualification": ("evaluate_semantic_v3.py", "qualify_candidate.py", "benchmark_semantic_v3.json"),
+    "canonical_qualification": ("evaluate_semantic_v3.py", "qualify_candidate.py", "c11_qualification_gate.target_grounded.v1.json", "benchmark_semantic_v3.json"),
 }
 
 
@@ -147,6 +182,14 @@ def training_dependency_fingerprint() -> str:
     except ImportError:
         from train_candidate11 import training_dependency_fingerprint as trainer_fingerprint
     return trainer_fingerprint()
+
+
+def resume_dependency_fingerprints() -> frozenset[str]:
+    try:
+        from .train_candidate11 import resume_dependency_fingerprints as values
+    except ImportError:
+        from train_candidate11 import resume_dependency_fingerprints as values
+    return values()
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -258,7 +301,7 @@ def training_valid(path: Path, stage: str, final_epoch: int) -> tuple[bool, dict
             and epoch >= final_epoch
             and checkpoint.get("epoch_complete", True) is True
             and checkpoint.get("dataset_identity", {}).get("primary") == sha256_file(TRAIN_DATA)
-            and checkpoint.get("dependency_fingerprint") == training_dependency_fingerprint()
+            and checkpoint.get("dependency_fingerprint") in resume_dependency_fingerprints()
         )
         return valid, {"completedEpoch": epoch, "candidateCount": len(candidates)}
     except Exception as error:
@@ -291,8 +334,103 @@ def semantic_valid(
     )
     if "smoke" in path.name:
         source_valid = source_valid and report.get("testClassification") == "ENGINEERING_SMOKE_ONLY" and report.get("productionReady") is False
-    valid = source_valid and isinstance(metric, (int, float)) and (not require_gate or metric >= 0.80)
-    return valid, {"semanticFamilyWin": metric, "gate": 0.80 if require_gate else None}
+    failures: list[str] = []
+    if require_gate:
+        calibration = load_json(ML / "c11_target_semantic_gate.v1.json").get("stageA", {})
+        gate_passed, failures = stage_a_metrics_contract(report.get("metrics", {}), calibration)
+    else:
+        gate_passed = True
+    valid = source_valid and isinstance(metric, (int, float)) and gate_passed
+    return valid, {
+        "semanticFamilyWin": metric,
+        "gate": "target-grounded-stage-a-v1" if require_gate else None,
+        "failures": failures,
+    }
+
+
+def probe_metrics_contract(
+    base: dict[str, Any], probe: dict[str, Any]
+) -> tuple[bool, dict[str, Any]]:
+    """Hard-stop contract required before any production Stage A training."""
+    failures: list[str] = []
+
+    def numeric(metrics: dict[str, Any], name: str) -> float:
+        value = metrics.get(name)
+        if not isinstance(value, (int, float)):
+            failures.append(f"{name} is missing or non-numeric")
+            return float("-inf")
+        return float(value)
+
+    base_family = numeric(base, "semanticFamilyWin")
+    probe_family = numeric(probe, "semanticFamilyWin")
+    base_en = numeric(base, "directEn")
+    probe_en = numeric(probe, "directEn")
+    base_ru = numeric(base, "directRu")
+    probe_ru = numeric(probe, "directRu")
+    base_structure = numeric(base, "paletteStructureWinRate")
+    probe_structure = numeric(probe, "paletteStructureWinRate")
+    if probe_family < 0.15:
+        failures.append(f"semanticFamilyWin {probe_family} < 0.15")
+    if probe_family < base_family:
+        failures.append(f"semanticFamilyWin {probe_family} < BASE {base_family}")
+    if probe_en < base_en:
+        failures.append(f"directEn {probe_en} < BASE {base_en}")
+    if probe_ru < base_ru:
+        failures.append(f"directRu {probe_ru} < BASE {base_ru}")
+    if probe_structure < base_structure - 0.05:
+        failures.append(
+            f"paletteStructureWinRate {probe_structure} < BASE-0.05 "
+            f"{base_structure - 0.05}"
+        )
+    return not failures, {
+        "pass": not failures,
+        "minimumSemanticFamilyWin": 0.15,
+        "brokenReferenceSemanticFamilyWin": 0.08,
+        "base": {
+            "semanticFamilyWin": base_family,
+            "directEn": base_en,
+            "directRu": base_ru,
+            "paletteStructureWinRate": base_structure,
+        },
+        "probe": {
+            "semanticFamilyWin": probe_family,
+            "directEn": probe_en,
+            "directRu": probe_ru,
+            "paletteStructureWinRate": probe_structure,
+        },
+        "failures": failures,
+    }
+
+
+def corrected_source_valid() -> tuple[bool, dict[str, Any]]:
+    report = load_json(SOURCE_REPORT)
+    acceptance = load_json(SOURCE_ACCEPTANCE)
+    bounded = load_json(ACQUISITION_ACCEPTANCE)
+    builder = ML / "prepare_c11_recovered_source.py"
+    valid = (
+        FULL_SOURCE.is_file()
+        and report.get("sha256") == sha256_file(FULL_SOURCE)
+        and report.get("builderSha256") == sha256_file(builder)
+        and report.get("acceptanceContract") == "SIGLIP_TEXT_IMAGE_RELEVANCE_ONLY"
+        and report.get("paletteStatisticsInfluenceAcceptance") is False
+        and int(report.get("validUniqueImages", 0)) >= 2500
+        and acceptance.get("pass") is True
+        and acceptance.get("sourceSha256") == sha256_file(FULL_SOURCE)
+        and acceptance.get("oldArtifactUnchanged") is True
+        and bounded.get("coveragePass") is True
+        and bounded.get("networkRecordsAdded") == 0
+        and bounded.get("relevanceCacheFullyReused") is True
+        and bounded.get("paletteStatisticsInfluenceAcceptance") is False
+    )
+    return valid, {
+        "validUniqueImages": report.get("validUniqueImages"),
+        "sourceConstructionSeconds": report.get("elapsedSeconds"),
+        "networkRecordsAdded": bounded.get("networkRecordsAdded"),
+        "relevanceCacheHits": bounded.get("relevanceCacheHitsAtStart"),
+        "rawRecords": bounded.get("rawRecordsAtStart"),
+        "paletteDiversity": report.get("paletteDiversity"),
+        "sourceAcceptancePass": acceptance.get("pass"),
+    }
 
 
 def qualification_artifact_valid(
@@ -315,7 +453,12 @@ def qualification_artifact_valid(
     if not common:
         return False
     if require_success:
-        return report.get("pass") is True and report.get("productionReady") is True
+        return (
+            report.get("pass") is True
+            and report.get("productionReady") is True
+            and report.get("qualificationMode") == "sealed"
+            and report.get("gateContract") == "candidate-11-target-grounded-full-photo-release-v1"
+        )
     return (
         report.get("testClassification") == "ENGINEERING_SMOKE_ONLY"
         and report.get("pass") is False
@@ -416,27 +559,50 @@ class Runner:
         validator: Callable[[], tuple[bool, dict[str, Any]]],
         action: Callable[[], None],
         output: Path,
+        *,
+        content_validates_current_contract: bool = False,
     ) -> None:
         print(f"\n=== Candidate 11 phase: {name} ===", flush=True)
         valid, metrics = validator()
         recorded = self.state.get("phases", {}).get(name, {})
         current_fingerprint = phase_dependency_fingerprint(name)
-        valid = valid and recorded.get("dependencyFingerprint") == current_fingerprint
+        valid = phase_artifact_reusable(
+            artifact_valid=valid,
+            recorded_dependency=recorded.get("dependencyFingerprint") if recorded else None,
+            current_dependency=current_fingerprint,
+            content_validates_current_contract=content_validates_current_contract,
+        )
         metrics = {**metrics, "dependencyFingerprint": current_fingerprint}
         if valid:
+            previous_metrics = recorded.get("metrics", {})
+            metrics = {
+                **previous_metrics,
+                **{key: value for key, value in metrics.items() if value is not None},
+            }
             print(f"PASS (verified existing artifact): {relative(output)}", flush=True)
             self.record(name, "passed", artifact(output, metrics))
             return
         self.record(name, "running", {"timestamp": now(), "metrics": metrics})
+        started = time.perf_counter()
         try:
             action()
             valid, metrics = validator()
             if not valid:
                 raise RuntimeError(f"phase artifact failed validation: {metrics}")
-            self.record(name, "passed", artifact(output, metrics))
+            elapsed = time.perf_counter() - started
+            self.record(
+                name,
+                "passed",
+                artifact(output, {**metrics, "phaseElapsedSeconds": elapsed}),
+            )
             print(f"PASS: {relative(output)}", flush=True)
         except Exception as error:
-            self.record(name, "failed", {"timestamp": now(), "reason": str(error), "metrics": metrics})
+            self.record(name, "failed", {
+                "timestamp": now(),
+                "reason": str(error),
+                "elapsedSeconds": time.perf_counter() - started,
+                "metrics": metrics,
+            })
             print(f"HARD STOP in {name}: {error}", flush=True)
             print(f"Resume with: {self.state['command']}", flush=True)
             raise
@@ -444,12 +610,36 @@ class Runner:
     def run(self) -> None:
         phases: list[tuple[str, Callable[[], None]]] = [
             ("source_data_preflight", self.preflight),
-            ("smoke_48_images", self.smoke),
-            ("full_visual_source", self.full_source),
-            ("repaired_training_dataset", self.training_dataset),
+        ]
+        if self.args.engineering_smoke:
+            phases.extend([
+                ("smoke_48_images", self.smoke),
+                ("full_visual_source", self.full_source),
+                ("repaired_training_dataset", self.training_dataset),
+            ])
+        else:
+            phases.extend([
+                ("corrected_acquisition_acceptance", self.acquisition_acceptance),
+                ("full_visual_source", self.full_source),
+                ("repaired_training_dataset", self.training_dataset),
+                ("base_semantic_evaluation", self.base_evaluation),
+                ("stage_a_probe", self.stage_a_probe),
+                ("stage_a_probe_semantic_evaluation", self.stage_a_probe_evaluation),
+                ("stage_a_probe_acceptance", self.stage_a_probe_acceptance),
+            ])
+        phases.extend([
             ("stage_a", self.stage_a),
             ("stage_a_dev_selection", self.stage_a_selection),
             ("stage_a_semantic_evaluation", self.stage_a_evaluation),
+        ])
+        if not self.args.engineering_smoke:
+            phases.extend([
+                ("stage_b_preflight", self.stage_b_preflight),
+                ("stage_b_probe", self.stage_b_probe),
+                ("stage_b_probe_semantic_evaluation", self.stage_b_probe_evaluation),
+                ("stage_b_probe_acceptance", self.stage_b_probe_acceptance),
+            ])
+        phases.extend([
             ("stage_b", self.stage_b),
             ("stage_b_dev_selection", self.stage_b_selection),
             ("frozen_pytorch_evaluation", self.frozen_evaluation),
@@ -459,7 +649,7 @@ class Runner:
             ("ort_browser_parity", self.ort_browser_parity),
             ("browser_semantic_smoke", self.browser_semantic_smoke),
             ("canonical_qualification", self.canonical_qualification),
-        ]
+        ])
         for name, operation in phases:
             operation()
             if self.args.stop_after == name:
@@ -509,6 +699,57 @@ class Runner:
             SMOKE_SOURCE,
         )
 
+    def acquisition_acceptance(self) -> None:
+        def validate() -> tuple[bool, dict[str, Any]]:
+            report = load_json(ACQUISITION_ACCEPTANCE)
+            diversity = report.get("paletteDiversity", {})
+            valid = (
+                report.get("testClassification") == "REAL_FULL_ACQUISITION_BENCHMARK"
+                and report.get("acceptanceContract") == "SIGLIP_TEXT_IMAGE_RELEVANCE_ONLY"
+                and report.get("paletteStatisticsInfluenceAcceptance") is False
+                and report.get("globalReacquisition") is False
+                and report.get("networkRecordsAdded") == 0
+                and report.get("relevanceCacheFullyReused") is True
+                and report.get("coveragePass") is True
+                and report.get("deficientConceptsAtEnd") == 0
+                and diversity.get("diagnosticOnly") is True
+                and diversity.get("influencesAcceptance") is False
+                and int(diversity.get("occupiedBins", 0)) >= 300
+                and int(diversity.get("hueBinsCovered", 0)) >= 14
+            )
+            return valid, {
+                "elapsedSeconds": report.get("elapsedSeconds"),
+                "cacheValidatedItemsPerSecond": report.get(
+                    "cacheValidatedItemsPerSecond"
+                ),
+                "rawRecords": report.get("rawRecordsAtStart"),
+                "relevanceCacheHits": report.get("relevanceCacheHitsAtStart"),
+                "networkRecordsAdded": report.get("networkRecordsAdded"),
+                "remainingDeficits": report.get("deficientConceptsAtEnd"),
+                "paletteDiversity": diversity,
+            }
+
+        def action() -> None:
+            if ACQUISITION_ACCEPTANCE.exists():
+                raise RuntimeError(
+                    "versioned acquisition acceptance exists but is invalid; "
+                    "preserve it and advance the contract version"
+                )
+            self.command("corrected_acquisition_acceptance", [
+                str(PYTHON), "-u", str(ML / "prepare_c11_recovered_source.py"),
+                "--device", self.args.device,
+                "--adaptive-benchmark-seconds", "120",
+                "--output", "ml/palettebrain/data/candidate11_corrected_contract_v1_benchmark_only.npz",
+                "--report", relative(ACQUISITION_ACCEPTANCE),
+            ])
+
+        self.phase(
+            "corrected_acquisition_acceptance",
+            validate,
+            action,
+            ACQUISITION_ACCEPTANCE,
+        )
+
     def full_source(self) -> None:
         if self.args.engineering_smoke:
             self.phase(
@@ -518,16 +759,42 @@ class Runner:
                 SMOKE_SOURCE,
             )
             return
-        report = REPORTS / "candidate-11-source-full.json"
+        report = SOURCE_REPORT
+
+        def action() -> None:
+            existing = [
+                path for path in (FULL_SOURCE, report, SOURCE_ACCEPTANCE)
+                if path.exists()
+            ]
+            if existing:
+                raise RuntimeError(
+                    "versioned source artifacts exist but failed validation; "
+                    "preserve them and advance the contract version: "
+                    + ", ".join(relative(path) for path in existing)
+                )
+            self.command("full_visual_source", [
+                str(PYTHON), "-u", str(ML / "prepare_c11_recovered_source.py"),
+                "--output", relative(FULL_SOURCE), "--report", relative(report),
+                "--device", self.args.device, "--seed", SEED,
+            ])
+            self.command("full_visual_source_acceptance", [
+                str(PYTHON), "-u", str(ML / "validate_c11_corrected_source.py"),
+                "--source", relative(FULL_SOURCE),
+                "--source-report", relative(report),
+                "--bounded-report", relative(ACQUISITION_ACCEPTANCE),
+                "--protected-old-source", "ml/palettebrain/data/palettebrain_c11_recovered_source.npz",
+                "--expected-old-sha256", "b1d1e8985633e1ce0b5b1454d0775126f563a85be0db56f6d81682d7e537e1d6",
+                "--output", relative(SOURCE_ACCEPTANCE),
+            ])
         self.phase(
             "full_visual_source",
-            lambda: source_valid(report, FULL_SOURCE, 1500),
-            lambda: self.command("full_visual_source", [str(PYTHON), "-u", str(ML / "prepare_c11_recovered_source.py"), "--output", relative(FULL_SOURCE), "--device", self.args.device, "--seed", SEED]),
+            corrected_source_valid,
+            action,
             FULL_SOURCE,
         )
 
     def training_dataset(self) -> None:
-        report = REPORTS / "candidate-11-repaired-dataset-audit.json"
+        report = DATASET_REPORT
         if self.args.engineering_smoke:
             report = REPORTS / "candidate-11-engineering-smoke-dataset-audit.json"
         command = [str(PYTHON), str(ML / "build_c11_dataset.py"), "--input", relative(SMOKE_SOURCE if self.args.engineering_smoke else FULL_SOURCE), "--output", relative(TRAIN_DATA), "--report", relative(report)]
@@ -542,6 +809,11 @@ class Runner:
                 "recordCount": current.get("recordCount"),
                 "pass": current.get("pass"),
                 "sourceSha256": current.get("sourceSha256"),
+                "elapsedSeconds": current.get("elapsedSeconds"),
+                "rowsPerSecond": current.get("rowsPerSecond"),
+                "sourceGroupLeakCount": current.get("provenance", {}).get(
+                    "sourceGroupLeakCount"
+                ),
             }
 
         self.phase(
@@ -551,9 +823,154 @@ class Runner:
             TRAIN_DATA,
         )
 
-    def train_command(self, stage: str) -> list[str]:
+    def base_evaluation(self) -> None:
+        self.phase(
+            "base_semantic_evaluation",
+            lambda: semantic_valid(BASE_EVAL, False, BASE),
+            lambda: self.command("base_semantic_evaluation", [
+                str(PYTHON), "-u", str(ML / "evaluate_semantic_v3.py"),
+                "--checkpoint", relative(BASE),
+                "--output", relative(BASE_EVAL),
+                "--dataset", relative(TRAIN_DATA),
+                "--device", self.args.device,
+            ]),
+            BASE_EVAL,
+        )
+
+    def stage_a_probe(self) -> None:
+        def validate() -> tuple[bool, dict[str, Any]]:
+            valid, metrics = training_valid(STAGE_A_PROBE, "a", 0)
+            last = STAGE_A_PROBE.with_name(
+                f"{STAGE_A_PROBE.stem.removesuffix('-best')}-last.pt"
+            )
+            if last.is_file():
+                import torch
+                checkpoint = torch.load(last, map_location="cpu", weights_only=True)
+                history = checkpoint.get("history", [])
+                epoch = history[-1] if history else {}
+                metrics = {
+                    **metrics,
+                    "epochSeconds": epoch.get("epochSeconds"),
+                    "trainSamplesPerSecond": epoch.get("train", {}).get(
+                        "samplesPerSecond"
+                    ),
+                    "globalStep": checkpoint.get("global_step"),
+                }
+            return valid, metrics
+
+        self.phase(
+            "stage_a_probe",
+            validate,
+            lambda: self.command("stage_a_probe", self.train_command("a", probe=True)),
+            STAGE_A_PROBE.with_name(
+                f"{STAGE_A_PROBE.stem.removesuffix('-best')}-last.pt"
+            ),
+            content_validates_current_contract=True,
+        )
+
+    def stage_a_probe_evaluation(self) -> None:
+        self.phase(
+            "stage_a_probe_semantic_evaluation",
+            lambda: semantic_valid(
+                STAGE_A_PROBE_EVAL, False, STAGE_A_PROBE
+            ),
+            lambda: self.command("stage_a_probe_semantic_evaluation", [
+                str(PYTHON), "-u", str(ML / "evaluate_semantic_v3.py"),
+                "--checkpoint", relative(STAGE_A_PROBE),
+                "--output", relative(STAGE_A_PROBE_EVAL),
+                "--dataset", relative(TRAIN_DATA),
+                "--device", self.args.device,
+            ]),
+            STAGE_A_PROBE_EVAL,
+        )
+
+    def stage_a_probe_acceptance(self) -> None:
+        def validate() -> tuple[bool, dict[str, Any]]:
+            report = load_json(STAGE_A_PROBE_ACCEPTANCE)
+            current_pass, current_evidence = probe_metrics_contract(
+                load_json(BASE_EVAL).get("metrics", {}),
+                load_json(STAGE_A_PROBE_EVAL).get("metrics", {}),
+            )
+            valid = (
+                report.get("pass") is True
+                and current_pass
+                and report.get("datasetSha256") == sha256_file(TRAIN_DATA)
+                and report.get("baseCheckpointSha256") == sha256_file(BASE)
+                and report.get("probeCheckpointSha256") == sha256_file(STAGE_A_PROBE)
+                and report.get("baseReportSha256") == sha256_file(BASE_EVAL)
+                and report.get("probeReportSha256") == sha256_file(
+                    STAGE_A_PROBE_EVAL
+                )
+            )
+            return valid, {
+                "pass": report.get("pass"),
+                "base": report.get("base"),
+                "probe": report.get("probe"),
+                "failures": current_evidence.get("failures", []),
+                "epochSeconds": report.get("epochSeconds"),
+                "trainSamplesPerSecond": report.get("trainSamplesPerSecond"),
+            }
+
+        def action() -> None:
+            if STAGE_A_PROBE_ACCEPTANCE.exists():
+                raise RuntimeError(
+                    "versioned probe acceptance exists but failed; do not "
+                    "launch production Stage A or overwrite the evidence"
+                )
+            base_report = load_json(BASE_EVAL)
+            probe_report = load_json(STAGE_A_PROBE_EVAL)
+            passed, evidence = probe_metrics_contract(
+                base_report.get("metrics", {}),
+                probe_report.get("metrics", {}),
+            )
+            import torch
+            last = STAGE_A_PROBE.with_name(
+                f"{STAGE_A_PROBE.stem.removesuffix('-best')}-last.pt"
+            )
+            checkpoint = torch.load(last, map_location="cpu", weights_only=True)
+            history = checkpoint.get("history", [])
+            epoch = history[-1] if history else {}
+            payload = {
+                "testClassification": "REAL_STAGE_A_ONE_EPOCH_HARD_STOP",
+                **evidence,
+                "datasetSha256": sha256_file(TRAIN_DATA),
+                "baseCheckpointSha256": sha256_file(BASE),
+                "probeCheckpointSha256": sha256_file(STAGE_A_PROBE),
+                "baseReportSha256": sha256_file(BASE_EVAL),
+                "probeReportSha256": sha256_file(STAGE_A_PROBE_EVAL),
+                "epochSeconds": epoch.get("epochSeconds"),
+                "trainSamplesPerSecond": epoch.get("train", {}).get(
+                    "samplesPerSecond"
+                ),
+                "timestamp": now(),
+            }
+            atomic_json(STAGE_A_PROBE_ACCEPTANCE, payload)
+            if not passed:
+                raise RuntimeError(
+                    "1-epoch probe hard-stop contract failed: "
+                    + "; ".join(evidence["failures"])
+                )
+
+        self.phase(
+            "stage_a_probe_acceptance",
+            validate,
+            action,
+            STAGE_A_PROBE_ACCEPTANCE,
+            content_validates_current_contract=True,
+        )
+
+    def train_command(self, stage: str, *, probe: bool = False) -> list[str]:
         is_a = stage == "a"
-        output, epochs = ((STAGE_A, 1) if is_a else (STAGE_B, 1)) if self.args.engineering_smoke else ((STAGE_A, 30) if is_a else (STAGE_B, 20))
+        if probe:
+            if not is_a or self.args.engineering_smoke:
+                raise ValueError("the production probe is Stage A only")
+            output, epochs = STAGE_A_PROBE, 1
+        else:
+            output, epochs = (
+                ((STAGE_A, 1) if is_a else (STAGE_B, 1))
+                if self.args.engineering_smoke
+                else ((STAGE_A, 30) if is_a else (STAGE_B, 20))
+            )
         command = [str(PYTHON), "-u", str(ML / "train_candidate11.py"), "--stage", stage, "--data", relative(TRAIN_DATA), "--initialize-from", relative(BASE if is_a else STAGE_A), "--output", relative(output), "--epochs", str(epochs), "--batch-size", "32", "--new-lr", "3e-4" if is_a else "1e-4", "--inherited-lr", "2e-5", "--seed", SEED, "--device", self.args.device]
         valid, _ = training_valid(output, stage, epochs - 1)
         last_output = output.with_name(f"{output.stem.removesuffix('-best')}-last{output.suffix}")
@@ -565,26 +982,25 @@ class Runner:
                     resume_checkpoint.get("candidate") == "candidate-11"
                     and resume_checkpoint.get("stage") == stage
                     and resume_checkpoint.get("dataset_identity", {}).get("primary") == sha256_file(TRAIN_DATA)
-                    and resume_checkpoint.get("dependency_fingerprint") == training_dependency_fingerprint()
+                    and resume_checkpoint.get("dependency_fingerprint") in resume_dependency_fingerprints()
                 )
             except Exception:
                 compatible = False
             if compatible:
                 command.extend(["--resume", relative(last_output)])
             else:
-                last_output.unlink(missing_ok=True)
-                output.unlink(missing_ok=True)
-                for stale in output.parent.glob(
-                    f"{output.stem.removesuffix('-best')}-dev-epoch-*{output.suffix}"
-                ):
-                    stale.unlink(missing_ok=True)
-        if not is_a:
+                raise RuntimeError(
+                    "versioned training artifacts exist but are incompatible; "
+                    "preserve them and advance the contract version: "
+                    f"{relative(last_output)}"
+                )
+        if not is_a and not probe:
             command.extend(["--stage-a-eval-report", relative(STAGE_A_EVAL), "--replay-data", "ml/palettebrain/data/palettebrain_candidate3_direct8_v1.npz"])
         return command
 
     def stage_a(self) -> None:
         final_epoch = 0 if self.args.engineering_smoke else 29
-        self.phase("stage_a", lambda: training_valid(STAGE_A, "a", final_epoch), lambda: self.command("stage_a", self.train_command("a")), STAGE_A.with_name(f"{STAGE_A.stem.removesuffix('-best')}-last.pt"))
+        self.phase("stage_a", lambda: training_valid(STAGE_A, "a", final_epoch), lambda: self.command("stage_a", self.train_command("a")), STAGE_A.with_name(f"{STAGE_A.stem.removesuffix('-best')}-last.pt"), content_validates_current_contract=True)
 
     def stage_a_selection(self) -> None:
         self.phase("stage_a_dev_selection", lambda: selection_valid(STAGE_A_SELECTION, STAGE_A, "a"), lambda: self.command("stage_a_dev_selection", self.smoke_flag([str(PYTHON), str(ML / "select_candidate11_checkpoint.py"), "--stage", "a", "--output", relative(STAGE_A), "--report", relative(STAGE_A_SELECTION), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_A_SELECTION)
@@ -592,9 +1008,193 @@ class Runner:
     def stage_a_evaluation(self) -> None:
         self.phase("stage_a_semantic_evaluation", lambda: semantic_valid(STAGE_A_EVAL, not self.args.engineering_smoke, STAGE_A), lambda: self.command("stage_a_semantic_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_A), "--output", relative(STAGE_A_EVAL), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_A_EVAL)
 
+    def stage_b_preflight(self) -> None:
+        def validate() -> tuple[bool, dict[str, Any]]:
+            report = load_json(STAGE_B_PREFLIGHT)
+            sources = report.get("sources", {})
+            valid = (
+                report.get("pass") is True
+                and sources.get("stageACheckpointSha256") == sha256_file(STAGE_A)
+                and sources.get("stageAEvaluationSha256") == sha256_file(STAGE_A_EVAL)
+                and sources.get("datasetSha256") == sha256_file(TRAIN_DATA)
+                and sources.get("replayDatasetSha256") == sha256_file(REPLAY_DATA)
+                and report.get("parameterContract", {}).get("frozenCount") == 0
+                and report.get("missingGradientCount") == 0
+                and report.get("newGradientNorm", 0) > 0
+                and report.get("inheritedGradientNorm", 0) > 0
+                and report.get("promptConditioningDelta", 0) > 1e-5
+                and report.get("checkpointSaveReloadPass") is True
+            )
+            return valid, {
+                "pass": report.get("pass"),
+                "failures": report.get("failures", []),
+                "loss": report.get("loss"),
+                "newGradientNorm": report.get("newGradientNorm"),
+                "inheritedGradientNorm": report.get("inheritedGradientNorm"),
+                "promptConditioningDelta": report.get("promptConditioningDelta"),
+                "checkpointSaveReloadPass": report.get("checkpointSaveReloadPass"),
+                "elapsedSeconds": report.get("elapsedSeconds"),
+                "batchSamplesPerSecond": report.get("batchSamplesPerSecond"),
+            }
+
+        def action() -> None:
+            if STAGE_B_PREFLIGHT.exists():
+                raise RuntimeError("versioned Stage B preflight exists but is invalid")
+            self.command("stage_b_preflight", [
+                str(PYTHON), "-u", str(ML / "audit_c11_stage_b_preflight.py"),
+                "--checkpoint", relative(STAGE_A),
+                "--stage-a-evaluation", relative(STAGE_A_EVAL),
+                "--data", relative(TRAIN_DATA),
+                "--replay-data", relative(REPLAY_DATA),
+                "--output", relative(STAGE_B_PREFLIGHT),
+                "--device", self.args.device,
+            ])
+
+        self.phase("stage_b_preflight", validate, action, STAGE_B_PREFLIGHT)
+
+    def stage_b_probe_command(self) -> list[str]:
+        return [
+            str(PYTHON), "-u", str(ML / "train_candidate11.py"),
+            "--stage", "b",
+            "--data", relative(TRAIN_DATA),
+            "--initialize-from", relative(STAGE_A),
+            "--output", relative(STAGE_B_PROBE),
+            "--epochs", "1",
+            "--batch-size", "32",
+            "--new-lr", "1e-4",
+            "--inherited-lr", "2e-5",
+            "--seed", SEED,
+            "--device", self.args.device,
+            "--stage-a-eval-report", relative(STAGE_A_EVAL),
+            "--replay-data", relative(REPLAY_DATA),
+        ]
+
+    def stage_b_probe(self) -> None:
+        def validate() -> tuple[bool, dict[str, Any]]:
+            valid, metrics = training_valid(STAGE_B_PROBE, "b", 0)
+            last = STAGE_B_PROBE.with_name(
+                f"{STAGE_B_PROBE.stem.removesuffix('-best')}-last.pt"
+            )
+            if last.is_file():
+                import torch
+                checkpoint = torch.load(last, map_location="cpu", weights_only=True)
+                history = checkpoint.get("history", [])
+                epoch = history[-1] if history else {}
+                metrics = {
+                    **metrics,
+                    "epochSeconds": epoch.get("epochSeconds"),
+                    "trainSamplesPerSecond": epoch.get("train", {}).get("samplesPerSecond"),
+                    "globalStep": checkpoint.get("global_step"),
+                    "checkpointReloadPass": checkpoint.get("stage") == "b",
+                }
+            return valid, metrics
+
+        def action() -> None:
+            last = STAGE_B_PROBE.with_name(
+                f"{STAGE_B_PROBE.stem.removesuffix('-best')}-last.pt"
+            )
+            if last.exists():
+                raise RuntimeError(
+                    "versioned Stage B probe exists but is incomplete or incompatible"
+                )
+            self.command("stage_b_probe", self.stage_b_probe_command())
+
+        self.phase(
+            "stage_b_probe", validate, action,
+            STAGE_B_PROBE.with_name(
+                f"{STAGE_B_PROBE.stem.removesuffix('-best')}-last.pt"
+            ),
+            content_validates_current_contract=True,
+        )
+
+    def stage_b_probe_evaluation(self) -> None:
+        self.phase(
+            "stage_b_probe_semantic_evaluation",
+            lambda: semantic_valid(STAGE_B_PROBE_EVAL, False, STAGE_B_PROBE),
+            lambda: self.command("stage_b_probe_semantic_evaluation", [
+                str(PYTHON), "-u", str(ML / "evaluate_semantic_v3.py"),
+                "--checkpoint", relative(STAGE_B_PROBE),
+                "--output", relative(STAGE_B_PROBE_EVAL),
+                "--dataset", relative(TRAIN_DATA),
+                "--device", self.args.device,
+            ]),
+            STAGE_B_PROBE_EVAL,
+        )
+
+    def stage_b_probe_acceptance(self) -> None:
+        def current_contract() -> tuple[bool, list[str]]:
+            return stage_b_probe_metrics_contract(
+                load_json(STAGE_A_EVAL).get("metrics", {}),
+                load_json(STAGE_B_PROBE_EVAL).get("metrics", {}),
+            )
+
+        def validate() -> tuple[bool, dict[str, Any]]:
+            report = load_json(STAGE_B_PROBE_ACCEPTANCE)
+            passed, failures = current_contract()
+            valid = (
+                report.get("pass") is True
+                and passed
+                and report.get("stageACheckpointSha256") == sha256_file(STAGE_A)
+                and report.get("probeCheckpointSha256") == sha256_file(STAGE_B_PROBE)
+                and report.get("stageAReportSha256") == sha256_file(STAGE_A_EVAL)
+                and report.get("probeReportSha256") == sha256_file(STAGE_B_PROBE_EVAL)
+            )
+            return valid, {
+                "pass": report.get("pass"),
+                "failures": failures,
+                "stageA": report.get("stageA"),
+                "probe": report.get("probe"),
+                "epochSeconds": report.get("epochSeconds"),
+                "trainSamplesPerSecond": report.get("trainSamplesPerSecond"),
+            }
+
+        def action() -> None:
+            if STAGE_B_PROBE_ACCEPTANCE.exists():
+                raise RuntimeError("versioned Stage B probe acceptance exists but is invalid")
+            passed, failures = current_contract()
+            import torch
+            last = STAGE_B_PROBE.with_name(
+                f"{STAGE_B_PROBE.stem.removesuffix('-best')}-last.pt"
+            )
+            checkpoint = torch.load(last, map_location="cpu", weights_only=True)
+            history = checkpoint.get("history", [])
+            epoch = history[-1] if history else {}
+            stage_metrics = load_json(STAGE_A_EVAL).get("metrics", {})
+            probe_metrics = load_json(STAGE_B_PROBE_EVAL).get("metrics", {})
+            names = (
+                "semanticFamilyWin", "semanticTargetContrastMargin", "directEn",
+                "directRu", "paletteStructureWinRate", "crossPromptCollapseRate",
+                "crossPromptCollapseGate",
+            )
+            payload = {
+                "schemaVersion": 1,
+                "testClassification": "REAL_STAGE_B_ONE_EPOCH_HARD_STOP",
+                "pass": passed,
+                "failures": failures,
+                "stageA": {name: stage_metrics.get(name) for name in names},
+                "probe": {name: probe_metrics.get(name) for name in names},
+                "stageACheckpointSha256": sha256_file(STAGE_A),
+                "probeCheckpointSha256": sha256_file(STAGE_B_PROBE),
+                "stageAReportSha256": sha256_file(STAGE_A_EVAL),
+                "probeReportSha256": sha256_file(STAGE_B_PROBE_EVAL),
+                "epochSeconds": epoch.get("epochSeconds"),
+                "trainSamplesPerSecond": epoch.get("train", {}).get("samplesPerSecond"),
+                "globalStep": checkpoint.get("global_step"),
+                "timestamp": now(),
+            }
+            atomic_json(STAGE_B_PROBE_ACCEPTANCE, payload)
+            if not passed:
+                raise RuntimeError("Stage B probe hard-stop contract failed: " + "; ".join(failures))
+
+        self.phase(
+            "stage_b_probe_acceptance", validate, action,
+            STAGE_B_PROBE_ACCEPTANCE,
+            content_validates_current_contract=True,
+        )
+
     def stage_b(self) -> None:
         final_epoch = 0 if self.args.engineering_smoke else 19
-        self.phase("stage_b", lambda: training_valid(STAGE_B, "b", final_epoch), lambda: self.command("stage_b", self.train_command("b")), STAGE_B.with_name(f"{STAGE_B.stem.removesuffix('-best')}-last.pt"))
+        self.phase("stage_b", lambda: training_valid(STAGE_B, "b", final_epoch), lambda: self.command("stage_b", self.train_command("b")), STAGE_B.with_name(f"{STAGE_B.stem.removesuffix('-best')}-last.pt"), content_validates_current_contract=True)
 
     def stage_b_selection(self) -> None:
         self.phase("stage_b_dev_selection", lambda: selection_valid(STAGE_B_SELECTION, STAGE_B, "b"), lambda: self.command("stage_b_dev_selection", self.smoke_flag([str(PYTHON), str(ML / "select_candidate11_checkpoint.py"), "--stage", "b", "--output", relative(STAGE_B), "--report", relative(STAGE_B_SELECTION), "--dataset", relative(TRAIN_DATA), "--device", self.args.device])), STAGE_B_SELECTION)
@@ -730,7 +1330,7 @@ class Runner:
             dev_qualification = load_json(DEV_QUALIFICATION)
             if dev_qualification.get("pass") is True:
                 self.command("sealed_evaluation", self.smoke_flag([str(PYTHON), str(ML / "evaluate_semantic_v3.py"), "--checkpoint", relative(STAGE_B), "--output", relative(SEALED_EVAL), "--dataset", relative(TRAIN_DATA), "--evaluation-split", "test", "--semantic-test-benchmark", "ml/palettebrain/benchmark_semantic_release.v1.json", "--parity-report", relative(PARITY), "--browser-smoke-report", relative(BROWSER_SMOKE), "--device", self.args.device]))
-                self.command("canonical_qualification", [str(PYTHON), str(ML / "qualify_candidate.py"), "--evidence", relative(SEALED_EVAL), "--parity-report", relative(PARITY), "--manifest", relative(MANIFEST), "--output", relative(QUALIFICATION), "--no-fail-exit"])
+                self.command("canonical_qualification", [str(PYTHON), str(ML / "qualify_candidate.py"), "--evidence", relative(SEALED_EVAL), "--parity-report", relative(PARITY), "--manifest", relative(MANIFEST), "--output", relative(QUALIFICATION), "--require-sealed", "--no-fail-exit"])
             else:
                 qualification = dict(dev_qualification)
                 qualification["sealedConsumed"] = False
@@ -751,7 +1351,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto", help="auto, cpu, cuda, or another PyTorch device")
     parser.add_argument("--resume", action="store_true", help="reuse only artifacts that pass fresh validation")
     parser.add_argument("--engineering-smoke", action="store_true")
-    parser.add_argument("--stop-after", choices=["source_data_preflight", "smoke_48_images", "full_visual_source", "repaired_training_dataset", "stage_a", "stage_a_dev_selection", "stage_a_semantic_evaluation", "stage_b", "stage_b_dev_selection", "frozen_pytorch_evaluation", "visual_report", "onnx_export", "pytorch_ort_parity", "ort_browser_parity", "browser_semantic_smoke", "canonical_qualification"])
+    parser.add_argument("--stop-after", choices=["source_data_preflight", "smoke_48_images", "corrected_acquisition_acceptance", "full_visual_source", "repaired_training_dataset", "base_semantic_evaluation", "stage_a_probe", "stage_a_probe_semantic_evaluation", "stage_a_probe_acceptance", "stage_a", "stage_a_dev_selection", "stage_a_semantic_evaluation", "stage_b_preflight", "stage_b_probe", "stage_b_probe_semantic_evaluation", "stage_b_probe_acceptance", "stage_b", "stage_b_dev_selection", "frozen_pytorch_evaluation", "visual_report", "onnx_export", "pytorch_ort_parity", "ort_browser_parity", "browser_semantic_smoke", "canonical_qualification"])
     return parser.parse_args()
 
 

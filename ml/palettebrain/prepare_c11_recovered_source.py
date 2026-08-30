@@ -55,6 +55,10 @@ METADATA_INDEX_SCHEMA = "palettebrain-c11-metadata-index/v3"
 CALIBRATION_SCHEMA = "palettebrain-c11-siglip-calibration/v1"
 ACQUISITION_STATE_SCHEMA = "palettebrain-c11-acquisition-state/v1"
 RELEVANCE_CACHE_SCHEMA = "palettebrain-c11-relevance-cache/v1"
+PALETTE_PRIOR_CACHE_SCHEMA = (
+    # Preserve the on-disk schema string so the already-computed cache is reused.
+    "palettebrain-c11-palette-semantic-prior-cache/v1"
+)
 
 OPEN_IMAGES_RELEASE = "Open Images V7"
 OPEN_IMAGES_CLASS_URL = (
@@ -89,13 +93,18 @@ FULL_TARGET_UNIQUE_IMAGES = 2500
 FULL_MAX_VALID_IMAGES = 3500
 FULL_ACQUISITION_CAPS = (8, 10, 12, 14)
 FULL_MAX_PER_CONCEPT = max(FULL_ACQUISITION_CAPS)
-TARGETED_MAX_TRAINING_QUERIES = 4
+TARGETED_MAX_TRAINING_QUERIES = 6
 FULL_MIN_CATEGORY_COVERAGE = 0.65
 FULL_MIN_CATEGORY_IMAGES = 20
 FULL_MIN_CROP_REQUIRED_CONCEPT_COVERAGE = 1.0
 FULL_MIN_CROP_REQUIRED_IMAGES_PER_CONCEPT = 2
 FULL_MIN_REAL_WORLD_FRACTION = 0.20
 FULL_MIN_ARTWORK_FRACTION = 0.20
+
+WIKIMEDIA_USER_AGENT = (
+    "PaletteBrain-C11-DataBuilder/1.0"
+    " (https://github.com/vansGAMee/OKLCH-PIXEL-PALETTE; image-acquisition-bot)"
+)
 
 ALLOWED_OPENVERSE_LICENSES = {"pdm", "cc0", "by"}
 
@@ -340,7 +349,15 @@ class DiskBudget:
                     f"HARD DISK LIMIT EXCEEDED BEFORE FILE COMMIT: "
                     f"{cur_usage + delta} >= {self.hard_bytes}"
                 )
-            tmp_path.replace(dest_path)
+            for replace_attempt in range(12):
+                try:
+                    tmp_path.replace(dest_path)
+                    break
+                except PermissionError:
+                    if replace_attempt == 11:
+                        raise
+                    import time as _time
+                    _time.sleep(min(0.05 * (2 ** replace_attempt), 0.8))
             if self._tracked_bytes is not None:
                 self._tracked_bytes += delta
             if not self._covered_by_primary_tree(dest_path):
@@ -515,6 +532,102 @@ _MET_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _MET_SEARCH_CACHE: dict[str, list[Any]] = {}
 _ARTIC_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 _COMMONS_QUERY_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
+_COMMONS_METADATA_SECONDS: float = 0.0
+_COMMONS_METADATA_ACCEPTED: int = 0
+_COMMONS_COOLDOWN_UNTIL: float = 0.0
+
+# Concrete search synonyms for abstract/compositional concepts that
+# Wikimedia Commons' full-text search cannot match from poetic phrasings.
+_COMMONS_EXPANDED_QUERIES: dict[str, list[str]] = {
+    'fading_memory_sepia_haze': ('sepia photograph old house', 'vintage sepia family portrait', 'old faded photograph house', 'antique sepia landscape photograph', 'vintage photograph nostalgia'),
+    'fragile_delicate_serenity': ('porcelain vase flowers painting', 'white porcelain still life painting', 'delicate flowers still life painting', 'woman by window soft light painting', 'quiet interior morning light painting'),
+    'hushed_winter_silence': ('snowy forest winter painting', 'frozen lake winter landscape painting', 'snow covered woods painting', 'winter landscape snow painting', 'silent snow landscape painting'),
+    'intense_poetic_yearning': ('Caspar David Friedrich monk by the sea', 'Wanderer above the Sea of Fog', 'romantic figure looking at sea painting', 'lonely figure seashore painting', 'romantic coastal landscape figure'),
+    'moonlit_venetian_regatta_gondolas': ('Venice gondolas moonlight painting', 'Grand Canal Venice night painting', 'Venetian regatta painting', 'gondolas Venice nocturne painting', 'Venice canal lanterns painting'),
+    'shaded_veranda_summer_afternoon': ('veranda garden painting', 'terrace garden painting', 'woman on veranda painting', 'porch garden summer painting', 'garden terrace afternoon painting'),
+    'winter_village_skating_pond': ('winter landscape with skaters painting', 'frozen canal skaters painting', 'village ice skating painting', 'Bruegel winter landscape skaters', 'Dutch winter skaters painting'),
+    'solitary_traveller_rocky_gorge': ('romantic mountain wanderer painting', 'traveller rocky gorge painting', 'lone figure mountain landscape painting', 'wanderer rocky landscape painting', 'traveler bridge mountain painting'),
+    'foggy_autumn_hunt_countryside': ('fox hunt painting hounds', 'equestrian hunt landscape painting', 'hunters hounds woodland painting', 'autumn hunting scene painting', 'riders hounds countryside painting'),
+
+    # --- abstractions (deficit: 7 concepts) ---
+    "bittersweet_evening_wistfulness": [
+        "melancholy evening painting", "twilight wistful figure art",
+        "nostalgic sunset scene oil painting", "evening longing portrait",
+    ],
+    "solitary_reverie_quietude": [
+        "woman reading window painting", "contemplative figure interior",
+        "quiet solitude portrait oil", "person alone in room artwork",
+    ],
+    "haunting_nocturnal_mystery": [
+        "moonlit night painting mysterious", "nocturnal landscape dark",
+        "night scene eerie atmosphere art", "haunting moonlight artwork",
+    ],
+    "austere_monastic_serenity": [
+        "monastery interior painting", "monk meditation cell",
+        "cloister serene architecture", "monastic stillness fresco",
+    ],
+    "quiet_morning_clarity": [
+        "morning light room painting", "dawn interior still life",
+        "early morning window sunlight", "peaceful daybreak artwork",
+    ],
+    "dynamic_festive_exuberance": [
+        "carnival celebration painting", "festival dance scene",
+        "festive crowd colorful art", "joyful celebration artwork",
+    ],
+    "restrained_poignant_tenderness": [
+        "mother child tender painting", "gentle embrace portrait",
+        "compassion scene intimate art", "tender moment artwork",
+    ],
+    # --- compositions (deficit: 12 concepts) ---
+    "desert_caravan_oasis_palms": [
+        "desert caravan painting", "oasis palm trees artwork",
+        "camel caravan desert landscape", "orientalist desert scene",
+    ],
+    "golden_wheat_field_haystack_rest": [
+        "wheat field harvest painting", "haystack landscape art",
+        "golden grain field summer", "harvest scene countryside",
+    ],
+    "fishing_village_misty_harbor": [
+        "fishing village harbor painting", "misty harbour boats",
+        "coastal village seascape", "fishing boats morning fog",
+    ],
+    "cozy_candlelit_tavern_hearth": [
+        "tavern interior candlelight painting", "inn fireplace scene",
+        "candlelit room hearth", "warm tavern Dutch painting",
+    ],
+    "ancient_desert_ruins_sunset": [
+        "ancient ruins desert painting", "ruined temple sunset",
+        "Egyptian ruins landscape", "desert archaeological site art",
+    ],
+    "alpine_chalet_mountain_view": [
+        "alpine chalet painting", "mountain cabin landscape",
+        "Swiss Alps cottage", "mountain view chalet artwork",
+    ],
+    "stormy_seacoast_shipwreck_rocks": [
+        "shipwreck storm painting", "stormy sea rocks art",
+        "dramatic seacoast tempest", "maritime disaster painting",
+    ],
+    "candlelit_alchemist_laboratory": [
+        "alchemist laboratory painting", "candlelit study room",
+        "scholar workshop art", "alchemist candle interior",
+    ],
+    "moonlit_winter_graveyard_ruins": [
+        "winter graveyard moonlight painting", "gothic cemetery night",
+        "ruined abbey snow art", "moonlit graveyard landscape",
+    ],
+    "bustling_florentine_market_square": [
+        "Italian market square painting", "Florence piazza scene",
+        "Renaissance marketplace", "bustling city square artwork",
+    ],
+    "solitary_monk_mountain_cell": [
+        "hermit monk mountain painting", "solitary cell monastery",
+        "ascetic mountain retreat", "monk prayer cave artwork",
+    ],
+    "rainy_paris_boulevard_carriages": [
+        "Paris boulevard rain painting", "rainy street carriages",
+        "wet Parisian scene impressionist", "rain city boulevard art",
+    ],
+}
 
 _GLOBAL_NETWORK_SEMAPHORE = threading.Semaphore(16)
 _GLOBAL_DEDUP_LOCK = threading.RLock()
@@ -574,6 +687,13 @@ def configure_acquisition_runtime(
         "disabledProviders": {},
     }
     # Provider challenges are transient external state. Never carry a run-local
+    # Legacy v1 counted emptyBatches cumulatively. From now on it means
+    # consecutive consumed metadata batches with zero candidates.
+    if not _ACQUISITION_STATE.get("consecutiveEmptyBatchesMigrated", False):
+        for route in _ACQUISITION_STATE.setdefault("routeStats", {}).values():
+            route["emptyBatches"] = 0
+        _ACQUISITION_STATE["consecutiveEmptyBatchesMigrated"] = True
+
     # circuit breaker into a future resume and silently starve a healthy route.
     _ACQUISITION_STATE.setdefault("disabledProviders", {}).pop("openverse", None)
     disabled_providers = _ACQUISITION_STATE.setdefault("disabledProviders", {})
@@ -660,6 +780,20 @@ def _record_route(route_key: str, field: str, amount: float = 1.0) -> None:
         _ACQUISITION_STATE_DIRTY += 1
 
 
+def _set_route_field(route_key: str, field: str, value: float) -> None:
+    global _ACQUISITION_STATE_DIRTY
+    if not route_key:
+        return
+    with _ACQUISITION_STATE_LOCK:
+        route = _ACQUISITION_STATE.setdefault("routeStats", {}).setdefault(
+            route_key,
+            {"metadata": 0, "attempted": 0, "downloaded": 0,
+             "scored": 0, "passed": 0, "networkSeconds": 0.0},
+        )
+        route[field] = value
+        _ACQUISITION_STATE_DIRTY += 1
+
+
 def _route_priority(route_key: str) -> float:
     with _ACQUISITION_STATE_LOCK:
         route = dict(_ACQUISITION_STATE.get("routeStats", {}).get(route_key, {}))
@@ -681,6 +815,8 @@ def _route_priority(route_key: str) -> float:
         return 0.0
     if int(route.get("emptyBatches", 0)) >= 2:
         return 0.0
+    # Route yield is defined exclusively by the frozen SigLIP relevance gate.
+    # Palette diagnostics must never influence acquisition order.
     expected_valid = (passed + 1.0) / (scored + 5.0)
     download_rate = (downloaded + 1.0) / (attempted + 2.0)
     latency = max(0.1, seconds / max(1, attempted))
@@ -743,7 +879,11 @@ def safe_http_get(
     if url in _ACQUISITION_STATE.get("permanentFailedUrls", {}):
         return None
     request_headers = {
-        "User-Agent": "PaletteBrain-C11-DataBuilder/1.0",
+        "User-Agent": (
+            WIKIMEDIA_USER_AGENT
+            if "commons.wikimedia.org" in url
+            else "PaletteBrain-C11-DataBuilder/1.0"
+        ),
         "Accept": "*/*",
     }
     if headers:
@@ -2060,6 +2200,13 @@ def _openverse_candidates_impl(
                 "bbox_source": "",
             }
         )
+    out.sort(
+        key=lambda record: {
+            "real_world": 0,
+            "unknown": 1,
+            "artwork": 2,
+        }.get(str(record.get("source_type")), 3)
+    )
     res = out[:limit]
     with _OPENVERSE_LOCK:
         _OPENVERSE_QUERY_CACHE[cache_key] = res
@@ -2074,31 +2221,44 @@ def _commons_candidates_impl(
     concept: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Search Wikimedia Commons and retain only explicitly compatible media."""
+    global _COMMONS_METADATA_SECONDS, _COMMONS_METADATA_ACCEPTED, _COMMONS_COOLDOWN_UNTIL
     cache_key = (query.strip().lower(), limit, page)
     with _API_CACHE_LOCK:
         cached = _COMMONS_QUERY_CACHE.get(cache_key)
     if cached is not None:
         return CandidateBatch((dict(item) for item in cached), consumed=True)
 
+    # Skip if Commons is in cooldown due to excessive latency
+    if time.time() < _COMMONS_COOLDOWN_UNTIL:
+        return CandidateBatch(consumed=False)
+
     t0 = time.time()
     offset = max(0, int(page) - 1) * min(50, int(limit))
-    url = (
+
+    # Phase 1: fast search — iiprop=url|mime only (no extmetadata)
+    search_url = (
         "https://commons.wikimedia.org/w/api.php?action=query&format=json"
         "&generator=search&gsrnamespace=6"
         f"&gsrsearch={urllib.parse.quote(query)}"
         f"&gsrlimit={min(50, int(limit))}&gsroffset={offset}"
-        "&prop=imageinfo&iiprop=url|mime|extmetadata&iiurlwidth=900"
+        "&prop=imageinfo&iiprop=url|mime&iiurlwidth=900"
     )
-    payload = fetch_json(url, timeout=15, max_retries=1)
-    _FUNNEL.add_time("commons", "seconds_metadata", time.time() - t0)
-    if payload is None:
+    search_payload = fetch_json(search_url, timeout=8, max_retries=0)
+    phase1_elapsed = time.time() - t0
+    _FUNNEL.add_time("commons", "seconds_metadata", phase1_elapsed)
+    if search_payload is None:
+        _COMMONS_METADATA_SECONDS += phase1_elapsed
+        if _COMMONS_METADATA_SECONDS > 120.0 and _COMMONS_METADATA_ACCEPTED < 5:
+            _COMMONS_COOLDOWN_UNTIL = time.time() + 60.0
         return CandidateBatch(consumed=False)
 
-    rows: list[dict[str, Any]] = []
-    pages = payload.get("query", {}).get("pages", {})
-    if not isinstance(pages, dict):
+    search_pages = search_payload.get("query", {}).get("pages", {})
+    if not isinstance(search_pages, dict) or not search_pages:
         return CandidateBatch(consumed=True)
-    for item in pages.values():
+
+    # Collect page IDs that passed MIME filter
+    viable_pages: dict[int, dict[str, Any]] = {}
+    for item in search_pages.values():
         if not isinstance(item, dict):
             continue
         info = (item.get("imageinfo") or [None])[0]
@@ -2106,7 +2266,54 @@ def _commons_candidates_impl(
             continue
         if not str(info.get("mime") or "").lower().startswith("image/"):
             continue
-        license_info = strict_commons_license(dict(info.get("extmetadata") or {}))
+        page_id = item.get("pageid")
+        if page_id is not None:
+            viable_pages[int(page_id)] = {
+                "item": item,
+                "info": info,
+            }
+
+    if not viable_pages:
+        with _API_CACHE_LOCK:
+            _COMMONS_QUERY_CACHE[cache_key] = []
+        _FUNNEL.record("commons", "metadata_candidates", 0)
+        return CandidateBatch(consumed=True)
+
+    # Phase 2: batch fetch extmetadata for viable pages
+    t1 = time.time()
+    page_ids_str = "|".join(str(pid) for pid in viable_pages)
+    meta_url = (
+        "https://commons.wikimedia.org/w/api.php?action=query&format=json"
+        f"&pageids={page_ids_str}"
+        "&prop=imageinfo&iiprop=extmetadata"
+    )
+    meta_payload = fetch_json(meta_url, timeout=8, max_retries=0)
+    phase2_elapsed = time.time() - t1
+    _FUNNEL.add_time("commons", "seconds_metadata", phase2_elapsed)
+    _COMMONS_METADATA_SECONDS += phase1_elapsed + phase2_elapsed
+
+    # Merge extmetadata into viable pages
+    if meta_payload is not None:
+        meta_pages = meta_payload.get("query", {}).get("pages", {})
+        if isinstance(meta_pages, dict):
+            for page_id_str, meta_item in meta_pages.items():
+                try:
+                    pid = int(page_id_str)
+                except (ValueError, TypeError):
+                    continue
+                if pid in viable_pages:
+                    meta_info = (meta_item.get("imageinfo") or [None])[0]
+                    if isinstance(meta_info, dict):
+                        viable_pages[pid]["extmetadata"] = meta_info.get(
+                            "extmetadata", {}
+                        )
+
+    rows: list[dict[str, Any]] = []
+    for page_id, data in viable_pages.items():
+        item = data["item"]
+        info = data["info"]
+        extmetadata = dict(data.get("extmetadata") or {})
+        license_info = strict_commons_license(extmetadata)
         if license_info is None:
             continue
         image_url = str(info.get("thumburl") or info.get("url") or "").strip()
@@ -2114,7 +2321,6 @@ def _commons_candidates_impl(
         if not image_url.startswith(("https://", "http://")) or not landing_url.startswith(("https://", "http://")):
             continue
         license_name, license_url = license_info
-        extmetadata = dict(info.get("extmetadata") or {})
         artist = extmetadata.get("Artist", {})
         artist_text = str(artist.get("value", "") if isinstance(artist, dict) else artist)
         artist_text = re.sub(r"<[^>]+>", "", artist_text).strip() or "Unknown"
@@ -2134,9 +2340,6 @@ def _commons_candidates_impl(
             ))
             else "unknown"
         )
-        page_id = item.get("pageid")
-        if page_id is None:
-            continue
         rows.append({
             "source_id": "commons",
             "source_type": source_type,
@@ -2157,6 +2360,7 @@ def _commons_candidates_impl(
             "bbox_source": "",
         })
     rows = rows[:limit]
+    _COMMONS_METADATA_ACCEPTED += len(rows)
     with _API_CACHE_LOCK:
         _COMMONS_QUERY_CACHE[cache_key] = rows
     _FUNNEL.record("commons", "metadata_candidates", len(rows))
@@ -2191,6 +2395,43 @@ def openverse_candidates(
     key = (query.strip().lower(), limit, page)
     with _api_key_lock("openverse", key):
         return _openverse_candidates_impl(query, limit, page, concept)
+
+
+def expand_commons_queries(concept: dict[str, Any]) -> list[str]:
+    """Return supplementary concrete search terms for Wikimedia Commons.
+
+    Abstract concepts with poetic retrieval queries often yield zero results
+    on Commons' full-text index. These concrete synonyms give the search
+    engine terms it can actually match against file descriptions.
+    """
+    cid = str(concept.get("concept_id", ""))
+    return list(_COMMONS_EXPANDED_QUERIES.get(cid, []))
+
+
+def training_acquisition_queries(
+    concept: dict[str, Any],
+    *,
+    max_queries: int,
+) -> list[str]:
+    """Build concept queries without expected-palette or benchmark hints."""
+    if max_queries < 1:
+        raise ValueError("max_queries must be positive")
+    base = str(concept["retrieval_query"]).strip()
+    queries: list[str] = [base]
+    if max_queries >= TARGETED_MAX_TRAINING_QUERIES:
+        for synonym in expand_commons_queries(concept):
+            value = synonym
+            if value not in queries:
+                queries.append(value)
+            if len(queries) >= max_queries:
+                return queries[:max_queries]
+    for phrasing in concept.get("phrasings_en", []):
+        value = str(phrasing).strip()
+        if value and value not in queries:
+            queries.append(value)
+        if len(queries) >= max_queries:
+            break
+    return queries[:max_queries]
 
 
 def commons_candidates(
@@ -2269,13 +2510,10 @@ def acquire_for_concept(
     crop_required = bool(concept.get("crop_required", False))
     cid = str(concept["concept_id"])
 
-    raw_queries = [str(concept["retrieval_query"])]
-    for phrasing in concept.get("phrasings_en", []):
-        p_str = str(phrasing).strip()
-        if p_str and p_str not in raw_queries:
-            raw_queries.append(p_str)
-        if len(raw_queries) >= max_training_queries:
-            break
+    raw_queries = training_acquisition_queries(
+        concept,
+        max_queries=max_training_queries,
+    )
 
     if crop_required:
         if "open_images" not in allowed_sources:
@@ -2284,14 +2522,19 @@ def acquire_for_concept(
     else:
         pref = [
             s
-            for s in concept.get("source_preference", ["commons", "artic", "met", "openverse"])
-            if s in allowed_sources and s in ("commons", "artic", "met", "openverse")
+            for s in concept.get(
+                "source_preference", ["commons", "artic", "met", "openverse"]
+            )
+            if s in allowed_sources
+            and s in ("commons", "artic", "met", "openverse")
         ]
         available = [
             source for source in allowed_sources
             if source in ("commons", "artic", "met", "openverse")
         ]
-        ordered_sources = pref + [source for source in available if source not in pref]
+        ordered_sources = pref + [
+            source for source in available if source not in pref
+        ]
 
     with _ACQUISITION_STATE_LOCK:
         concept_cursors = _ACQUISITION_STATE.setdefault("conceptCursors", {}).setdefault(
@@ -2387,7 +2630,7 @@ def acquire_for_concept(
                 batch_candidates = records
         elif src == "commons":
             cur_page = int(route_offset)
-            limit_commons = min(max(max_count, 8), 20)
+            limit_commons = min(max(max_count, 12), 50)
             records = commons_candidates(query, limit=limit_commons, page=cur_page, concept=concept)
             if getattr(records, "consumed", False):
                 with _ACQUISITION_STATE_LOCK:
@@ -2400,6 +2643,8 @@ def acquire_for_concept(
         _record_route(route_key, "batches", 1)
         if getattr(records, "consumed", False) and not batch_candidates:
             _record_route(route_key, "emptyBatches", 1)
+        elif batch_candidates:
+            _set_route_field(route_key, "emptyBatches", 0)
         _record_route(route_key, "metadata", len(batch_candidates))
         for cand in batch_candidates:
             cand["acquisition_route_key"] = route_key
@@ -3167,13 +3412,10 @@ def targeted_allowed_sources(concept: dict[str, Any]) -> tuple[str, ...]:
 
 def _concept_recovery_priority(concept: dict[str, Any]) -> float:
     cid = str(concept["concept_id"])
-    queries = [str(concept["retrieval_query"])]
-    for phrasing in concept.get("phrasings_en", []):
-        value = str(phrasing).strip()
-        if value and value not in queries:
-            queries.append(value)
-        if len(queries) >= TARGETED_MAX_TRAINING_QUERIES:
-            break
+    queries = training_acquisition_queries(
+        concept,
+        max_queries=TARGETED_MAX_TRAINING_QUERIES,
+    )
     scores = [
         _route_priority(_route_key(cid, provider, query))
         for provider in targeted_allowed_sources(concept)
@@ -3225,6 +3467,15 @@ def process_acquired_records(
     for record in acquired:
         concept = concept_map[str(record["concept_id"])]
         crop_required = bool(concept.get("crop_required", False))
+        if include_final_features and all(
+            name in record
+            for name in ("oklab_pixels", "color_prior", "crop_coordinates")
+        ):
+            out = dict(record)
+            if crop_required:
+                counters["crop_required_accepted_before_relevance"] += 1
+            processed.append(out)
+            continue
         prepared = prepare_relevance_image(
             Path(record["local_path"]),
             crop_required=crop_required,
@@ -3327,6 +3578,140 @@ def save_relevance_cache(
         if hashes else np.empty((0, feature_width), dtype=np.float32),
     }
     guarded_atomic_savez(path, disk=disk, arrays=arrays)
+
+
+def load_palette_prior_cache(
+    path: Path,
+) -> dict[str, tuple[np.ndarray, np.ndarray, float]]:
+    if not path.is_file():
+        return {}
+    try:
+        with np.load(path, allow_pickle=False) as payload:
+            if str(payload["schema"].item()) != PALETTE_PRIOR_CACHE_SCHEMA:
+                return {}
+            hashes = payload["content_sha256"].astype(str)
+            priors = payload["color_prior"].astype(np.float32)
+            crops = payload["crop_coordinates"].astype(np.float64)
+            fractions = payload["mask_area_fraction"].astype(np.float64)
+        if (
+            priors.shape != (len(hashes), 390)
+            or crops.shape != (len(hashes), 4)
+            or fractions.shape != (len(hashes),)
+        ):
+            return {}
+        return {
+            content_sha: (priors[index], crops[index], float(fractions[index]))
+            for index, content_sha in enumerate(hashes.tolist())
+        }
+    except (OSError, KeyError, ValueError):
+        return {}
+
+
+def seed_palette_prior_cache_from_source(
+    *,
+    source_path: Path,
+    cache: dict[str, tuple[np.ndarray, np.ndarray, float]],
+) -> int:
+    if not source_path.is_file():
+        return 0
+    required = {
+        "content_sha256", "color_prior", "crop_coordinates", "mask_area_fraction"
+    }
+    with np.load(source_path, allow_pickle=False) as archive:
+        if not required.issubset(archive.files):
+            return 0
+        hashes = archive["content_sha256"].astype(str)
+        priors = np.asarray(archive["color_prior"], dtype=np.float32)
+        crops = np.asarray(archive["crop_coordinates"], dtype=np.float64)
+        fractions = np.asarray(archive["mask_area_fraction"], dtype=np.float64)
+    seeded = 0
+    for index, content_sha in enumerate(hashes.tolist()):
+        if content_sha in cache:
+            continue
+        cache[content_sha] = (
+            priors[index], crops[index], float(fractions[index])
+        )
+        seeded += 1
+    return seeded
+
+
+def save_palette_prior_cache(
+    path: Path,
+    cache: dict[str, tuple[np.ndarray, np.ndarray, float]],
+    disk: DiskBudget,
+) -> None:
+    hashes = sorted(cache)
+    guarded_atomic_savez(
+        path,
+        disk=disk,
+        arrays={
+            "schema": np.asarray(PALETTE_PRIOR_CACHE_SCHEMA, dtype=str),
+            "content_sha256": np.asarray(hashes, dtype=str),
+            "color_prior": np.stack([cache[value][0] for value in hashes]).astype(
+                np.float32
+            ) if hashes else np.empty((0, 390), dtype=np.float32),
+            "crop_coordinates": np.stack(
+                [cache[value][1] for value in hashes]
+            ).astype(np.float64) if hashes else np.empty((0, 4), dtype=np.float64),
+            "mask_area_fraction": np.asarray(
+                [cache[value][2] for value in hashes], dtype=np.float64
+            ),
+        },
+    )
+
+
+def hydrate_palette_priors_with_cache(
+    *,
+    records: list[dict[str, Any]],
+    concept_map: dict[str, dict[str, Any]],
+    cache: dict[str, tuple[np.ndarray, np.ndarray, float]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    started = time.perf_counter()
+    hydrated: list[dict[str, Any]] = []
+    hits = 0
+    misses = 0
+    invalid = 0
+    for record in records:
+        content_sha = str(record["content_sha256"])
+        cached = cache.get(content_sha)
+        if cached is not None:
+            prior, crop, fraction = cached
+            hits += 1
+        else:
+            concept = concept_map[str(record["concept_id"])]
+            prepared = prepare_relevance_image(
+                Path(record["local_path"]),
+                crop_required=bool(concept.get("crop_required", False)),
+                whole_frame_valid=bool(concept.get("whole_frame_valid", True)),
+                meta_crop=record.get("crop_coordinates"),
+            )
+            if prepared is None:
+                invalid += 1
+                continue
+            image, crop, fraction = prepared
+            _, prior = extract_final_color_features(image)
+            cache[content_sha] = (
+                np.asarray(prior, dtype=np.float32),
+                np.asarray(crop, dtype=np.float64),
+                float(fraction),
+            )
+            misses += 1
+        out = dict(record)
+        out["color_prior"] = np.asarray(prior, dtype=np.float32)
+        out["crop_coordinates"] = np.asarray(crop, dtype=np.float64)
+        out["mask_area_fraction"] = float(fraction)
+        hydrated.append(out)
+    elapsed = max(time.perf_counter() - started, 1e-9)
+    diagnostics = {
+        "records": len(records),
+        "cacheHits": hits,
+        "cacheMisses": misses,
+        "invalidImages": invalid,
+        "elapsedSeconds": elapsed,
+        "recordsPerSecond": len(records) / elapsed,
+    }
+    print("Palette prior cache: " + json.dumps(diagnostics, sort_keys=True))
+    return hydrated, diagnostics
 
 
 def score_records_with_cache(
@@ -3498,7 +3883,7 @@ def fit_pca(
     features: np.ndarray,
     records: list[dict[str, Any]],
     smoke: bool,
-    output_dir: Path,
+    output_path: Path,
     disk: DiskBudget,
 ) -> tuple[np.ndarray, dict[str, Any]]:
     group_ids = [str(r["source_group_id"]) for r in records]
@@ -3546,7 +3931,9 @@ def fit_pca(
         "\n".join(train_group_ids).encode("utf-8")
     ).hexdigest()
 
-    pca_path = output_dir / "palettebrain_c11_pca_projection.npz"
+    pca_path = output_path.with_name(
+        f"{output_path.stem}_pca_projection.npz"
+    )
     guarded_atomic_savez(
         pca_path,
         disk=disk,
@@ -3712,7 +4099,7 @@ def build_rows(
                     "locked_mask": locked_mask,
                     "locked_colors": locked_colors,
                     "target": target,
-                    "quality_weight": 1.0,
+                    "quality_weight": float(record.get("quality_weight", 1.0)),
                     "split": record["split"],
                 }
             )
@@ -3756,6 +4143,60 @@ def audit_rows(rows: list[dict[str, Any]], *, smoke: bool) -> dict[str, Any]:
         "languageRows": languages,
         "lockedRows": locked_rows,
         "lockedFraction": locked_rows / len(rows),
+    }
+
+
+def summarize_palette_diversity(
+    records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Report palette coverage without accepting, rejecting, or ranking images."""
+    if not records:
+        return {
+            "diagnosticOnly": True,
+            "influencesAcceptance": False,
+            "images": 0,
+            "occupiedBins": 0,
+            "occupiedBinFraction": 0.0,
+            "aggregateNormalizedEntropy": 0.0,
+            "meanImageNormalizedEntropy": 0.0,
+            "hueBinsCovered": 0,
+            "neutralMass": 0.0,
+        }
+    priors = np.stack(
+        [np.asarray(record["color_prior"], dtype=np.float64) for record in records]
+    )
+    if priors.shape[1] != 390 or not np.isfinite(priors).all():
+        raise RuntimeError("palette diversity requires finite 390-bin priors")
+    totals = priors.sum(axis=1, keepdims=True)
+    if np.any(totals <= 0):
+        raise RuntimeError("palette diversity requires positive histogram mass")
+    priors = priors / totals
+    aggregate = priors.mean(axis=0)
+    entropy_denominator = math.log(priors.shape[1])
+    image_entropy = -np.sum(
+        np.where(priors > 0, priors * np.log(np.maximum(priors, 1e-12)), 0.0),
+        axis=1,
+    ) / entropy_denominator
+    aggregate_entropy = -float(
+        np.sum(
+            np.where(
+                aggregate > 0,
+                aggregate * np.log(np.maximum(aggregate, 1e-12)),
+                0.0,
+            )
+        )
+    ) / entropy_denominator
+    hue_mass = aggregate[:384].reshape(16, 6, 4).sum(axis=(1, 2))
+    return {
+        "diagnosticOnly": True,
+        "influencesAcceptance": False,
+        "images": len(records),
+        "occupiedBins": int(np.count_nonzero(aggregate >= 1e-5)),
+        "occupiedBinFraction": float(np.mean(aggregate >= 1e-5)),
+        "aggregateNormalizedEntropy": aggregate_entropy,
+        "meanImageNormalizedEntropy": float(np.mean(image_entropy)),
+        "hueBinsCovered": int(np.count_nonzero(hue_mass >= 0.005)),
+        "neutralMass": float(aggregate[384:].sum()),
     }
 
 
@@ -3888,7 +4329,7 @@ def select_targeted_recovery_concept_ids(
         zero = [
             cid
             for cid in details["zeroConcepts"]
-            if cid not in unavailable and cid in concept_map
+            if cid not in unavailable and cid in concept_map and cid not in selected
         ]
         zero.sort(
             key=lambda cid: (-_concept_recovery_priority(concept_map[cid]), cid)
@@ -3941,7 +4382,18 @@ def require_full_visual_coverage(requirements: dict[str, Any]) -> None:
         for category, details in requirements.get("failingCategories", {}).items()
     }
     raise RuntimeError(
-        "FULL DATASET COVERAGE FAILED: " + json.dumps(deficits, sort_keys=True)
+        "FULL DATASET COVERAGE FAILED: "
+        + json.dumps(
+            {
+                "categories": deficits,
+                "weakCropConcepts": requirements.get("weakCropConcepts", {}),
+                "realWorldFraction": requirements.get("realWorldFraction"),
+                "realWorldPass": requirements.get("realWorldPass"),
+                "artworkFraction": requirements.get("artworkFraction"),
+                "artworkPass": requirements.get("artworkPass"),
+            },
+            sort_keys=True,
+        )
     )
 
 
@@ -4162,7 +4614,9 @@ def build_c11_dataset(
     metadata_workers: int = 8,
     checkpoint_every: int = 10,
     adaptive_benchmark_seconds: float | None = None,
+    report_path: Path | None = None,
 ) -> dict[str, Any]:
+    build_started = time.perf_counter()
     manifest = load_and_validate_manifest(manifest_path)
     policy = manifest.get("acquisition_policy", {})
     hard_disk = int(
@@ -4337,6 +4791,7 @@ def build_c11_dataset(
             device=resolved_device,
             threshold=threshold,
         )
+        palette_diversity = summarize_palette_diversity(valid)
         valid = choose_balanced_smoke(valid, SMOKE_VALID_IMAGES)
     else:
         relevance_fingerprint = hashlib.sha256(
@@ -4364,6 +4819,25 @@ def build_c11_dataset(
             cache_fingerprint=relevance_fingerprint,
             disk=disk,
         )
+        relevance_cache_hits_at_start = cache_hits
+        semantic_prior_cache_path = raw_dir / "palette_semantic_prior_cache.npz"
+        disk.track_artifact(semantic_prior_cache_path)
+        semantic_prior_cache = load_palette_prior_cache(
+            semantic_prior_cache_path
+        )
+        valid, palette_prior_cache_diagnostics = (
+            hydrate_palette_priors_with_cache(
+                records=valid,
+                concept_map=concept_map,
+                cache=semantic_prior_cache,
+            )
+        )
+        save_palette_prior_cache(
+            semantic_prior_cache_path,
+            semantic_prior_cache,
+            disk,
+        )
+        palette_diversity = summarize_palette_diversity(valid)
         print(f"Relevance: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits}")
         desired_valid = (
             min(limit_images, FULL_TARGET_UNIQUE_IMAGES)
@@ -4401,9 +4875,6 @@ def build_c11_dataset(
         )
         print("Starting adaptive streaming top-up...")
         import queue
-        import threading
-        import time
-        import math
 
         seen_urls: set[str] = {
             str(r.get("downloaded_url"))
@@ -4533,12 +5004,12 @@ def build_c11_dataset(
                     )
                 )
                 for state in active[:slots]:
-                    state["inflight"] += 2
+                    state["inflight"] += 6
                     task_queue.put(
                         (
                             state["concept_id"],
                             state["concept"],
-                            2,
+                            6,
                             True,
                         )
                     )
@@ -4577,6 +5048,7 @@ def build_c11_dataset(
 
         start_time = time.time()
         valid_at_start = len(valid)
+        raw_at_start = len(acquired)
         recovery_concepts_at_start = int(coverage_state["remainingConcepts"])
         last_checkpoint_time = time.time()
         benchmark_timed_out = False
@@ -4649,13 +5121,24 @@ def build_c11_dataset(
                     disk=disk,
                     save_cache=False,
                 )
+                new_valid, pass_prior_cache = hydrate_palette_priors_with_cache(
+                    records=new_valid,
+                    concept_map=concept_map,
+                    cache=semantic_prior_cache,
+                )
                 for key, value in pass_crop_stats.items():
                     crop_stats[key] += value
+                for key in ("cacheHits", "cacheMisses", "invalidImages"):
+                    palette_prior_cache_diagnostics[key] += pass_prior_cache[key]
+                palette_prior_cache_diagnostics["elapsedSeconds"] += (
+                    pass_prior_cache["elapsedSeconds"]
+                )
                 valid.extend(new_valid)
+                palette_diversity = summarize_palette_diversity(valid)
                 state["valid"] += len(new_valid)
                 if targeted_mode and not new_valid:
                     state["consecutive_empty"] += 1
-                    if state["consecutive_empty"] >= 2:
+                    if state["consecutive_empty"] >= 4:
                         state["exhausted"] = True
                 else:
                     state["consecutive_empty"] = 0
@@ -4678,6 +5161,11 @@ def build_c11_dataset(
                         relevance_cache,
                         disk,
                     )
+                    save_palette_prior_cache(
+                        semantic_prior_cache_path,
+                        semantic_prior_cache,
+                        disk,
+                    )
                     persist_acquisition_state()
                     last_checkpoint_time = now
 
@@ -4686,7 +5174,6 @@ def build_c11_dataset(
                 valid_per_sec = valid_gained / elapsed if elapsed > 0 else 0
                 deficit_remaining = max(0, desired_valid - len(valid))
                 eta_sec = deficit_remaining / valid_per_sec if valid_per_sec > 0 else None
-
                 print(
                     f"Adaptive top-up: VALID={len(valid)} RAW={len(acquired)} cache_hits={cache_hits} "
                     f"(latest {cid}: fetched {len(records)} -> valid {len(new_valid)})"
@@ -4747,6 +5234,11 @@ def build_c11_dataset(
             relevance_cache,
             disk,
         )
+        save_palette_prior_cache(
+            semantic_prior_cache_path,
+            semantic_prior_cache,
+            disk,
+        )
         persist_acquisition_state()
         final_funnel = _FUNNEL.summary(force=True)
         if final_funnel:
@@ -4755,6 +5247,11 @@ def build_c11_dataset(
         if adaptive_benchmark_seconds is not None:
             elapsed = max(time.time() - start_time, 1e-9)
             gained = len(valid) - valid_at_start
+            remaining_deficits = int(coverage_state["remainingConcepts"])
+            resolved_deficits = max(
+                0, recovery_concepts_at_start - remaining_deficits
+            )
+            resolved_per_second = resolved_deficits / elapsed
             with _FUNNEL._lock:
                 funnel_metrics = {
                     provider: dict(values)
@@ -4763,23 +5260,55 @@ def build_c11_dataset(
                 siglip_seconds = _FUNNEL.siglip_seconds
             scored = sum(int(values["siglip_scored"]) for values in funnel_metrics.values())
             passed = sum(int(values["siglip_pass"]) for values in funnel_metrics.values())
+            targeted_at_start = select_targeted_recovery_concept_ids(
+                requirements=coverage_state,
+                concepts=concepts,
+            )
             benchmark_summary = {
                 "mode": "full-adaptive-benchmark",
                 "testClassification": "REAL_FULL_ACQUISITION_BENCHMARK",
+                "acceptanceContract": "SIGLIP_TEXT_IMAGE_RELEVANCE_ONLY",
+                "paletteStatisticsInfluenceAcceptance": False,
                 "timedOut": benchmark_timed_out,
                 "elapsedSeconds": elapsed,
                 "currentValid": len(valid),
                 "validAtStart": valid_at_start,
                 "validGained": gained,
+                "acceptedItemsPerSecond": gained / elapsed,
+                "rawRecordsAtStart": raw_at_start,
+                "rawRecordsAtEnd": len(acquired),
+                "networkRecordsAdded": len(acquired) - raw_at_start,
+                "globalReacquisition": False,
+                "targetedConceptsAtEnd": targeted_at_start,
+                "deficientConceptsAtStart": recovery_concepts_at_start,
+                "deficientConceptsAtEnd": remaining_deficits,
+                "deficientConceptsResolved": resolved_deficits,
+                "deficientConceptsResolvedPerSecond": resolved_per_second,
+                "projectedRemainingDeficitRuntimeSeconds": (
+                    remaining_deficits / resolved_per_second
+                    if resolved_per_second > 0
+                    else None
+                ),
                 "remainingTo2500": max(0, FULL_TARGET_UNIQUE_IMAGES - len(valid)),
                 "validPerSecond": gained / elapsed,
+                "cacheValidatedItemsPerSecond": valid_at_start / elapsed,
                 "siglipAcceptanceRate": passed / scored if scored else 0.0,
                 "funnel": funnel_metrics,
                 "siglipWallSeconds": siglip_seconds,
                 "relevanceThreshold": threshold,
                 "cacheRecords": len(cached_records),
+                "relevanceCacheHitsAtStart": relevance_cache_hits_at_start,
+                "relevanceCacheFullyReused": (
+                    relevance_cache_hits_at_start == raw_at_start
+                ),
+                "coveragePass": bool(coverage_state["mandatoryPass"]),
+                "coverage": coverage_state,
+                "paletteDiversity": palette_diversity,
+                "palettePriorCache": palette_prior_cache_diagnostics,
             }
-            benchmark_path = Path("ml/palettebrain/reports/candidate-11-adaptive-benchmark.json")
+            benchmark_path = report_path or Path(
+                "ml/palettebrain/reports/candidate-11-adaptive-benchmark.json"
+            )
             guarded_atomic_write_text(
                 benchmark_path,
                 json.dumps(benchmark_summary, ensure_ascii=False, indent=2) + "\n",
@@ -4816,7 +5345,7 @@ def build_c11_dataset(
         features=features,
         records=valid,
         smoke=smoke,
-        output_dir=output_path.parent,
+        output_path=output_path,
         disk=disk,
     )
 
@@ -4895,17 +5424,28 @@ def build_c11_dataset(
         "sourceManifestSha256": manifest_sha256,
         "siglipCalibrationReportSha256": calibration_sha256,
         "builderSha256": builder_sha256,
+        "acceptanceContract": "SIGLIP_TEXT_IMAGE_RELEVANCE_ONLY",
+        "paletteStatisticsInfluenceAcceptance": False,
+        "paletteDiversity": palette_diversity,
+        "palettePriorCache": (
+            palette_prior_cache_diagnostics if not smoke else None
+        ),
+        "elapsedSeconds": time.perf_counter() - build_started,
+        "validImagesPerSecond": len(valid) / max(
+            time.perf_counter() - build_started, 1e-9
+        ),
         "diskUsageBytes": disk.usage(),
     }
 
-    report_path = (
-        Path("ml/palettebrain/reports")
-        / (
-            "candidate-11-source-smoke.json"
-            if smoke
-            else "candidate-11-source-full.json"
+    if report_path is None:
+        report_path = (
+            Path("ml/palettebrain/reports")
+            / (
+                "candidate-11-source-smoke.json"
+                if smoke
+                else "candidate-11-source-full.json"
+            )
         )
-    )
     guarded_atomic_write_text(
         report_path,
         json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
@@ -4935,6 +5475,7 @@ def main() -> None:
         "--output",
         default="ml/palettebrain/data/palettebrain_c11_recovered_source.npz",
     )
+    parser.add_argument("--report")
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--limit-images", type=int, default=None)
     parser.add_argument("--seed", type=int, default=20260826)
@@ -4966,6 +5507,7 @@ def main() -> None:
         metadata_workers=int(args.metadata_workers),
         checkpoint_every=int(args.checkpoint_every),
         adaptive_benchmark_seconds=args.adaptive_benchmark_seconds,
+        report_path=Path(args.report) if args.report else None,
     )
 
 

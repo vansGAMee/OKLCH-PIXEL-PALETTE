@@ -313,6 +313,14 @@ class PaletteDecoder(nn.Module):
             visual_color_context = color_tokens.mean(dim=1, keepdim=True)
         else:
             slot_visual_context, _ = self.visual_cross_attention(slots, color_tokens)
+            # Cross-attention is a slot-specific refinement, not a second global
+            # text context.  Without centering, Stage A can learn a large
+            # prompt-invariant residual that shifts every slot and overwhelms
+            # the inherited semantic decoder path.
+            slot_visual_context = (
+                slot_visual_context
+                - slot_visual_context.mean(dim=1, keepdim=True)
+            )
             visual_color_context = (
                 color_tokens.mean(dim=1, keepdim=True) + slot_visual_context
             )

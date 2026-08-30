@@ -13,10 +13,10 @@ import torch
 
 try:
     from .evaluate_semantic_v3 import evaluate
-    from .train_candidate11 import training_dependency_fingerprint
+    from .train_candidate11 import resume_dependency_fingerprints, training_dependency_fingerprint
 except ImportError:
     from evaluate_semantic_v3 import evaluate
-    from train_candidate11 import training_dependency_fingerprint
+    from train_candidate11 import resume_dependency_fingerprints, training_dependency_fingerprint
 
 
 def selection_key(report: dict[str, Any], validation_loss: float) -> tuple[Any, ...]:
@@ -72,6 +72,7 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
         "seed": 20260826,
     }
     expected_dependency = training_dependency_fingerprint()
+    compatible_dependencies = resume_dependency_fingerprints()
     dataset_sha256 = sha256_file(Path(args.dataset))
     expected_dataset_identity: dict[str, Any] | None = None
     if last_path.is_file():
@@ -80,7 +81,7 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
             if (
                 last_checkpoint.get("candidate") == "candidate-11"
                 and last_checkpoint.get("stage") == args.stage
-                and last_checkpoint.get("dependency_fingerprint") == expected_dependency
+                and last_checkpoint.get("dependency_fingerprint") in compatible_dependencies
                 and last_checkpoint.get("dataset_identity", {}).get("primary") == dataset_sha256
             ):
                 expected_dataset_identity = last_checkpoint.get("dataset_identity")
@@ -97,7 +98,7 @@ def select(args: argparse.Namespace) -> dict[str, Any]:
                 expected_dataset_identity is not None
                 and checkpoint.get("dataset_identity") != expected_dataset_identity
             )
-            or checkpoint.get("dependency_fingerprint") != expected_dependency
+            or checkpoint.get("dependency_fingerprint") not in compatible_dependencies
             or any(candidate_args.get(key) != value for key, value in expected_training_args.items())
         ):
             continue

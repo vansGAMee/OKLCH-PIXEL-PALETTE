@@ -299,6 +299,62 @@ def palette_set_distance(left: np.ndarray, right: np.ndarray) -> float:
     return float(matched + 0.04 * count_penalty)
 
 
+def full_photo_semantic_rows(
+    palettes: dict[str, np.ndarray],
+    prompts: list[str],
+    prompt_embeddings: np.ndarray,
+    support_embeddings: np.ndarray,
+    support_palettes: np.ndarray,
+    support_counts: np.ndarray,
+    support_prompts: np.ndarray,
+    support_groups: np.ndarray,
+    *,
+    neighbors: int = 8,
+) -> list[dict[str, Any]]:
+    """Score against text-linked, held-out full-photo palette targets.
+
+    This contrast uses no expected colour family: a natural rainy photograph
+    remains valid even when its full-image palette is not stereotypically blue.
+    """
+    if neighbors < 1 or len(support_embeddings) < neighbors * 2:
+        raise ValueError("full-photo semantic evaluation needs at least 2*neighbors supports")
+    query = np.asarray(prompt_embeddings, dtype=np.float64)
+    query /= np.maximum(np.linalg.norm(query, axis=1, keepdims=True), 1e-12)
+    support = np.asarray(support_embeddings, dtype=np.float64)
+    support /= np.maximum(np.linalg.norm(support, axis=1, keepdims=True), 1e-12)
+    rows: list[dict[str, Any]] = []
+    for prompt, embedding in zip(prompts, query, strict=True):
+        similarities = support @ embedding
+        positive = np.argsort(-similarities, kind="stable")[:neighbors]
+        negative = np.argsort(similarities, kind="stable")[:neighbors]
+        generated = palettes[prompt]
+        positive_distance = min(palette_set_distance(
+            generated, support_palettes[index, :int(support_counts[index])]
+        ) for index in positive)
+        negative_distance = min(palette_set_distance(
+            generated, support_palettes[index, :int(support_counts[index])]
+        ) for index in negative)
+        nearest = int(positive[0])
+        rows.append({
+            "prompt": prompt,
+            "nearestRealPrompt": str(support_prompts[nearest]),
+            "nearestRealGroup": str(support_groups[nearest]),
+            "retrievalCosine": float(similarities[nearest]),
+            "positiveDistance": positive_distance,
+            "negativeDistance": negative_distance,
+            "contrastMargin": negative_distance - positive_distance,
+            "pass": positive_distance < negative_distance,
+        })
+    return rows
+
+
+def full_photo_category_rates(rows: list[dict[str, Any]]) -> dict[str, float]:
+    grouped: dict[str, list[bool]] = {}
+    for row in rows:
+        grouped.setdefault(str(row["category"]), []).append(bool(row["pass"]))
+    return {name: float(np.mean(values)) for name, values in grouped.items()}
+
+
 def cross_prompt_collapse_metric(
     palettes: list[np.ndarray], *, distance_threshold: float = 0.04,
     maximum_rate: float = 0.20,
@@ -478,15 +534,45 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         for prompt, raw in zip(prompts, decoded_prompts, strict=True)
     }
 
-    family_rows = []
-    categories: dict[str, list[bool]] = {}
+    # Kept only as a diagnostic: expected colour-family labels are stereotypes,
+    # not valid acceptance supervision for full-photo palette targets.
+    stereotype_family_rows = []
+    stereotype_categories: dict[str, list[bool]] = {}
     for family, concept in v2["concepts"].items():
         for prompt in concept["prompts"]:
             closest = _family_distance(palettes[prompt], references)[0][0]
             passed = closest == family
-            family_rows.append({"prompt": prompt, "expected": family, "closest": closest, "pass": passed})
-            categories.setdefault(concept["category"], []).append(passed)
-    category_rates = {name: float(np.mean(values)) for name, values in categories.items()}
+            stereotype_family_rows.append({"prompt": prompt, "expected": family, "closest": closest, "pass": passed})
+            stereotype_categories.setdefault(concept["category"], []).append(passed)
+    stereotype_category_rates = {
+        name: float(np.mean(values)) for name, values in stereotype_categories.items()
+    }
+    stereotype_family_win = float(np.mean([row["pass"] for row in stereotype_family_rows]))
+    with np.load(args.dataset, allow_pickle=False) as archive:
+        required = {"text_embedding", "target", "count", "split", "prompt", "source_group_id"}
+        missing = sorted(required - set(archive.files))
+        if missing:
+            raise RuntimeError(f"full-photo semantic dataset is missing {missing}")
+        indices = np.flatnonzero(archive["split"].astype(str) == args.evaluation_split)
+        support_embeddings = np.asarray(archive["text_embedding"][indices], dtype=np.float32)
+        support_palettes = representation_to_oklab_numpy(np.asarray(archive["target"][indices], dtype=np.float32))
+        support_counts = np.asarray(archive["count"][indices], dtype=np.int64)
+        support_prompts = archive["prompt"][indices].astype(str)
+        support_groups = archive["source_group_id"][indices].astype(str)
+    family_prompts = [prompt for concept in v2["concepts"].values() for prompt in concept["prompts"]]
+    family_embeddings = np.asarray([embeddings[prompt_index[prompt]] for prompt in family_prompts], dtype=np.float32)
+    family_rows = full_photo_semantic_rows(
+        palettes, family_prompts, family_embeddings, support_embeddings,
+        support_palettes, support_counts, support_prompts, support_groups,
+    )
+    prompt_metadata = {
+        prompt: {"expectedFamily": family, "category": concept["category"]}
+        for family, concept in v2["concepts"].items()
+        for prompt in concept["prompts"]
+    }
+    for row in family_rows:
+        row.update(prompt_metadata[row["prompt"]])
+    category_rates = full_photo_category_rates(family_rows)
     semantic_family_win = float(np.mean([row["pass"] for row in family_rows]))
 
     direct_rows = []
@@ -630,6 +716,8 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     browser_smoke_engineering = browser_smoke.get("testClassification") == "ENGINEERING_SMOKE_ONLY"
     metrics = {
         "semanticFamilyWin": semantic_family_win,
+        "stereotypeFamilyWinDiagnostic": stereotype_family_win,
+        "semanticTargetContrastMargin": float(np.mean([row["contrastMargin"] for row in family_rows])),
         "directEn": float(np.mean([row["pass"] for row in direct_rows if not any("а" <= c.lower() <= "я" for c in row["prompt"])])),
         "directRu": float(np.mean([row["pass"] for row in direct_rows if any("а" <= c.lower() <= "я" for c in row["prompt"])])),
         "exclusion": float(np.mean([row["pass"] for row in direct_rows if row["prompt"] in {"not red", "without green"}])),
@@ -642,7 +730,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "basicConcepts": category_rates.get("basic_objects", 0.0),
         "nature": category_rates.get("nature", 0.0),
         "weatherScenes": category_rates.get("weather", 0.0),
-        "materials": float(np.mean([row["pass"] for row in family_rows if row["expected"] in {"rust", "gold", "ice"}])),
+        "materials": float(np.mean([row["pass"] for row in family_rows if row["expectedFamily"] in {"rust", "gold", "ice"}])),
         "placesInteriors": category_rates.get("places", 0.0),
         "lighting": category_rates.get("light", 0.0),
         "stylesMedia": category_rates.get("styles", 0.0),
@@ -682,6 +770,8 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "semanticTestSha256": _cached_file_sha256(semantic_test_path) if sealed_test is not None else None,
         },
         "metrics": metrics, "categoryRates": category_rates, "familyRows": family_rows,
+        "stereotypeFamilyRowsDiagnostic": stereotype_family_rows,
+        "stereotypeCategoryRatesDiagnostic": stereotype_category_rates,
         "directRows": direct_rows, "abstractRows": abstract_rows, "longRows": long_rows,
         "compositionRows": composition_rows, "oodRows": ood_rows, "adversarialRows": adversarial_rows,
         "bilingualRows": bilingual_rows,

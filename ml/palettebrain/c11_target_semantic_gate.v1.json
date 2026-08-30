@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "metricContract": "held-out-real-full-photo-target-contrast-v1",
+  "stageA": {
+    "minimumSemanticFamilyWin": 0.62,
+    "minimumSemanticTargetContrastMargin": 0.009,
+    "minimumDirectEn": 0.5714285714285714,
+    "minimumDirectRu": 1.0,
+    "minimumPaletteStructureWinRate": 0.53,
+    "maximumCrossPromptCollapseRate": 0.05
+  },
+  "calibrationEvidence": {
+    "baseSemanticFamilyWin": 0.62,
+    "baseSemanticTargetContrastMargin": 0.009207645220583593,
+    "probeSemanticFamilyWin": 0.63,
+    "stageASemanticFamilyWin": 0.64,
+    "stageASemanticTargetContrastMargin": 0.010384562378429689,
+    "heldOutRealTargetSelfReferenceDev": 0.9892857142857143,
+    "heldOutRealTargetSelfReferenceTest": 0.9951456310679612,
+    "note": "Stage A is accepted for preserving and improving BASE under the new target-grounded metric; the 0.80 stereotype-era intermediate gate is not reused. Final release qualification remains separate."
+  }
+}

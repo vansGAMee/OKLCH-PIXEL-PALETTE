@@ -74,11 +74,109 @@ def test_stage_a_freezes_inherited_and_stage_b_unfreezes_it() -> None:
     assert not stage_b["frozen"]
 
 
+def test_stage_a_optimizer_treats_only_visual_cross_attention_as_new() -> None:
+    from ml.palettebrain.train_candidate11 import partition_trainable_parameters
+
+    model = PaletteDecoder(
+        PaletteDecoderConfig(visual_conditioning="slot_cross_attention")
+    )
+    configure_stage_parameters(model, "a")
+    groups = partition_trainable_parameters(model)
+
+    assert groups["new_names"]
+    assert all(name.startswith("visual_cross_attention.") for name in groups["new_names"])
+    assert groups["inherited_names"]
+    assert all(name.startswith("bridge.") for name in groups["inherited_names"])
+
+
+def test_stage_a_stability_loss_detects_joint_decoder_drift() -> None:
+    from ml.palettebrain.train_candidate11 import stage_a_semantic_stability_loss
+
+    torch.manual_seed(11)
+    teacher = PaletteDecoder(PaletteDecoderConfig()).eval()
+    student = PaletteDecoder(
+        PaletteDecoderConfig(visual_conditioning="slot_cross_attention")
+    ).eval()
+    student.load_state_dict(teacher.state_dict(), strict=False)
+    inputs = _inputs()
+
+    initial = stage_a_semantic_stability_loss(student, teacher, inputs)
+    with torch.no_grad():
+        student.bridge.prior_proj.weight.normal_(mean=0.0, std=0.2)
+        student.visual_cross_attention.output.weight.normal_(mean=0.0, std=0.2)
+    drifted = stage_a_semantic_stability_loss(student, teacher, inputs)
+
+    assert float(initial.detach()) < 1e-3
+    assert float(drifted.detach()) > float(initial.detach()) + 1e-3
+
+
+def test_stage_a_prior_stability_detects_semantic_histogram_drift() -> None:
+    from ml.palettebrain.train_candidate11 import stage_a_prior_stability_loss
+
+    torch.manual_seed(11)
+    teacher = PaletteDecoder(PaletteDecoderConfig()).eval()
+    student = PaletteDecoder(
+        PaletteDecoderConfig(visual_conditioning="slot_cross_attention")
+    ).eval()
+    student.load_state_dict(teacher.state_dict(), strict=False)
+    text_embedding = _inputs()[0]
+
+    initial = stage_a_prior_stability_loss(student, teacher, text_embedding)
+    with torch.no_grad():
+        student.bridge.color_prior_head.weight.normal_(mean=0.0, std=0.2)
+    drifted = stage_a_prior_stability_loss(student, teacher, text_embedding)
+
+    assert float(initial.detach()) < 1e-7
+    assert float(drifted.detach()) > 1e-3
+
+
+def test_stage_a_concept_weights_equalize_sampling_mass() -> None:
+    from ml.palettebrain.train_candidate11 import inverse_frequency_sample_weights
+
+    labels = np.asarray(["frequent"] * 8 + ["rare"] * 2 + ["singleton"])
+    weights = inverse_frequency_sample_weights(labels)
+
+    assert float(weights[labels == "frequent"].sum()) == pytest.approx(1.0)
+    assert float(weights[labels == "rare"].sum()) == pytest.approx(1.0)
+    assert float(weights[labels == "singleton"].sum()) == pytest.approx(1.0)
+
+
 def test_stage_b_mixture_is_explicit_eighty_twenty() -> None:
     weights, mixture = stage_b_mixture_weights([80, 20])
     assert mixture == {"realVisualSemantic": 0.8, "replayTotal": 0.2}
     assert float(weights[:80].sum()) == pytest.approx(0.8)
     assert float(weights[80:].sum()) == pytest.approx(0.2)
+
+
+def test_stage_b_loss_distills_selected_stage_a_semantics() -> None:
+    from ml.palettebrain.train_candidate11 import _stage_b_loss
+
+    torch.manual_seed(11)
+    config = PaletteDecoderConfig(visual_conditioning="slot_cross_attention")
+    teacher = PaletteDecoder(config).eval()
+    student = PaletteDecoder(config)
+    student.load_state_dict(teacher.state_dict(), strict=True)
+    inputs = _inputs()
+    with torch.no_grad():
+        target = teacher(*inputs)
+        student.output_head.weight.add_(0.05)
+        student.bridge.color_prior_head.weight.normal_(mean=0.0, std=0.2)
+    batch = {
+        "text_embedding": inputs[0],
+        "count_mask": inputs[1],
+        "seed_noise": inputs[2],
+        "locked_mask": inputs[3],
+        "locked_colors": inputs[4],
+        "target": target,
+        "color_prior": torch.softmax(torch.randn(2, 390), dim=-1),
+        "teacher_latent": torch.randn(2, 128),
+        "visual_weight": torch.ones(2),
+    }
+
+    _, components = _stage_b_loss(student, batch, teacher=teacher)
+
+    assert float(components["semanticStability"].detach()) > 0
+    assert float(components["priorStability"].detach()) > 0
 
 
 def test_candidate8_inheritance_keeps_every_compatible_decoder_block() -> None:

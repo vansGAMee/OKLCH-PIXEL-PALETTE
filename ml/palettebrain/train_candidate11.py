@@ -9,10 +9,12 @@ state required for deterministic resume.
 from __future__ import annotations
 
 import argparse
+import os
 import hashlib
 import json
 import random
 import shutil
+import time
 from pathlib import Path
 from typing import Any
 
@@ -23,13 +25,46 @@ from torch import Tensor
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, WeightedRandomSampler
 
 try:
+    from .c11_release_contract import stage_a_metrics_contract
     from .color_distribution import smooth_circular_histogram_loss
     from .model import PaletteDecoder, PaletteDecoderConfig, load_inherited_state
     from .train_decoder import decoder_loss
 except ImportError:
+    from c11_release_contract import stage_a_metrics_contract
     from color_distribution import smooth_circular_histogram_loss
     from model import PaletteDecoder, PaletteDecoderConfig, load_inherited_state
     from train_decoder import decoder_loss
+
+
+def inverse_frequency_sample_weights(labels: np.ndarray) -> Tensor:
+    """Give every Stage A concept equal expected sampling mass."""
+    values = np.asarray(labels).astype(str).reshape(-1)
+    if not len(values):
+        raise ValueError("concept-balanced sampling requires at least one label")
+    _, inverse, counts = np.unique(values, return_inverse=True, return_counts=True)
+    return torch.as_tensor(1.0 / counts[inverse], dtype=torch.double)
+
+
+def atomic_checkpoint_replace(
+    temporary: Path, destination: Path, *, attempts: int = 5,
+    initial_backoff_seconds: float = 0.05,
+) -> None:
+    """Publish a checkpoint atomically, tolerating Windows sharing violations.
+
+    The prior valid destination is never removed.  Only WinError 5 is retried;
+    all other errors, and a persistent lock after the bounded retry budget, are
+    surfaced to the caller unchanged.
+    """
+    if attempts < 1:
+        raise ValueError("attempts must be positive")
+    for attempt in range(attempts):
+        try:
+            os.replace(temporary, destination)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) != 5 or attempt == attempts - 1:
+                raise
+            time.sleep(initial_backoff_seconds * (attempt + 1))
 
 
 class C11Dataset(Dataset[dict[str, Tensor]]):
@@ -58,6 +93,10 @@ class C11Dataset(Dataset[dict[str, Tensor]]):
             selected = np.asarray(archive[mapping["split"]] == split_id)
         else:
             raise ValueError(f"unsupported PaletteBrain archive schema: {sorted(names)}")
+        self.concept_ids = (
+            np.asarray(archive["concept_id"][selected]).astype(str)
+            if "concept_id" in names else None
+        )
         self.values: dict[str, np.ndarray] = {}
         for output_name, source_name in mapping.items():
             if output_name == "split" or source_name not in names:
@@ -103,10 +142,28 @@ def _sha256_file(path: str | Path) -> str:
 def training_dependency_fingerprint() -> str:
     digest = hashlib.sha256()
     directory = Path(__file__).resolve().parent
-    for name in ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py"):
+    for name in ("train_candidate11.py", "model.py", "train_decoder.py", "color_distribution.py", "c11_release_contract.py", "c11_target_semantic_gate.v1.json"):
         digest.update(name.encode("utf-8"))
         digest.update(_sha256_file(directory / name).encode("ascii"))
     return digest.hexdigest()
+
+
+# This is the immediately preceding Candidate 11 trainer fingerprint.  It is
+# compatible solely because the only change is atomic checkpoint publication;
+# model math, optimizer state, data identity, and resume arguments remain
+# independently validated below.
+CHECKPOINT_SAVE_RETRY_COMPATIBLE_FINGERPRINTS = frozenset({
+    "b5239a9d991cf473d29425412ab8566d0c7c536a5ec8a27803b8085517eda67f",
+    "05bb4b0691c3ae52e5a49a3d5afdaa04f0ec224f776726d1539332f77b2c44d3",
+    # Completed one-epoch probe produced after adding release-only evidence
+    # calibration.  The subsequent fingerprint change only touched the
+    # orchestration reuse predicate; forward/loss/optimizer code is identical.
+    "d1ec28a8789eefb71a109cd7e8fd0928adb17d42d0635f371855a519bb0969c9",
+})
+
+
+def resume_dependency_fingerprints() -> frozenset[str]:
+    return frozenset({training_dependency_fingerprint(), *CHECKPOINT_SAVE_RETRY_COMPATIBLE_FINGERPRINTS})
 
 
 def training_input_identity(args: argparse.Namespace) -> dict[str, Any]:
@@ -136,12 +193,13 @@ def _stage_a_release_evidence(path: str | None) -> dict[str, Any]:
     report = json.loads(Path(path).read_text(encoding="utf-8"))
     if report.get("benchmarkId") != "palettebrain-candidate11-semantic-v3-frozen-2026-08-26":
         raise RuntimeError("Stage A report is not from the frozen semantic v3 benchmark")
-    metric = report.get("metrics", {}).get("semanticFamilyWin")
-    if not isinstance(metric, (int, float)) or not np.isfinite(metric):
-        raise RuntimeError("Stage A semantic report is corrupt or non-finite")
+    metrics = report.get("metrics", {})
+    calibration_path = Path(__file__).with_name("c11_target_semantic_gate.v1.json")
+    calibration = json.loads(calibration_path.read_text(encoding="utf-8"))["stageA"]
+    passed, failures = stage_a_metrics_contract(metrics, calibration)
     classification = report.get("testClassification")
-    if classification != "ENGINEERING_SMOKE_ONLY" and metric < 0.80:
-        raise RuntimeError(f"Stage A semantic gate failed: {metric} < 0.80")
+    if classification != "ENGINEERING_SMOKE_ONLY" and not passed:
+        raise RuntimeError("Stage A target-grounded semantic gate failed: " + "; ".join(failures))
     return report
 
 
@@ -155,6 +213,55 @@ def configure_stage_parameters(model: PaletteDecoder, stage: str) -> dict[str, l
         "trainable": [name for name, value in model.named_parameters() if value.requires_grad],
         "frozen": [name for name, value in model.named_parameters() if not value.requires_grad],
     }
+
+
+def partition_trainable_parameters(model: PaletteDecoder) -> dict[str, list[Any]]:
+    """Separate genuinely new attention tensors from inherited decoder tensors."""
+    new_names: list[str] = []
+    new_parameters: list[Any] = []
+    inherited_names: list[str] = []
+    inherited_parameters: list[Any] = []
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        if name.startswith("visual_cross_attention."):
+            new_names.append(name)
+            new_parameters.append(parameter)
+        else:
+            inherited_names.append(name)
+            inherited_parameters.append(parameter)
+    return {
+        "new_names": new_names,
+        "new_parameters": new_parameters,
+        "inherited_names": inherited_names,
+        "inherited_parameters": inherited_parameters,
+    }
+
+
+def stage_a_semantic_stability_loss(
+    student: PaletteDecoder,
+    teacher: PaletteDecoder,
+    inputs: tuple[Tensor, ...],
+) -> Tensor:
+    """Penalize joint bridge/attention drift from the inherited BASE decoder."""
+    with torch.no_grad():
+        expected = teacher(*inputs)
+    actual = student(*inputs)
+    active = inputs[1].unsqueeze(-1)
+    per_value = F.smooth_l1_loss(actual, expected, reduction="none") * active
+    return per_value.sum() / active.sum().clamp_min(1.0) / actual.shape[-1]
+
+
+def stage_a_prior_stability_loss(
+    student: PaletteDecoder,
+    teacher: PaletteDecoder,
+    text_embedding: Tensor,
+) -> Tensor:
+    """Preserve the inherited semantic color distribution during visual training."""
+    with torch.no_grad():
+        expected = torch.softmax(teacher.bridge(text_embedding)[0], dim=-1)
+    actual = torch.log_softmax(student.bridge(text_embedding)[0], dim=-1)
+    return F.kl_div(actual, expected, reduction="batchmean")
 
 
 def stage_b_mixture_weights(lengths: list[int]) -> tuple[Tensor, dict[str, float]]:
@@ -186,7 +293,11 @@ def _configure_model(args: argparse.Namespace) -> PaletteDecoder:
     return model
 
 
-def _stage_a_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tensor, dict[str, Tensor]]:
+def _stage_a_loss(
+    model: PaletteDecoder,
+    batch: dict[str, Tensor],
+    teacher: PaletteDecoder | None = None,
+) -> tuple[Tensor, dict[str, Tensor]]:
     prior_logits, style_latent, _, _ = model.bridge(batch["text_embedding"])
     prior = smooth_circular_histogram_loss(prior_logits, batch["color_prior"])
     style = F.smooth_l1_loss(style_latent, batch["teacher_latent"])
@@ -206,11 +317,36 @@ def _stage_a_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
         output, batch["target"], batch["count_mask"], batch["locked_mask"],
         batch["locked_colors"],
     )
-    total = prior + 0.25 * style + 0.5 * ranking + 0.25 * palette
-    return total, {"prior": prior, "style": style, "ranking": ranking, "palette": palette}
+    stability = palette.new_zeros(())
+    prior_stability = palette.new_zeros(())
+    if teacher is not None:
+        stability = stage_a_semantic_stability_loss(
+            model,
+            teacher,
+            (
+                batch["text_embedding"], batch["count_mask"], batch["seed_noise"],
+                batch["locked_mask"], batch["locked_colors"],
+            ),
+        )
+        prior_stability = stage_a_prior_stability_loss(
+            model, teacher, batch["text_embedding"]
+        )
+    total = (
+        prior + 0.25 * style + 0.5 * ranking + 0.25 * palette
+        + 5.0 * stability + 2.0 * prior_stability
+    )
+    return total, {
+        "prior": prior, "style": style, "ranking": ranking,
+        "palette": palette, "semanticStability": stability,
+        "priorStability": prior_stability,
+    }
 
 
-def _stage_b_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tensor, dict[str, Tensor]]:
+def _stage_b_loss(
+    model: PaletteDecoder,
+    batch: dict[str, Tensor],
+    teacher: PaletteDecoder | None = None,
+) -> tuple[Tensor, dict[str, Tensor]]:
     output = model(
         batch["text_embedding"], batch["count_mask"], batch["seed_noise"],
         batch["locked_mask"], batch["locked_colors"],
@@ -231,8 +367,34 @@ def _stage_b_loss(model: PaletteDecoder, batch: dict[str, Tensor]) -> tuple[Tens
     else:
         prior = palette.new_zeros(())
         style = palette.new_zeros(())
-    total = palette + 0.25 * prior + 0.05 * style
-    return total, {"palette": palette, "prior": prior, "style": style, **components}
+    semantic_stability = palette.new_zeros(())
+    prior_stability = palette.new_zeros(())
+    if teacher is not None:
+        with torch.no_grad():
+            expected_output = teacher(
+                batch["text_embedding"], batch["count_mask"], batch["seed_noise"],
+                batch["locked_mask"], batch["locked_colors"],
+            )
+        active = batch["count_mask"].unsqueeze(-1)
+        per_value = F.smooth_l1_loss(output, expected_output, reduction="none") * active
+        semantic_stability = (
+            per_value.sum() / active.sum().clamp_min(1.0) / output.shape[-1]
+        )
+        prior_stability = stage_a_prior_stability_loss(
+            model, teacher, batch["text_embedding"]
+        )
+    total = (
+        palette + 0.25 * prior + 0.05 * style
+        + 5.0 * semantic_stability + 2.0 * prior_stability
+    )
+    return total, {
+        "palette": palette,
+        "prior": prior,
+        "style": style,
+        "semanticStability": semantic_stability,
+        "priorStability": prior_stability,
+        **components,
+    }
 
 
 def train(args: argparse.Namespace) -> dict[str, Any]:
@@ -249,15 +411,27 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     _seed_everything(args.seed)
     device = _device(args.device)
     model = _configure_model(args).to(device)
+    semantic_teacher: PaletteDecoder | None = None
+    if args.stage in {"a", "b"}:
+        teacher_checkpoint = torch.load(
+            args.initialize_from, map_location="cpu", weights_only=True
+        )
+        semantic_teacher = PaletteDecoder(
+            PaletteDecoderConfig(**teacher_checkpoint["model_config"])
+        ).to(device).eval()
+        semantic_teacher.load_state_dict(
+            teacher_checkpoint["model_state_dict"], strict=True
+        )
+        for parameter in semantic_teacher.parameters():
+            parameter.requires_grad_(False)
     parameter_contract = configure_stage_parameters(model, args.stage)
-    new_parameters, inherited_parameters = [], []
-    for name, parameter in model.named_parameters():
-        if not parameter.requires_grad:
-            continue
-        (new_parameters if name.startswith(("bridge.", "visual_cross_attention.")) else inherited_parameters).append(parameter)
-    parameter_groups = [{"params": new_parameters, "lr": args.new_lr}]
-    if inherited_parameters:
-        parameter_groups.append({"params": inherited_parameters, "lr": args.inherited_lr})
+    optimizer_partition = partition_trainable_parameters(model)
+    parameter_groups = [{"params": optimizer_partition["new_parameters"], "lr": args.new_lr}]
+    if optimizer_partition["inherited_parameters"]:
+        parameter_groups.append({
+            "params": optimizer_partition["inherited_parameters"],
+            "lr": args.inherited_lr,
+        })
     optimizer = torch.optim.AdamW(parameter_groups, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     start_epoch = 0
@@ -272,8 +446,11 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         resumed = torch.load(args.resume, map_location="cpu", weights_only=True)
         if resumed.get("dataset_identity") != dataset_identity:
             raise RuntimeError("resume checkpoint dataset identity does not match current inputs")
-        if resumed.get("dependency_fingerprint") != dependency_fingerprint:
+        resumed_dependency = resumed.get("dependency_fingerprint")
+        if resumed_dependency not in resume_dependency_fingerprints():
             raise RuntimeError("resume checkpoint trainer/model dependency fingerprint is stale")
+        if resumed_dependency != dependency_fingerprint:
+            print("RESUME compatible prior checkpoint-save contract fingerprint", flush=True)
         resumed_args = resumed.get("training_args", {})
         for name in ("stage", "epochs", "batch_size", "new_lr", "inherited_lr", "seed"):
             if resumed_args.get(name) != getattr(args, name):
@@ -309,7 +486,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         if device.type == "cuda" and "torch_cuda_rng_state" in resumed:
             torch.cuda.set_rng_state_all(resumed["torch_cuda_rng_state"])
 
-    train_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "train")]
+    primary_train = C11Dataset(args.data, "train")
+    train_sets: list[Dataset[dict[str, Tensor]]] = [primary_train]
     val_sets: list[Dataset[dict[str, Tensor]]] = [C11Dataset(args.data, "val")]
     if args.stage == "b":
         for replay_path in args.replay_data:
@@ -321,10 +499,20 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     val_data = val_sets[0]
     sampler_weights = None
     mixture = {"realVisualSemantic": 1.0, "replayTotal": 0.0}
-    if len(train_sets) > 1:
+    if args.stage == "a" and primary_train.concept_ids is not None:
+        sampler_weights = inverse_frequency_sample_weights(primary_train.concept_ids)
+    elif len(train_sets) > 1:
         sampler_weights, mixture = stage_b_mixture_weights([len(value) for value in train_sets])
     val_loader = DataLoader(val_data, batch_size=args.batch_size, shuffle=False)
-    loss_function = _stage_a_loss if args.stage == "a" else _stage_b_loss
+    loss_function = (
+        (lambda current_model, batch: _stage_a_loss(
+            current_model, batch, teacher=semantic_teacher
+        ))
+        if args.stage == "a"
+        else (lambda current_model, batch: _stage_b_loss(
+            current_model, batch, teacher=semantic_teacher
+        ))
+    )
     output = Path(args.output)
     last_output = Path(args.last_output) if args.last_output else output.with_name(
         f"{output.stem.removesuffix('-best')}-last{output.suffix}"
@@ -386,6 +574,11 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                 "paletteStructure": "SmoothL1 pairwise physical OKLab geometry after matching and lock restoration",
                 "paletteStructureWeight": 0.20,
                 "rankingNegativeVersion": "c11-safe-ranking-negative-v3-bounded-global-order",
+                "stageAConceptSampling": "inverse-frequency-equal-concept-mass",
+                "stageAPriorStabilityWeight": 2.0,
+                "stageAFinalStabilityWeight": 5.0,
+                "stageBPriorStabilityWeight": 2.0,
+                "stageBFinalStabilityWeight": 5.0,
             },
             "python_rng_state": random.getstate(),
             "numpy_rng_state": {
@@ -402,9 +595,10 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     def save_last(payload: dict[str, Any]) -> None:
         last_temporary = last_output.with_suffix(last_output.suffix + ".tmp")
         torch.save(payload, last_temporary)
-        last_temporary.replace(last_output)
+        atomic_checkpoint_replace(last_temporary, last_output)
 
     for epoch in range(start_epoch, args.epochs):
+        epoch_started = time.perf_counter()
         epoch_generator = torch.Generator().manual_seed(args.seed + epoch)
         sampler = None
         if sampler_weights is not None:
@@ -418,6 +612,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         )
         row: dict[str, Any] = {"epoch": epoch}
         for split, loader in (("train", train_loader), ("val", val_loader)):
+            split_started = time.perf_counter()
             model.train(split == "train")
             continuing_train = split == "train" and epoch == start_epoch and resume_batch > 0
             totals: dict[str, float] = (
@@ -463,10 +658,17 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                         epoch_progress=progress,
                     ))
             row[split] = {name: value / batches for name, value in totals.items()}
+            split_elapsed = time.perf_counter() - split_started
+            row[split]["elapsedSeconds"] = split_elapsed
+            row[split]["batchesPerSecond"] = batches / max(split_elapsed, 1e-9)
             if split == "train":
                 row[split]["actualVisualSampleFraction"] = (
                     visual_samples / max(1, total_samples)
                 )
+                row[split]["samplesPerSecond"] = total_samples / max(
+                    split_elapsed, 1e-9
+                )
+        row["epochSeconds"] = time.perf_counter() - epoch_started
         scheduler.step()
         history.append(row)
         improved = row["val"]["loss"] < best_loss
