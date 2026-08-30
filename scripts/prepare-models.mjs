@@ -48,6 +48,7 @@ if (fs.existsSync(partA) && fs.existsSync(partB)) {
     if (assembledSha256 !== expectedSha256) {
       throw new Error(`Assembled E5 artifact SHA-256 mismatch: ${assembledSha256}`);
     }
+    fs.mkdirSync(modelDir, { recursive: true });
     const temporaryFile = `${targetFile}.tmp-${process.pid}`;
     fs.writeFileSync(temporaryFile, combined);
     fs.renameSync(temporaryFile, targetFile);
