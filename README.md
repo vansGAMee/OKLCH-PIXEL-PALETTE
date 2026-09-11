@@ -132,12 +132,35 @@ in `localStorage`, so the editor restores your previous state after a reload.
 
 ---
 
+## Production text-to-palette runtime
+
+The AI studio now uses the local `pat-e5-tone-scorer-v1` pipeline:
+
+```text
+prompt → multilingual E5 → top-24 PAT retrieval → ToneHead transforms
+       → small candidate pool → whole-palette OKLab/OKLCH scorer → 2–9 colors
+```
+
+The browser downloads 10,183 real text/palette records as a compact palette
+manifest plus cached 384D embeddings. Ranking combines semantic relevance,
+ToneHead agreement, harmony, perceptual separation, lightness/chroma structure,
+and explicit collapse/outlier penalties. Locked colors are inserted before the
+final score and are restored exactly. Regeneration varies ToneHead strength
+inside the winning semantic composition, so a new seed does not jump to an
+unrelated concept. PreferenceNet is intentionally disabled: its measured bonus
+did not improve complete-palette ablation quality.
+
+The runtime remains fully local in the browser and uses no external inference
+API. Rebuild its artifacts with `scripts/export-retrieval-artifacts.py`.
+
+---
+
 ## 🤖 PaletteBrain Candidate 11 — technical handoff and honest status
 
 > **Status as of 2026-08-30: experimental; do not treat as production-ready.**
 >
-> The browser manifest currently says `productionReady: true`. That flag is stale
-> and **must not** be used as evidence of semantic quality. The real frozen
+> The legacy browser manifest now correctly says `productionReady: false` and
+> **must not** be used as evidence of semantic quality. The real frozen
 > semantic report records a failing model. Candidate 11 may still be useful for
 > engineering work (local inference, deterministic generation, locks, ONNX
 > export, and runtime parity), but it is not reliable enough to promise that a
@@ -149,7 +172,7 @@ model work for the first time.
 
 ### What Candidate 11 is
 
-Candidate 11 is an in-browser text-to-palette experiment. It is independent of
+Candidate 11 is a retained legacy in-browser text-to-palette experiment. It is independent of
 the deterministic 4-colour OKLCH generator described above:
 
 1. The browser normalizes the prompt and obtains a 384-dimensional embedding

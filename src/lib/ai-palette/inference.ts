@@ -1,5 +1,5 @@
 /**
- * Local browser inference for the legacy semantic baseline and PaletteBrain v2.
+ * Local browser inference for PAT retrieval + ToneHead scoring and the retained legacy baselines.
  * Neural runtimes and weights are loaded only when an AI function is called.
  */
 'use client';
@@ -17,6 +17,11 @@ import {
   setTestAnchors,
 } from './semanticMapper';
 import { matchColorConstraint } from './colorLexicon';
+import {
+  generateRetrievedPalette,
+  type RetrievalArtifacts,
+  type ToneArtifacts,
+} from './retrievalEngine';
 
 export interface EncoderSession {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,6 +80,7 @@ const ENCODER_EMBEDDING_SIZE = 384;
 const MAX_PALETTE_SIZE = 9;
 const PROMPT_EMBEDDING_CACHE_LIMIT = 16;
 const DECODER_MANIFEST_PATH = '/models/palettebrain-v2.manifest.json';
+const RETRIEVAL_MANIFEST_PATH = '/models/palette-retrieval-v1.json';
 const E5_UPSTREAM_MODEL_ID = 'intfloat/multilingual-e5-small';
 
 let encoderPromise: Promise<EncoderSession> | null = null;
@@ -84,6 +90,9 @@ let encoderRunQueue: Promise<void> = Promise.resolve();
 let decoderPromise: Promise<PaletteDecoderSession> | null = null;
 let customDecoderLoader: (() => Promise<PaletteDecoderSession>) | null = null;
 let decoderRunQueue: Promise<void> = Promise.resolve();
+
+let retrievalPromise: Promise<RetrievalArtifacts> | null = null;
+let customRetrievalLoader: (() => Promise<RetrievalArtifacts>) | null = null;
 
 const promptEmbeddingCache = new Map<string, Promise<Float32Array>>();
 
@@ -124,12 +133,19 @@ export function resetDecoderSession(): void {
   decoderPromise = null;
 }
 
+export function setTestRetrievalLoader(loader: (() => Promise<RetrievalArtifacts>) | null): void {
+  customRetrievalLoader = loader;
+  retrievalPromise = null;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function setTestArtifacts(_vocab?: Record<string, number>, _model?: ArrayBuffer | Uint8Array | string): void {
   encoderPromise = null;
   customEncoderLoader = null;
   decoderPromise = null;
   customDecoderLoader = null;
+  customRetrievalLoader = null;
+  retrievalPromise = null;
   clearPromptEmbeddingCache();
   setTestAnchors(null);
 }
@@ -337,6 +353,90 @@ async function sha256Hex(value: ArrayBuffer): Promise<string> {
   }
   const digest = await globalThis.crypto.subtle.digest('SHA-256', value);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+interface RetrievalManifestContract {
+  schemaVersion?: number;
+  version?: string;
+  dimension?: number;
+  recordCount?: number;
+  embeddings?: { path?: string; bytes?: number; sha256?: string };
+  palettes?: unknown;
+  tone?: unknown;
+}
+
+function validateRetrievalManifest(raw: unknown): Omit<RetrievalArtifacts, 'embeddings'> & {
+  embeddingsPath: string;
+  embeddingsBytes: number;
+  embeddingsSha256: string;
+} {
+  if (!raw || typeof raw !== 'object') throw new Error('retrieval manifest must be a JSON object');
+  const manifest = raw as RetrievalManifestContract;
+  const path = manifest.embeddings?.path;
+  const bytes = manifest.embeddings?.bytes;
+  const sha256 = manifest.embeddings?.sha256;
+  if (manifest.schemaVersion !== 1 || typeof manifest.version !== 'string' || !manifest.version.trim()) {
+    throw new Error('retrieval manifest version contract is invalid');
+  }
+  if (manifest.dimension !== ENCODER_EMBEDDING_SIZE || !Number.isInteger(manifest.recordCount) || Number(manifest.recordCount) < 1) {
+    throw new Error('retrieval manifest dimensions are invalid');
+  }
+  if (!Array.isArray(manifest.palettes) || manifest.palettes.length !== manifest.recordCount) {
+    throw new Error('retrieval manifest palettes are invalid');
+  }
+  const palettes = manifest.palettes as unknown[];
+  if (!palettes.every((palette) => Array.isArray(palette) && palette.length >= 2 && palette.every((color) => typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color)))) {
+    throw new Error('retrieval manifest contains an invalid palette');
+  }
+  if (!path?.startsWith('/models/') || path.includes('..') || !path.endsWith('.f32')) {
+    throw new Error('retrieval embedding path is invalid');
+  }
+  if (bytes !== Number(manifest.recordCount) * ENCODER_EMBEDDING_SIZE * 4) {
+    throw new Error('retrieval embedding byte count is invalid');
+  }
+  if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(sha256)) {
+    throw new Error('retrieval embedding SHA-256 is invalid');
+  }
+  const tone = manifest.tone as ToneArtifacts | undefined;
+  if (!tone || !Array.isArray(tone.layers) || !tone.layers.length) {
+    throw new Error('retrieval ToneHead artifact is invalid');
+  }
+  return {
+    version: manifest.version,
+    dimension: manifest.dimension,
+    palettes: manifest.palettes as string[][],
+    tone,
+    embeddingsPath: path,
+    embeddingsBytes: bytes,
+    embeddingsSha256: sha256,
+  };
+}
+
+async function createDefaultRetrievalArtifacts(): Promise<RetrievalArtifacts> {
+  const response = await fetch(RETRIEVAL_MANIFEST_PATH, { cache: 'force-cache' });
+  if (!response.ok) throw new Error(`GET ${RETRIEVAL_MANIFEST_PATH} returned ${response.status}`);
+  const manifest = validateRetrievalManifest(await response.json());
+  const embeddingResponse = await fetch(manifest.embeddingsPath, { cache: 'force-cache' });
+  if (!embeddingResponse.ok) throw new Error(`GET ${manifest.embeddingsPath} returned ${embeddingResponse.status}`);
+  const buffer = await embeddingResponse.arrayBuffer();
+  if (buffer.byteLength !== manifest.embeddingsBytes) throw new Error('retrieval embedding byte size mismatch');
+  if (await sha256Hex(buffer) !== manifest.embeddingsSha256) throw new Error('retrieval embedding SHA-256 mismatch');
+  return {
+    version: manifest.version,
+    dimension: manifest.dimension,
+    palettes: manifest.palettes,
+    tone: manifest.tone,
+    embeddings: new Float32Array(buffer),
+  };
+}
+
+async function getRetrievalArtifacts(): Promise<RetrievalArtifacts> {
+  if (retrievalPromise) return retrievalPromise;
+  retrievalPromise = (customRetrievalLoader ? customRetrievalLoader() : createDefaultRetrievalArtifacts()).catch((err) => {
+    retrievalPromise = null;
+    throw errorWithCause(`AI palette retrieval artifacts failed: ${errorDetail(err)}`, err);
+  });
+  return retrievalPromise;
 }
 
 async function createDefaultDecoderSession(): Promise<PaletteDecoderSession> {
@@ -726,6 +826,31 @@ export async function generateAiPalette(
   const encoderStartedAt = nowMs();
   const embedding = await getCachedPromptEmbedding(normalized);
   const encoderMs = nowMs() - encoderStartedAt;
+
+  // Test-only decoder injection keeps the frozen legacy runtime contract
+  // testable. Production uses PAT retrieval + ToneHead + whole-palette scoring.
+  if (customRetrievalLoader || !customDecoderLoader) {
+    const criticStartedAt = nowMs();
+    const artifacts = await getRetrievalArtifacts();
+    const result = generateRetrievedPalette({
+      embedding,
+      count: request.count,
+      seed: request.seed,
+      artifacts,
+      lockedColors: lockedByIndex,
+    });
+    return {
+      colors: result.colors,
+      seed: request.seed,
+      modelVersion: artifacts.version,
+      inference: {
+        encoderMs,
+        criticMs: nowMs() - criticStartedAt,
+        totalMs: nowMs() - totalStartedAt,
+      },
+      fallback: false,
+    };
+  }
 
   const decoderStartedAt = nowMs();
   const decoder = await getPaletteDecoder();
