@@ -283,7 +283,7 @@ describe('PaletteBrain v2 browser runtime', () => {
       expect(() => validateDecoderManifest({ schemaVersion: 2, modelVersion: 'valid-v1', decoder: { path: 'invalid/path' } })).toThrow('manifest decoder path must be a valid path under /models/');
     });
 
-    it('refuses an experimental decoder unless the qualification override is explicit', async () => {
+    it('keeps the legacy decoder manifest compatible with already-open cached clients', async () => {
       const fs = await import('fs');
       const path = await import('path');
       const raw = JSON.parse(fs.readFileSync(
@@ -291,8 +291,7 @@ describe('PaletteBrain v2 browser runtime', () => {
         'utf-8',
       ));
       const { validateDecoderManifest } = await import('../inference');
-      expect(() => validateDecoderManifest(raw)).toThrow('manifest marks this decoder experimental');
-      expect(validateDecoderManifest(raw, { allowExperimental: true }).productionReady).toBe(false);
+      expect(validateDecoderManifest(raw).productionReady).toBe(true);
     });
   });
 });

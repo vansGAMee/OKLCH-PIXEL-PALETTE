@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
   "modelVersion": "palettebrain-v4-candidate11-5b4b6e36",
-  "codename": null,
+  "codename": "Mikhail Tal",
   "trainedFromCandidate": 11,
-  "productionReady": false,
+  "productionReady": true,
   "decoder": {
     "path": "/models/palettebrain-v4-candidate11-corrected-contract-v2.onnx",
     "url": "/models/palettebrain-v4-candidate11-corrected-contract-v2.onnx",

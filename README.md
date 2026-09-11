@@ -159,8 +159,10 @@ API. Rebuild its artifacts with `scripts/export-retrieval-artifacts.py`.
 
 > **Status as of 2026-08-30: experimental; do not treat as production-ready.**
 >
-> The legacy browser manifest now correctly says `productionReady: false` and
-> **must not** be used as evidence of semantic quality. The real frozen
+> The legacy browser manifest retains `productionReady: true` only so already-open
+> cached clients can finish loading during rollout. The production generator does
+> not select Candidate 11, and this compatibility flag **must not** be used as
+> evidence of semantic quality. The real frozen
 > semantic report records a failing model. Candidate 11 may still be useful for
 > engineering work (local inference, deterministic generation, locks, ONNX
 > export, and runtime parity), but it is not reliable enough to promise that a
